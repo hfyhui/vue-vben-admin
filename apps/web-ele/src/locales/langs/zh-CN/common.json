@@ -1,0 +1,15 @@
+{
+  "add": "新增",
+  "edit": "编辑",
+  "editBatch": "批量编辑",
+  "update": "更新",
+  "del": "删除",
+  "delBatch": "批量删除",
+  "import": "导入",
+  "export": "导出",
+  "confirm": "确认",
+  "cancel": "取消",
+  "yes": "是",
+  "no": "否",
+  "prompt": "提示"
+}
