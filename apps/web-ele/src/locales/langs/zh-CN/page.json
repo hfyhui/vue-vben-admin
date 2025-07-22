@@ -9,6 +9,9 @@
   "dashboard": {
     "title": "概览",
     "analytics": "分析页",
-    "workspace": "工作台"
+    "workspace": "工作台",
+    "customerManage": "客户管理",
+    "licenseManage": "license管理",
+    "productList": "产品清单"
   }
 }
