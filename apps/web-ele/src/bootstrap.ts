@@ -8,7 +8,7 @@ import '@vben/styles';
 import '@vben/styles/ele';
 
 import { useTitle } from '@vueuse/core';
-import { ElLoading } from 'element-plus';
+import ElementPlus, { ElLoading } from 'element-plus';
 
 import { $t, setupI18n } from '#/locales';
 
@@ -16,6 +16,8 @@ import { initComponentAdapter } from './adapter/component';
 import { initSetupVbenForm } from './adapter/form';
 import App from './app.vue';
 import { router } from './router';
+
+import 'element-plus/dist/index.css';
 
 async function bootstrap(namespace: string) {
   // 初始化组件适配器
@@ -58,7 +60,9 @@ async function bootstrap(namespace: string) {
 
   // 配置路由及路由守卫
   app.use(router);
-
+  // 添加全局方法 $message
+  app.config.globalProperties.$message = ElementPlus.ElMessage;
+  app.use(ElementPlus);
   // 配置Motion插件
   const { MotionPlugin } = await import('@vben/plugins/motion');
   app.use(MotionPlugin);
