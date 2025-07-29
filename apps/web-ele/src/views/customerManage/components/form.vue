@@ -239,6 +239,13 @@ function handleReset() {
     emit('update:visible', false);
   }
 }
+
+function onDialogClose() {
+  if (formApi.resetForm) {
+    formApi.resetForm();
+  }
+  emit('update:visible', false);
+}
 </script>
 
 <template>
@@ -246,6 +253,7 @@ function handleReset() {
     :model-value="props.visible"
     :title="props.modelValue && props.modelValue.id ? '编辑客户' : '新增客户'"
     width="940px"
+    @close="onDialogClose"
   >
     <Form />
   </ElDialog>

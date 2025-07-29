@@ -1,30 +1,29 @@
 <script setup lang="ts">
-import { h, watch } from 'vue';
+import { h, ref, watch } from 'vue';
 
 import { z } from 'zod';
 
 import { useVbenForm } from '#/adapter/form';
 
 import AppTreeSelector from './AppTreeSelector.vue';
+import CustomerSelector from './CustomerSelector.vue';
 
 const props = defineProps<{ modelValue?: any; visible: boolean }>();
 const emit = defineEmits(['update:visible', 'submit']);
 
+const customerKeyStatus = ref(false);
+
 const schema = [
   {
-    component: 'Select',
+    component: h(CustomerSelector, {
+      onKeyStatusChange: (status: boolean) =>
+        (customerKeyStatus.value = status),
+    }),
     fieldName: 'customer',
     label: '客户',
     required: true,
-    componentProps: {
-      placeholder: '请选择客户',
-      filterable: true,
-      options: [
-        { label: '客户A', value: 'a' },
-        { label: '客户B', value: 'b' },
-      ],
-    },
-    rules: z.string().min(1, { message: '请选择客户' }),
+    componentProps: {},
+    rules: 'selectRequired',
   },
   {
     component: h(AppTreeSelector),
@@ -33,7 +32,11 @@ const schema = [
     required: true,
     defaultValue: [],
     componentProps: {},
-    rules: z.array(z.string()).min(1, { message: '请选择授权应用' }),
+    rules: z
+      .any()
+      .refine((val) => val && Array.isArray(val) && val.length > 0, {
+        message: '请选择授权应用',
+      }),
   },
   {
     component: 'RadioGroup',
@@ -47,7 +50,7 @@ const schema = [
         { label: '正式', value: 'official' },
       ],
     },
-    rules: z.string().min(1, { message: '请选择授权类型' }),
+    rules: 'selectRequired',
   },
   {
     component: 'DatePicker',
@@ -58,7 +61,7 @@ const schema = [
       type: 'datetime',
       placeholder: '请选择过期时间',
     },
-    rules: z.string().min(1, { message: '请选择过期时间' }),
+    rules: 'selectRequired',
   },
   {
     component: 'InputNumber',
@@ -72,10 +75,7 @@ const schema = [
       controls: true,
       placeholder: '最大2000个并发',
     },
-    rules: z
-      .number()
-      .min(1, { message: '最小1' })
-      .max(2000, { message: '最大2000' }),
+    rules: 'required',
   },
   {
     component: 'Input',
@@ -122,6 +122,10 @@ watch(
 );
 
 function handleSubmit(values: any) {
+  if (!customerKeyStatus.value) {
+    ElMessage.warning('请先生成证书密钥');
+    return;
+  }
   emit('submit', values);
   emit('update:visible', false);
 }

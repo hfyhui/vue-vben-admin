@@ -238,3 +238,97 @@ export async function downloadLicenseApi(
   URL.revokeObjectURL(url);
   return { code: 0, data: null, message: '下载成功' };
 }
+
+// ====== 密钥相关假数据和接口 ======
+export interface CustomerKey {
+  id: string;
+  customer: string;
+  name: string;
+  publicKey: string;
+  privateKey: string;
+  createdAt: string;
+}
+
+const MOCK_KEY_DATA: CustomerKey[] = [
+  {
+    id: 'k1',
+    customer: 'a',
+    name: '客户A密钥1',
+    publicKey: 'pubkey-a-1',
+    privateKey: 'prikey-a-1',
+    createdAt: '2024-06-01 10:00:00',
+  },
+  {
+    id: 'k2',
+    customer: 'a',
+    name: '客户A密钥2',
+    publicKey: 'pubkey-a-2',
+    privateKey: 'prikey-a-2',
+    createdAt: '2024-07-01 10:00:00',
+  },
+  {
+    id: 'k3',
+    customer: 'b',
+    name: '客户B密钥1',
+    publicKey: 'pubkey-b-1',
+    privateKey: 'prikey-b-1',
+    createdAt: '2024-06-15 10:00:00',
+  },
+];
+
+export async function getCustomerKeys(
+  customerId: string,
+): Promise<CustomerKey[]> {
+  await sleep();
+  return MOCK_KEY_DATA.filter((k) => k.customer === customerId);
+}
+
+export async function createCustomerKey(
+  customerId: string,
+  keyData: Partial<CustomerKey>,
+): Promise<CustomerKey> {
+  await sleep();
+  const newKey: CustomerKey = {
+    id: `k${Date.now()}`,
+    customer: customerId,
+    name: keyData.name || '新密钥',
+    publicKey: keyData.publicKey || `pubkey-${Date.now()}`,
+    privateKey: keyData.privateKey || `prikey-${Date.now()}`,
+    createdAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
+  };
+  MOCK_KEY_DATA.unshift(newKey);
+  return newKey;
+}
+
+export async function deleteCustomerKey(keyId: string): Promise<boolean> {
+  await sleep();
+  const idx = MOCK_KEY_DATA.findIndex((k) => k.id === keyId);
+  if (idx !== -1) {
+    // 证书失效逻辑：将所有用此密钥生成的license置为无效
+    const key = MOCK_KEY_DATA[idx];
+    for (const lic of MOCK_LICENSE_DATA) {
+      if (lic.customer === key.customer) {
+        lic.licenseKey = '无效';
+      }
+    }
+    MOCK_KEY_DATA.splice(idx, 1);
+    return true;
+  }
+  return false;
+}
+
+export async function getKeyDetail(
+  keyId: string,
+): Promise<CustomerKey | undefined> {
+  await sleep();
+  return MOCK_KEY_DATA.find((k) => k.id === keyId);
+}
+
+export async function switchCustomerKey(
+  _customerId: string,
+  _keyId: string,
+): Promise<boolean> {
+  await sleep();
+  // 这里只做切换标记，实际业务可扩展
+  return true;
+}

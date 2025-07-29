@@ -18,6 +18,10 @@ import {
 import LicenseDetail from './components/detail.vue';
 import LicenseForm from './components/form.vue';
 
+declare global {
+  const ElMessageBox: any;
+}
+
 const licenseTypes = [
   { label: '试用', value: 'trial' },
   { label: '正式', value: 'official' },
@@ -265,7 +269,7 @@ async function onBatchDelete() {
 
     <ElDialog
       v-model="showForm"
-      title="License信息"
+      title="新增"
       width="600px"
       :close-on-click-modal="false"
     >
