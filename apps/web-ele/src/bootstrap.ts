@@ -8,7 +8,7 @@ import '@vben/styles';
 import '@vben/styles/ele';
 
 import { useTitle } from '@vueuse/core';
-import { ElLoading } from 'element-plus';
+import ElementPlus, { ElLoading } from 'element-plus';
 
 import { $t, setupI18n } from '#/locales';
 
@@ -58,6 +58,12 @@ async function bootstrap(namespace: string) {
 
   // 配置路由及路由守卫
   app.use(router);
+  app.use(
+    ElementPlus,
+    //   , {
+    //   locale: zhCn,
+    // }
+  );
 
   // 配置Motion插件
   const { MotionPlugin } = await import('@vben/plugins/motion');
