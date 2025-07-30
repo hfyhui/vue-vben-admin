@@ -60,9 +60,13 @@ async function bootstrap(namespace: string) {
 
   // 配置路由及路由守卫
   app.use(router);
-  // 添加全局方法 $message
-  app.config.globalProperties.$message = ElementPlus.ElMessage;
-  app.use(ElementPlus);
+  app.use(
+    ElementPlus,
+    //   , {
+    //   locale: zhCn,
+    // }
+  );
+
   // 配置Motion插件
   const { MotionPlugin } = await import('@vben/plugins/motion');
   app.use(MotionPlugin);
