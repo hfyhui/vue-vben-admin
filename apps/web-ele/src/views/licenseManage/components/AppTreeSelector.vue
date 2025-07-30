@@ -1,4 +1,3 @@
-<!-- src/views/licenseManage/components/AppTreeSelector.vue -->
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 

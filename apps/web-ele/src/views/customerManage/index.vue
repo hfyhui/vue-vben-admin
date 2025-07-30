@@ -3,17 +3,7 @@ import type { VxeGridListeners, VxeGridProps } from '#/adapter/vxe-table';
 
 import { ref } from 'vue';
 
-import {
-  ElButton,
-  ElDialog,
-  ElForm,
-  ElFormItem,
-  ElInput,
-  ElMessage,
-  ElMessageBox,
-  ElOption,
-  ElSelect,
-} from 'element-plus';
+import {ElMessage, ElMessageBox} from 'element-plus';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
 

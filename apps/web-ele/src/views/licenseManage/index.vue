@@ -3,7 +3,10 @@ import type { VxeGridListeners, VxeGridProps } from '#/adapter/vxe-table';
 
 import { ref } from 'vue';
 
+import { ElMessage, ElMessageBox } from 'element-plus';
+
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
+import { $t } from '#/locales';
 
 import {
   batchDeleteLicenseApi,
@@ -17,21 +20,8 @@ import {
 } from '../../api/core/license';
 import LicenseDetail from './components/detail.vue';
 import LicenseForm from './components/form.vue';
+import SearchForm from './components/searchForm.vue';
 
-declare global {
-  const ElMessageBox: any;
-}
-
-const licenseTypes = [
-  { label: '试用', value: 'trial' },
-  { label: '正式', value: 'official' },
-];
-
-const searchForm = ref({
-  customerName: '',
-  licenseType: '',
-  expireTimeRange: [] as string[],
-});
 const selectedRows = ref<any[]>([]);
 const showForm = ref(false);
 const showDetail = ref(false);
@@ -41,34 +31,50 @@ const detailData = ref<any>(null);
 const gridOptions: VxeGridProps<any> = {
   columns: [
     { type: 'checkbox', width: 50, align: 'center' },
-    { field: 'customerName', title: '客户名称', minWidth: 150 },
-    { field: 'remark', title: '备注', minWidth: 150 },
+    {
+      field: 'customerName',
+      title: $t('licenseManage.search.customerName'),
+      minWidth: 150,
+    },
+    { field: 'remark', title: $t('licenseManage.form.remark'), minWidth: 150 },
     {
       field: 'licenseType',
-      title: '授权类型',
+      title: $t('licenseManage.form.licenseType'),
       minWidth: 100,
       formatter: ({ cellValue }) => {
-        if (cellValue === 'trial') return '试用';
-        if (cellValue === 'official') return '正式';
+        if (cellValue === 'trial') return $t('licenseManage.form.trial');
+        if (cellValue === 'official') return $t('licenseManage.form.official');
         return '';
       },
     },
-    { field: 'expireTime', title: '过期时间', minWidth: 150 },
-    { field: 'maxConcurrentUsers', title: '最大并发用户', minWidth: 120 },
-    { field: 'fingerprint', title: '指纹特征', minWidth: 150 },
+    {
+      field: 'expireTime',
+      title: $t('licenseManage.form.expireTime'),
+      minWidth: 150,
+    },
+    {
+      field: 'maxConcurrentUsers',
+      title: $t('licenseManage.form.maxUsers'),
+      minWidth: 120,
+    },
+    {
+      field: 'fingerprint',
+      title: $t('licenseManage.form.fingerprint'),
+      minWidth: 150,
+    },
     {
       field: 'status',
-      title: '状态',
+      title: $t('licenseManage.status'),
       minWidth: 100,
       formatter: ({ cellValue }) => {
-        if (cellValue === 'normal') return '正常';
-        if (cellValue === 'invalid') return '无效';
+        if (cellValue === 'normal') return $t('licenseManage.statusNormal');
+        if (cellValue === 'invalid') return $t('licenseManage.statusInvalid');
         return '';
       },
     },
     {
       field: 'action',
-      title: '操作',
+      title: $t('licenseManage.actionTitle'),
       width: 180,
       slots: { default: 'action' },
       fixed: 'right',
@@ -102,7 +108,6 @@ const gridOptions: VxeGridProps<any> = {
       result: 'items',
       total: 'total',
     },
-    form: searchForm.value,
   },
 };
 
@@ -116,15 +121,6 @@ const [Grid, gridApi] = useVbenVxeGrid({
   gridEvents,
 });
 
-function onSearch() {
-  gridApi.query();
-}
-function onReset() {
-  searchForm.value.customerName = '';
-  searchForm.value.licenseType = '';
-  searchForm.value.expireTimeRange = [];
-  gridApi.query();
-}
 function onAdd() {
   editData.value = null;
   showForm.value = true;
@@ -136,10 +132,10 @@ function onEdit(row: any) {
 async function submit(values: any) {
   if (editData.value && editData.value.id) {
     await updateLicenseApi(editData.value.id, values);
-    ElMessage.success('编辑成功');
+    ElMessage.success($t('licenseManage.message.editSuccess'));
   } else {
     await createLicenseApi(values);
-    ElMessage.success('新增成功');
+    ElMessage.success($t('licenseManage.message.addSuccess'));
   }
   showForm.value = false;
   gridApi.query();
@@ -147,10 +143,10 @@ async function submit(values: any) {
 async function onImportLicense(file: File) {
   const res = await importLicenseApi(file);
   if (res.code === 0) {
-    ElMessage.success('导入成功');
+    ElMessage.success($t('licenseManage.message.importSuccess'));
     gridApi.query();
   } else {
-    ElMessage.error(res.message || '导入失败');
+    ElMessage.error(res.message || $t('licenseManage.message.importFail'));
   }
   return false;
 }
@@ -164,33 +160,44 @@ async function onView(row: any) {
       detailData.value = res.data;
       showDetail.value = true;
     } else {
-      ElMessage.error(res.message || '获取详情失败');
+      ElMessage.error(res.message || $t('licenseManage.message.getDetailFail'));
     }
   } catch {
-    ElMessage.error('获取详情失败');
+    ElMessage.error($t('licenseManage.message.getDetailFail'));
   }
 }
 async function onDelete(row: any) {
-  await ElMessageBox.confirm('确定要删除该license吗？', '提示', {
-    type: 'warning',
-  });
+  await ElMessageBox.confirm(
+    $t('licenseManage.message.deleteConfirm'),
+    $t('licenseManage.title'),
+    {
+      type: 'warning',
+    },
+  );
   await deleteLicenseApi(row.id);
   gridApi.query();
-  ElMessage.success('删除成功');
+  ElMessage.success($t('licenseManage.message.deleteSuccess'));
 }
 async function onBatchDelete() {
   if (selectedRows.value.length === 0) {
-    ElMessage.warning('请先选择要删除的license');
+    ElMessage.warning($t('licenseManage.message.selectToDelete'));
     return;
   }
-  await ElMessageBox.confirm('确定要删除选中的license吗？', '提示', {
-    type: 'warning',
-  });
+  await ElMessageBox.confirm(
+    $t('licenseManage.message.batchDeleteConfirm'),
+    $t('licenseManage.title'),
+    {
+      type: 'warning',
+    },
+  );
   const ids = selectedRows.value.map((row) => row.id);
   await batchDeleteLicenseApi(ids);
   selectedRows.value = [];
   gridApi.query();
-  ElMessage.success('删除成功');
+  ElMessage.success($t('licenseManage.message.deleteSuccess'));
+}
+function onSearchForm(values: Record<string, any>) {
+  gridApi.query({ ...values, page: 1 });
 }
 </script>
 
@@ -198,78 +205,43 @@ async function onBatchDelete() {
   <div class="license-manage-root">
     <!-- 搜索区 -->
     <div class="search-card">
-      <ElForm
-        :inline="true"
-        :model="searchForm"
-        class="search-form"
-        size="large"
-      >
-        <ElFormItem label="客户名称">
-          <ElInput
-            v-model="searchForm.customerName"
-            placeholder="请输入客户名称"
-            style="width: 220px"
-            clearable
-          />
-        </ElFormItem>
-        <ElFormItem label="授权类型">
-          <ElSelect
-            v-model="searchForm.licenseType"
-            placeholder="请选择授权类型"
-            style="width: 180px"
-            clearable
-          >
-            <ElOption
-              v-for="item in licenseTypes"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
-            />
-          </ElSelect>
-        </ElFormItem>
-        <ElFormItem label="过期时间">
-          <ElDatePicker
-            v-model="searchForm.expireTimeRange"
-            type="daterange"
-            range-separator="至"
-            start-placeholder="开始日期"
-            end-placeholder="结束日期"
-            style="width: 280px"
-            format="YYYY-MM-DD"
-            value-format="YYYY-MM-DD"
-          />
-        </ElFormItem>
-        <ElFormItem>
-          <ElButton type="primary" @click="onSearch">搜索</ElButton>
-          <ElButton @click="onReset">重置</ElButton>
-        </ElFormItem>
-      </ElForm>
+      <SearchForm @search="onSearchForm" />
     </div>
     <div class="action-bar">
-      <ElButton type="primary" @click="onAdd">新增</ElButton>
+      <ElButton type="primary" @click="onAdd">
+        {{ $t('licenseManage.action.add') }}
+      </ElButton>
       <ElUpload
         :show-file-list="false"
         :before-upload="onImportLicense"
         accept=".json"
         style="display: inline-block"
       >
-        <ElButton type="primary">导入license</ElButton>
+        <ElButton type="primary">
+          {{ $t('licenseManage.action.import') }}
+        </ElButton>
       </ElUpload>
-      <ElButton type="danger" @click="onBatchDelete">批量删除</ElButton>
+      <ElButton type="danger" @click="onBatchDelete">
+        {{ $t('licenseManage.action.batchDelete') }}
+      </ElButton>
     </div>
     <Grid>
       <template #action="{ row }">
-        <ElButton type="text" @click="onDownload(row)">下载</ElButton>
-        <ElButton type="text" @click="onView(row)">查看</ElButton>
+        <ElButton type="text" @click="onDownload(row)">
+          {{ $t('licenseManage.action.download') }}
+        </ElButton>
+        <ElButton type="text" @click="onView(row)">
+          {{ $t('licenseManage.action.view') }}
+        </ElButton>
         <ElButton type="text" @click="onDelete(row)" style="color: #f56c6c">
-          删除
+          {{ $t('licenseManage.action.delete') }}
         </ElButton>
       </template>
     </Grid>
 
     <ElDialog
       v-model="showForm"
-      title="新增"
+      :title="$t('licenseManage.action.add')"
       width="600px"
       :close-on-click-modal="false"
     >
@@ -283,7 +255,7 @@ async function onBatchDelete() {
 
     <ElDialog
       v-model="showDetail"
-      title="License详情"
+      :title="$t('licenseManage.detail.title')"
       width="800px"
       :close-on-click-modal="false"
     >

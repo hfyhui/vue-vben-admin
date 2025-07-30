@@ -1,0 +1,49 @@
+{
+  "title": "License Management",
+  "search": {
+    "customerName": "Customer Name",
+    "licenseType": "License Type",
+    "expireTime": "Expiration Date",
+    "search": "Search",
+    "reset": "Reset"
+  },
+  "action": {
+    "add": "Add",
+    "import": "Import License",
+    "batchDelete": "Batch Delete",
+    "download": "Download",
+    "view": "View",
+    "delete": "Delete"
+  },
+  "actionTitle": "Action",
+  "form": {
+    "customer": "Customer",
+    "apps": "Authorized Apps",
+    "licenseType": "License Type",
+    "expireTime": "Expiration Date",
+    "maxUsers": "Max Concurrent Users",
+    "fingerprint": "Fingerprint",
+    "remark": "Remark",
+    "save": "Save",
+    "cancel": "Cancel",
+    "trial": "Trial",
+    "official": "Official"
+  },
+  "detail": {
+    "title": "License Detail",
+    "close": "Close",
+    "noFingerprint": "No fingerprint",
+    "noRemark": "No remark"
+  },
+  "message": {
+    "editSuccess": "Edit succeeded",
+    "addSuccess": "Add succeeded",
+    "importSuccess": "Import succeeded",
+    "importFail": "Import failed",
+    "deleteConfirm": "Are you sure to delete this license?",
+    "deleteSuccess": "Delete succeeded",
+    "batchDeleteConfirm": "Are you sure to delete selected licenses?",
+    "selectToDelete": "Please select licenses to delete",
+    "getDetailFail": "Failed to get details"
+  }
+} 

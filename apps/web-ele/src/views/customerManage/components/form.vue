@@ -2,6 +2,7 @@
 import { h, watch } from 'vue';
 
 import { useVbenForm } from '#/adapter/form';
+import { $t } from '#/locales';
 
 import ShareholdersTable from './ShareholdersTable.vue';
 
@@ -9,52 +10,55 @@ const props = defineProps<{ modelValue?: any; visible: boolean }>();
 const emit = defineEmits(['update:visible', 'submit']);
 
 const idTypeOptions = [
-  '居民身份证',
-  '社会保障卡',
-  '港澳证',
-  '户口簿',
-  '军官证/士兵证/文职证',
-  '武警证',
-  '退役军人优待证',
-  '残疾人证',
-  '利比里亚护照',
-  '护照',
-  '港澳居民来往内地通行证',
-  '台湾居民来往大陆通行证',
-  '外国人永久居留身份证',
-  '外国人入境许可证',
+  $t('customerManage.form.idTypeIdCard'),
+  $t('customerManage.form.idTypeSocialCard'),
+  $t('customerManage.form.idTypeHKMacao'),
+  $t('customerManage.form.idTypeHousehold'),
+  $t('customerManage.form.idTypeOfficer'),
+  $t('customerManage.form.idTypeArmedPolice'),
+  $t('customerManage.form.idTypeVeteran'),
+  $t('customerManage.form.idTypeDisability'),
+  $t('customerManage.form.idTypeLiberiaPassport'),
+  $t('customerManage.form.idTypePassport'),
+  $t('customerManage.form.idTypeHKMacaoMainland'),
+  $t('customerManage.form.idTypeTaiwanMainland'),
+  $t('customerManage.form.idTypePermanentResident'),
+  $t('customerManage.form.idTypeForeignerPermit'),
 ].map((label) => ({ label, value: label }));
 
 const schema = [
-  // 客户名称
   {
     component: 'Input',
     fieldName: 'name',
-    label: '客户名称',
+    label: $t('customerManage.form.name'),
     required: true,
-    componentProps: { placeholder: '请输入客户名称', maxlength: 50 },
+    componentProps: {
+      placeholder: $t('customerManage.form.namePlaceholder'),
+      maxlength: 50,
+    },
     rules: 'required',
   },
-  // 客户类型
   {
     component: 'RadioGroup',
     fieldName: 'type',
-    label: '客户类型',
+    label: $t('customerManage.form.type'),
     defaultValue: 'company',
     componentProps: {
       options: [
-        { label: '公司', value: 'company' },
-        { label: '组织', value: 'org' },
-        { label: '个人', value: 'person' },
+        { label: $t('customerManage.types.company'), value: 'company' },
+        { label: $t('customerManage.types.org'), value: 'org' },
+        { label: $t('customerManage.types.person'), value: 'person' },
       ],
     },
   },
-  // 公司：社会统一信用代码
   {
     component: 'Input',
     fieldName: 'creditCode',
-    label: '社会统一信用代码',
-    componentProps: { placeholder: '请输入社会统一信用代码', maxlength: 20 },
+    label: $t('customerManage.form.creditCode'),
+    componentProps: {
+      placeholder: $t('customerManage.form.creditCodePlaceholder'),
+      maxlength: 20,
+    },
     dependencies: {
       show(values: any) {
         return values && values.type === 'company';
@@ -62,13 +66,15 @@ const schema = [
       triggerFields: ['type'],
     },
   },
-  // 公司：法人姓名
   {
     component: 'Input',
     fieldName: 'legalName',
-    label: '法人姓名',
+    label: $t('customerManage.form.legalName'),
     required: true,
-    componentProps: { placeholder: '请输入法人姓名', maxlength: 20 },
+    componentProps: {
+      placeholder: $t('customerManage.form.legalNamePlaceholder'),
+      maxlength: 20,
+    },
     dependencies: {
       show(values: any) {
         return values && values.type === 'company';
@@ -77,14 +83,13 @@ const schema = [
     },
     rules: 'required',
   },
-  // 公司：法人证件类型
   {
     component: 'Select',
     fieldName: 'legalIdType',
-    label: '法人证件类型',
+    label: $t('customerManage.form.legalIdType'),
     required: true,
     componentProps: {
-      placeholder: '请选择证件类型',
+      placeholder: $t('customerManage.form.legalIdTypePlaceholder'),
       options: idTypeOptions,
       filterable: true,
       clearable: true,
@@ -97,13 +102,15 @@ const schema = [
     },
     rules: 'required',
   },
-  // 公司：法人证件号码
   {
     component: 'Input',
     fieldName: 'legalIdNo',
-    label: '法人证件号码',
+    label: $t('customerManage.form.legalIdNo'),
     required: true,
-    componentProps: { placeholder: '请输入法人证件号码', maxlength: 20 },
+    componentProps: {
+      placeholder: $t('customerManage.form.legalIdNoPlaceholder'),
+      maxlength: 20,
+    },
     dependencies: {
       show(values: any) {
         return values && values.type === 'company';
@@ -115,7 +122,7 @@ const schema = [
   {
     component: h(ShareholdersTable),
     fieldName: 'shareholders',
-    label: '股东信息',
+    label: $t('customerManage.form.shareholders'),
     defaultValue: [],
     componentProps: {
       idTypeOptions,
@@ -127,12 +134,14 @@ const schema = [
       triggerFields: ['type'],
     },
   },
-  // 组织：个体工商经营者代码
   {
     component: 'Input',
     fieldName: 'personalCode',
-    label: '个体工商经营者代码',
-    componentProps: { placeholder: '请输入个体工商经营者代码', maxlength: 20 },
+    label: $t('customerManage.form.personalCode'),
+    componentProps: {
+      placeholder: $t('customerManage.form.personalCodePlaceholder'),
+      maxlength: 20,
+    },
     dependencies: {
       show(values: any) {
         return values && values.type === 'org';
@@ -140,14 +149,13 @@ const schema = [
       triggerFields: ['type'],
     },
   },
-  // 个人：证件类型
   {
     component: 'Select',
     fieldName: 'personIdType',
-    label: '证件类型',
+    label: $t('customerManage.form.personIdType'),
     required: true,
     componentProps: {
-      placeholder: '请选择证件类型',
+      placeholder: $t('customerManage.form.personIdTypePlaceholder'),
       options: idTypeOptions,
       filterable: true,
       clearable: true,
@@ -160,13 +168,15 @@ const schema = [
     },
     rules: 'required',
   },
-  // 个人：证件号码
   {
     component: 'Input',
     fieldName: 'personIdNo',
-    label: '证件号码',
+    label: $t('customerManage.form.personIdNo'),
     required: true,
-    componentProps: { placeholder: '请输入证件号码', maxlength: 20 },
+    componentProps: {
+      placeholder: $t('customerManage.form.personIdNoPlaceholder'),
+      maxlength: 20,
+    },
     dependencies: {
       show(values: any) {
         return values && values.type === 'person';
@@ -181,17 +191,15 @@ const [Form, formApi] = useVbenForm({
   schema,
   wrapperClass: 'grid-cols-1',
   commonConfig: {
-    labelWidth: 126, // 这里设置全局label宽度
+    labelWidth: 126,
   },
   resetButtonOptions: {
-    content: '取消',
+    content: $t('customerManage.form.cancel'),
   },
   submitButtonOptions: {
-    content: '保存',
+    content: $t('customerManage.form.save'),
   },
-  // 提交函数
   handleSubmit,
-  //   重置回调
   handleReset,
 });
 
@@ -251,7 +259,11 @@ function onDialogClose() {
 <template>
   <ElDialog
     :model-value="props.visible"
-    :title="props.modelValue && props.modelValue.id ? '编辑客户' : '新增客户'"
+    :title="
+      props.modelValue && props.modelValue.id
+        ? $t('customerManage.form.edit')
+        : $t('customerManage.form.add')
+    "
     width="940px"
     @close="onDialogClose"
   >

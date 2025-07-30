@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
-import { syncProduct } from '../../api/core/product';
+import { syncProduct } from '#/api/core/product';
+import { $t } from '#/locales';
 
 declare global {
   const ElMessage: any;
@@ -45,7 +46,7 @@ async function handleSync() {
 <template>
   <div style="padding: 24px">
     <el-button type="primary" :loading="loading" @click="handleSync">
-      同步
+      {{ $t('productList.sync') }}
     </el-button>
     <el-tree
       :data="data"

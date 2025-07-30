@@ -3,6 +3,8 @@ import { getCurrentInstance, nextTick, ref, watch } from 'vue';
 
 import { ElMessage } from 'element-plus';
 
+import { $t } from '#/locales';
+
 import {
   createCustomerKey,
   deleteCustomerKey,
@@ -20,8 +22,8 @@ const { proxy } = getCurrentInstance();
 
 // 客户列表
 const customers = [
-  { label: '客户A', value: 'a' },
-  { label: '客户B', value: 'b' },
+  { label: $t('licenseManage.customer.a'), value: 'a' },
+  { label: $t('licenseManage.customer.b'), value: 'b' },
 ];
 
 const selectedCustomer = ref(props.modelValue || ''); // 当前选中客户
@@ -67,7 +69,7 @@ async function fetchKeys(customerId: string) {
 // 点击logo按钮，未选客户时弹出提示，否则弹出Dialog
 function onLogoClick() {
   if (!selectedCustomer.value) {
-    proxy?.$message?.warning?.('请先选择客户');
+    proxy?.$message?.warning($t('licenseManage.customer.select'));
     return;
   }
   showDialog.value = true;
@@ -88,7 +90,7 @@ async function onAddKey() {
   addKeySuccess.value = true;
   fetchKeys(selectedCustomer.value);
   newKeyName.value = '';
-  ElMessage.success('密钥新增成功！');
+  ElMessage.success($t('licenseManage.key.addSuccess'));
   setTimeout(() => {
     addKeySuccess.value = false;
   }, 800);
@@ -96,7 +98,7 @@ async function onAddKey() {
 
 // 切换密钥（这里只做提示，可扩展实际业务）
 function onSwitchKey(key) {
-  proxy?.$message?.success?.(`已切换密钥：${key.name}`);
+  proxy?.$message?.success($t('licenseManage.key.switchSuccess') + key.name);
   showDialog.value = false;
 }
 
@@ -113,7 +115,7 @@ async function onDeleteKey(keyId) {
     <div class="customer-row">
       <el-select
         v-model="selectedCustomer"
-        placeholder="请选择客户"
+        :placeholder="$t('licenseManage.customer.select')"
         @change="onCustomerChange"
         clearable
       >
@@ -135,18 +137,20 @@ async function onDeleteKey(keyId) {
     <!-- 密钥管理Dialog -->
     <el-dialog
       v-model="showDialog"
-      title="密钥管理"
-      width="420px"
+      :title="$t('licenseManage.key.manage')"
+      width="480px"
       :close-on-click-modal="false"
       :destroy-on-close="true"
     >
       <div class="dialog-content">
         <!-- 新增密钥输入区 -->
         <div class="add-key-block">
-          <span style="font-size: 14px; font-weight: bold">新增秘钥</span>
+          <span style="font-size: 14px; font-weight: bold">
+            {{ $t('licenseManage.key.add') }}&nbsp;&nbsp;
+          </span>
           <el-input
             v-model="newKeyName"
-            placeholder="请输入密钥名称"
+            :placeholder="$t('licenseManage.key.inputName')"
             ref="keyInputRef"
             @keyup.enter="onAddKey"
             style="width: 220px; margin-right: 8px"
@@ -157,7 +161,7 @@ async function onDeleteKey(keyId) {
             @click="onAddKey"
             :loading="addKeyLoading"
           >
-            保存
+            {{ $t('licenseManage.form.save') }}
           </el-button>
         </div>
         <!-- 密钥列表 -->
@@ -166,7 +170,7 @@ async function onDeleteKey(keyId) {
             v-if="keyList.length === 0"
             style="margin-top: 16px; color: #999"
           >
-            暂无密钥，请先新增。
+            {{ $t('licenseManage.key.empty') }}
           </div>
           <el-table
             v-else
@@ -175,13 +179,20 @@ async function onDeleteKey(keyId) {
             size="small"
             style="margin-top: 16px"
           >
-            <el-table-column prop="name" label="密钥名称" min-width="120" />
             <el-table-column
-              prop="createdAt"
-              label="创建时间"
+              prop="name"
+              :label="$t('licenseManage.key.name')"
               min-width="120"
             />
-            <el-table-column label="操作" min-width="120">
+            <el-table-column
+              prop="createdAt"
+              :label="$t('licenseManage.key.createdAt')"
+              min-width="120"
+            />
+            <el-table-column
+              :label="$t('licenseManage.actionTitle')"
+              min-width="120"
+            >
               <template #default="scope">
                 <div style="display: flex; gap: 2px; align-items: center">
                   <el-button
@@ -189,16 +200,18 @@ async function onDeleteKey(keyId) {
                     type="success"
                     @click="onSwitchKey(scope.row)"
                   >
-                    切换
+                    {{ $t('licenseManage.key.switch') }}
                   </el-button>
                   <el-popconfirm
                     @confirm="onDeleteKey(scope.row.id)"
-                    title="确定删除该密钥？"
+                    :title="$t('licenseManage.key.deleteConfirm')"
                     :width="180"
                     popper-class="popconfirm-single-line"
                   >
                     <template #reference>
-                      <el-button size="small" type="danger">删除</el-button>
+                      <el-button size="small" type="danger">
+                        {{ $t('licenseManage.action.delete') }}
+                      </el-button>
                     </template>
                   </el-popconfirm>
                 </div>

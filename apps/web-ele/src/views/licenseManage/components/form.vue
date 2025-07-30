@@ -4,6 +4,7 @@ import { h, ref, watch } from 'vue';
 import { z } from 'zod';
 
 import { useVbenForm } from '#/adapter/form';
+import { $t } from '#/locales';
 
 import AppTreeSelector from './AppTreeSelector.vue';
 import CustomerSelector from './CustomerSelector.vue';
@@ -20,7 +21,7 @@ const schema = [
         (customerKeyStatus.value = status),
     }),
     fieldName: 'customer',
-    label: '客户',
+    label: $t('licenseManage.form.customer'),
     required: true,
     componentProps: {},
     rules: 'selectRequired',
@@ -28,26 +29,28 @@ const schema = [
   {
     component: h(AppTreeSelector),
     fieldName: 'apps',
-    label: '授权应用',
+    label: $t('licenseManage.form.apps'),
     required: true,
     defaultValue: [],
     componentProps: {},
     rules: z
       .any()
       .refine((val) => val && Array.isArray(val) && val.length > 0, {
-        message: '请选择授权应用',
+        message:
+          $t('licenseManage.form.apps') +
+          $t('licenseManage.message.selectToDelete'),
       }),
   },
   {
     component: 'RadioGroup',
     fieldName: 'licenseType',
-    label: '授权类型',
+    label: $t('licenseManage.form.licenseType'),
     required: true,
     defaultValue: 'trial',
     componentProps: {
       options: [
-        { label: '试用', value: 'trial' },
-        { label: '正式', value: 'official' },
+        { label: $t('licenseManage.form.trial'), value: 'trial' },
+        { label: $t('licenseManage.form.official'), value: 'official' },
       ],
     },
     rules: 'selectRequired',
@@ -55,46 +58,59 @@ const schema = [
   {
     component: 'DatePicker',
     fieldName: 'expireTime',
-    label: '过期时间',
+    label: $t('licenseManage.form.expireTime'),
     required: true,
     componentProps: {
       type: 'datetime',
-      placeholder: '请选择过期时间',
+      placeholder: $t('licenseManage.form.expireTime'),
     },
     rules: 'selectRequired',
   },
   {
     component: 'InputNumber',
     fieldName: 'maxUsers',
-    label: '最大并发用户',
+    label: $t('licenseManage.form.maxUsers'),
     required: true,
     defaultValue: 10,
     componentProps: {
       min: 1,
       max: 2000,
       controls: true,
-      placeholder: '最大2000个并发',
+      placeholder: $t('licenseManage.form.maxUsers'),
     },
     rules: 'required',
   },
   {
     component: 'Input',
     fieldName: 'fingerprint',
-    label: '指纹特征',
-    componentProps: { placeholder: '请输入指纹特征', maxlength: 2000 },
+    label: $t('licenseManage.form.fingerprint'),
+    componentProps: {
+      placeholder: $t('licenseManage.form.fingerprint'),
+      maxlength: 2000,
+    },
     rules: z
       .string()
-      .max(2000, { message: '限制不超过2000个字符长度' })
+      .max(2000, {
+        message:
+          $t('licenseManage.message.maxFingerprint') ||
+          '限制不超过2000个字符长度',
+      })
       .optional(),
   },
   {
     component: 'Input',
     fieldName: 'remark',
-    label: '备注',
-    componentProps: { placeholder: '请输入备注', maxlength: 100 },
+    label: $t('licenseManage.form.remark'),
+    componentProps: {
+      placeholder: $t('licenseManage.form.remark'),
+      maxlength: 100,
+    },
     rules: z
       .string()
-      .max(100, { message: '限制不超过100个字符长度' })
+      .max(100, {
+        message:
+          $t('licenseManage.message.maxRemark') || '限制不超过100个字符长度',
+      })
       .optional(),
   },
 ];
@@ -102,9 +118,9 @@ const schema = [
 const [Form, formApi] = useVbenForm({
   schema,
   wrapperClass: 'grid-cols-1',
-  commonConfig: { labelWidth: 110 },
-  submitButtonOptions: { content: '保存' },
-  resetButtonOptions: { content: '取消' },
+  commonConfig: { labelWidth: 130 },
+  submitButtonOptions: { content: $t('licenseManage.form.save') },
+  resetButtonOptions: { content: $t('licenseManage.form.cancel') },
   handleSubmit,
   handleReset,
 });
@@ -123,7 +139,9 @@ watch(
 
 function handleSubmit(values: any) {
   if (!customerKeyStatus.value) {
-    ElMessage.warning('请先生成证书密钥');
+    ElMessage.warning(
+      $t('licenseManage.message.genKeyTip') || '请先生成证书密钥',
+    );
     return;
   }
   emit('submit', values);

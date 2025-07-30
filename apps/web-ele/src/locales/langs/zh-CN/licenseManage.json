@@ -1,0 +1,66 @@
+{
+  "title": "License管理",
+  "search": {
+    "customerName": "客户名称",
+    "licenseType": "授权类型",
+    "expireTime": "过期时间",
+    "search": "搜索",
+    "reset": "重置"
+  },
+  "action": {
+    "add": "新增",
+    "import": "导入license",
+    "batchDelete": "批量删除",
+    "download": "下载",
+    "view": "查看",
+    "delete": "删除"
+  },
+  "actionTitle": "操作",
+  "form": {
+    "customer": "客户",
+    "apps": "授权应用",
+    "licenseType": "授权类型",
+    "expireTime": "过期时间",
+    "maxUsers": "最大并发用户",
+    "fingerprint": "指纹特征",
+    "remark": "备注",
+    "save": "保存",
+    "cancel": "取消",
+    "trial": "试用",
+    "official": "正式"
+  },
+  "detail": {
+    "title": "License详情",
+    "close": "关闭",
+    "noFingerprint": "暂无指纹特征",
+    "noRemark": "暂无备注"
+  },
+  "message": {
+    "editSuccess": "编辑成功",
+    "addSuccess": "新增成功",
+    "importSuccess": "导入成功",
+    "importFail": "导入失败",
+    "deleteConfirm": "确定要删除该license吗？",
+    "deleteSuccess": "删除成功",
+    "batchDeleteConfirm": "确定要删除选中的license吗？",
+    "selectToDelete": "请先选择要删除的license",
+    "getDetailFail": "获取详情失败"
+  },
+  "customer": {
+    "a": "客户A",
+    "b": "客户B",
+    "select": "请选择客户"
+  },
+  "key": {
+    "manage": "密钥管理",
+    "add": "新增秘钥",
+    "inputName": "请输入密钥名称",
+    "addSuccess": "密钥新增成功！",
+    "switch": "切换",
+    "switchSuccess": "已切换密钥：",
+    "deleteConfirm": "确定删除该密钥？",
+    "empty": "暂无密钥，请先新增。",
+    "name": "密钥名称",
+    "createdAt": "创建时间"
+  }
+} 

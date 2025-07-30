@@ -1,6 +1,8 @@
 <script lang="ts" setup>
 import { ref, watch } from 'vue';
 
+import { $t } from '#/locales';
+
 const props = defineProps<{
   idTypeOptions?: Array<{ label: string; value: string }>;
   modelValue: any[];
@@ -13,20 +15,20 @@ const emit = defineEmits<{
 
 // 默认证件类型选项
 const defaultIdTypeOptions = [
-  '居民身份证',
-  '社会保障卡',
-  '港澳证',
-  '户口簿',
-  '军官证/士兵证/文职证',
-  '武警证',
-  '退役军人优待证',
-  '残疾人证',
-  '利比里亚护照',
-  '护照',
-  '港澳居民来往内地通行证',
-  '台湾居民来往大陆通行证',
-  '外国人永久居留身份证',
-  '外国人入境许可证',
+  $t('customerManage.form.idTypeIdCard'),
+  $t('customerManage.form.idTypeSocialCard'),
+  $t('customerManage.form.idTypeHKMacao'),
+  $t('customerManage.form.idTypeHousehold'),
+  $t('customerManage.form.idTypeOfficer'),
+  $t('customerManage.form.idTypeArmedPolice'),
+  $t('customerManage.form.idTypeVeteran'),
+  $t('customerManage.form.idTypeDisability'),
+  $t('customerManage.form.idTypeLiberiaPassport'),
+  $t('customerManage.form.idTypePassport'),
+  $t('customerManage.form.idTypeHKMacaoMainland'),
+  $t('customerManage.form.idTypeTaiwanMainland'),
+  $t('customerManage.form.idTypePermanentResident'),
+  $t('customerManage.form.idTypeForeignerPermit'),
 ].map((label) => ({ label, value: label }));
 
 // 使用传入的选项或默认选项
@@ -127,17 +129,20 @@ defineExpose({
   <div class="shareholders-table">
     <div class="table-header">
       <el-button type="primary" size="small" @click="addShareholder">
-        新增股东
+        {{ $t('customerManage.shareholder.add') }}
       </el-button>
     </div>
 
     <el-table :data="shareholders" border style="width: 100%">
-      <el-table-column label="股东姓名" width="200">
+      <el-table-column
+        :label="$t('customerManage.shareholder.name')"
+        width="200"
+      >
         <template #default="{ row, $index }">
           <template v-if="row.isEditing">
             <el-input
               v-model="row.name"
-              placeholder="请输入股东姓名"
+              :placeholder="$t('customerManage.shareholder.namePlaceholder')"
               maxlength="20"
               @input="(value) => updateShareholder($index, 'name', value)"
             />
@@ -148,12 +153,15 @@ defineExpose({
         </template>
       </el-table-column>
 
-      <el-table-column label="证件类型" width="200">
+      <el-table-column
+        :label="$t('customerManage.shareholder.idType')"
+        width="200"
+      >
         <template #default="{ row, $index }">
           <template v-if="row.isEditing">
             <el-select
               v-model="row.idType"
-              placeholder="请选择证件类型"
+              :placeholder="$t('customerManage.shareholder.idTypePlaceholder')"
               style="width: 100%"
               filterable
               clearable
@@ -173,12 +181,15 @@ defineExpose({
         </template>
       </el-table-column>
 
-      <el-table-column label="证件号码" width="200">
+      <el-table-column
+        :label="$t('customerManage.shareholder.idNo')"
+        width="200"
+      >
         <template #default="{ row, $index }">
           <template v-if="row.isEditing">
             <el-input
               v-model="row.idNo"
-              placeholder="请输入证件号码"
+              :placeholder="$t('customerManage.shareholder.idNoPlaceholder')"
               maxlength="20"
               @input="(value) => updateShareholder($index, 'idNo', value)"
             />
@@ -189,26 +200,29 @@ defineExpose({
         </template>
       </el-table-column>
 
-      <el-table-column label="操作" width="150">
+      <el-table-column
+        :label="$t('customerManage.shareholder.action')"
+        width="150"
+      >
         <template #default="{ row, $index }">
           <template v-if="row.isEditing">
             <el-button type="success" size="small" @click="saveRow($index)">
-              保存
+              {{ $t('customerManage.shareholder.save') }}
             </el-button>
             <el-button type="info" size="small" @click="cancelRow($index)">
-              取消
+              {{ $t('customerManage.shareholder.cancel') }}
             </el-button>
           </template>
           <template v-else>
             <el-button type="primary" size="small" @click="editRow($index)">
-              编辑
+              {{ $t('customerManage.shareholder.edit') }}
             </el-button>
             <el-button
               type="danger"
               size="small"
               @click="removeShareholder($index)"
             >
-              删除
+              {{ $t('customerManage.shareholder.delete') }}
             </el-button>
           </template>
         </template>

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { $t } from '#/locales';
+
 interface LicenseInfo {
   id: string;
   customer: string;
@@ -44,16 +46,16 @@ function handleClose() {
 <template>
   <div v-if="props.data" class="license-detail">
     <ElDescriptions :column="1" border>
-      <ElDescriptionsItem label="客户">
+      <ElDescriptionsItem :label="$t('licenseManage.form.customer')">
         <span class="font-medium">{{
           props.data.customer === 'a'
-            ? '客户A'
+            ? $t('licenseManage.customer.a')
             : props.data.customer === 'b'
-              ? '客户B'
+              ? $t('licenseManage.customer.b')
               : props.data.customer
         }}</span>
       </ElDescriptionsItem>
-      <ElDescriptionsItem label="授权应用">
+      <ElDescriptionsItem :label="$t('licenseManage.form.apps')">
         <div class="apps-container">
           <ElTag
             v-for="app in props.data.apps"
@@ -65,33 +67,41 @@ function handleClose() {
           </ElTag>
         </div>
       </ElDescriptionsItem>
-      <ElDescriptionsItem label="授权类型">
+      <ElDescriptionsItem :label="$t('licenseManage.form.licenseType')">
         <ElButton
           :type="props.data.licenseType === 'trial' ? 'warning' : 'success'"
         >
-          {{ props.data.licenseType === 'trial' ? '试用' : '正式' }}
+          {{
+            props.data.licenseType === 'trial'
+              ? $t('licenseManage.form.trial')
+              : $t('licenseManage.form.official')
+          }}
         </ElButton>
       </ElDescriptionsItem>
-      <ElDescriptionsItem label="过期时间">
+      <ElDescriptionsItem :label="$t('licenseManage.form.expireTime')">
         <span class="font-medium text-red-500">{{
           props.data.expireTime
         }}</span>
       </ElDescriptionsItem>
-      <ElDescriptionsItem label="最大并发用户">
+      <ElDescriptionsItem :label="$t('licenseManage.form.maxUsers')">
         <span class="font-medium">{{ props.data.maxUsers }} 人</span>
       </ElDescriptionsItem>
-      <ElDescriptionsItem label="指纹特征">
+      <ElDescriptionsItem :label="$t('licenseManage.form.fingerprint')">
         <span class="fingerprint-text">{{
-          props.data.fingerprint || '暂无指纹特征'
+          props.data.fingerprint || $t('licenseManage.detail.noFingerprint')
         }}</span>
       </ElDescriptionsItem>
-      <ElDescriptionsItem label="备注" :span="2">
-        <span class="text-gray-600">{{ props.data.remark || '暂无备注' }}</span>
+      <ElDescriptionsItem :label="$t('licenseManage.form.remark')" :span="2">
+        <span class="text-gray-600">{{
+          props.data.remark || $t('licenseManage.detail.noRemark')
+        }}</span>
       </ElDescriptionsItem>
     </ElDescriptions>
 
     <div class="detail-actions">
-      <ElButton @click="handleClose">关闭</ElButton>
+      <ElButton @click="handleClose">
+        {{ $t('licenseManage.detail.close') }}
+      </ElButton>
     </div>
   </div>
 </template>
