@@ -1,5 +1,7 @@
 import type { VbenFormProps } from '#/adapter/form';
-import type { VxeTableGridOptions } from '#/adapter/vxe-table';
+import type { OnActionClickFn, VxeTableGridOptions } from '#/adapter/vxe-table';
+import type { SystemDeptApi } from '#/api/system/dept';
+import type { SystemMenuApi } from '#/api/system/menu';
 
 import dayjs from 'dayjs';
 
@@ -156,57 +158,50 @@ export const getFormOptions = (
 });
 
 // 表格配置
-export const gridOptions: VxeTableGridOptions<RowType> = {
-  checkboxConfig: {
-    highlight: true,
-    labelField: 'name',
-  },
-  columns: [
-    { type: 'seq', title: '序号', width: 50 },
-    { field: 'icon', title: 'IconPicker' },
-    { field: 'api', title: 'ApiSelect' },
-    { field: 'apiTree', title: 'ApiTreeSelect' },
-    { field: 'string', title: 'String' },
-    { field: 'number', title: 'Number' },
-    { field: 'radio', title: 'Radio' },
-    { field: 'radioButton', title: 'RadioButton' },
-    { field: 'checkbox', title: 'Checkbox' },
-    { field: 'checkbox1', title: 'Checkbox1' },
-    { field: 'checkbotton', title: 'CheckBotton' },
-    { field: 'date', title: 'Date' },
-    { field: 'select', title: 'Select' },
+export function useColumns(
+  onActionClick: OnActionClickFn<SystemMenuApi.SystemMenu>,
+): VxeTableGridOptions<SystemMenuApi.SystemMenu>['columns'] {
+  return [
+    { type: 'seq', title: '序号', width: 150 },
+    { field: 'icon', title: 'IconPicker', width: 150 },
+    { field: 'api', title: 'ApiSelect', width: 150 },
+    { field: 'apiTree', title: 'ApiTreeSelect', width: 150 },
+    { field: 'string', title: 'String', width: 150 },
+    { field: 'number', title: 'Number', width: 150 },
+    { field: 'radio', title: 'Radio', width: 150 },
+    { field: 'radioButton', title: 'RadioButton', width: 150 },
+    { field: 'checkbox', title: 'Checkbox', width: 150 },
+    { field: 'checkbox1', title: 'Checkbox1', width: 150 },
+    { field: 'checkbotton', title: 'CheckBotton', width: 150 },
+    { field: 'date', title: 'Date', width: 150 },
+    { field: 'select', title: 'Select', width: 150 },
     {
       field: 'action',
       fixed: 'right',
-      slots: { default: 'action' },
+      // 方法1，通过通过配置直接完成
+      cellRender: {
+        attrs: {
+          nameField: 'name',
+          onClick: onActionClick,
+        },
+        name: 'CellOperation',
+        options: [
+          'edit', // 默认的编辑按钮
+          {
+            code: 'delete', // 默认的删除按钮
+            disabled: (row: SystemDeptApi.SystemDept) => {
+              return row.select === 'C';
+            },
+            show: (row: SystemDeptApi.SystemDept) => {
+              return row.select !== 'B';
+            },
+          },
+        ],
+      },
+      // 方法二 通过slots完成
+      // slots: { default: 'action' },
       title: '操作',
       width: 120,
     },
-  ],
-  exportConfig: {},
-  height: 'auto',
-  keepSource: true,
-  pagerConfig: {},
-  proxyConfig: {
-    response: {
-      result: 'list',
-    },
-    ajax: {
-      query: async ({ page }, formValues) => {
-        return await getExampleTableApi({
-          page: page.currentPage,
-          pageSize: page.pageSize,
-          ...formValues,
-        });
-      },
-    },
-  },
-  toolbarConfig: {
-    custom: true,
-    export: true,
-    refresh: true,
-    resizable: true,
-    search: true,
-    zoom: true,
-  },
-};
+  ];
+}

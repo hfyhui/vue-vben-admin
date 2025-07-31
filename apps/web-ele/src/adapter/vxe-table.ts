@@ -2,11 +2,44 @@ import type { VxeTableGridOptions } from '@vben/plugins/vxe-table';
 
 import { h } from 'vue';
 
+import { IconifyIcon } from '@vben/icons';
+import { $te } from '@vben/locales';
 import { setupVbenVxeTable, useVbenVxeGrid } from '@vben/plugins/vxe-table';
+import { isFunction } from '@vben/utils';
 
 import { ElButton, ElImage } from 'element-plus';
 
+import { $t } from '#/locales';
+
 import { useVbenForm } from './form';
+
+// 类型定义
+type OperationButton = {
+  [key: string]: any; // 支持任意额外属性
+  code: string;
+  disabled?: ((row: any) => boolean) | boolean;
+  icon?: string;
+  show?: ((row: any) => boolean) | boolean;
+  text?: string;
+};
+
+type OperationOption = OperationButton | string;
+
+// 预设按钮配置
+const PRESET_BUTTONS: Record<string, Partial<OperationButton>> = {
+  delete: { type: 'danger', text: $t('common.delete') },
+  edit: { text: $t('common.edit') },
+  view: { text: $t('common.view') },
+  detail: { type: 'warning', text: $t('common.detail') },
+};
+
+// 对齐方式映射
+const ALIGN_MAP: Record<string, string> = {
+  center: 'center',
+  left: 'start',
+  right: 'end',
+  default: 'center',
+};
 
 // 初始化 vxe-table 的全局配置
 setupVbenVxeTable({
@@ -40,7 +73,6 @@ setupVbenVxeTable({
     });
 
     // 自定义渲染器：图片单元格
-    // 使用 cellRender: { name: 'CellImage' } 可启用
     vxeUI.renderer.add('CellImage', {
       renderTableDefault(_renderOpts, params) {
         const { column, row } = params;
@@ -62,7 +94,6 @@ setupVbenVxeTable({
     });
 
     // 自定义渲染器：链接按钮单元格
-    // 使用 cellRender: { name: 'CellLink' } 可启用
     vxeUI.renderer.add('CellLink', {
       renderTableDefault(renderOpts) {
         const { props } = renderOpts;
@@ -74,11 +105,122 @@ setupVbenVxeTable({
       },
     });
 
-    // 可在此扩展更多 vxe-table 的全局配置，比如自定义格式化
-    // vxeUI.formats.add
+    /**
+     * 注册表格的操作按钮渲染器
+     */
+    vxeUI.renderer.add('CellOperation', {
+      renderTableDefault({ attrs, options, props }, { column, row }) {
+        // 1. 对齐方式处理
+        const align = ALIGN_MAP[column.align] || ALIGN_MAP.default;
+
+        // 2. 获取事件处理函数（支持两种位置）
+        const onClick = attrs?.onClick || props?.onClick;
+
+        // 3. 按钮配置标准化
+        const buttonOptions = (options || []).map((opt) =>
+          normalizeOption(opt, attrs),
+        );
+
+        // 4. 生成操作按钮
+        const operations = buttonOptions
+          .map((opt) => resolveButtonProps(opt, row))
+          .filter((opt) => opt.show !== false);
+
+        // 5. 渲染按钮组
+        return renderButtonGroup(operations, align, props, row, onClick);
+      },
+    });
+
+    // 可在此扩展更多 vxe-table 的全局配置
   },
   useVbenForm, // 表单适配
 });
+
+/** 标准化按钮配置 - 支持全局属性继承 */
+function normalizeOption(opt: OperationOption, attrs: any): OperationButton {
+  // 字符串简写形式
+  if (typeof opt === 'string') {
+    return PRESET_BUTTONS[opt]
+      ? { code: opt, link: true, type: 'primary', ...PRESET_BUTTONS[opt] }
+      : {
+          code: opt,
+          link: true,
+          type: 'primary',
+          text: $te(`common.${opt}`) ? $t(`common.${opt}`) : opt,
+        };
+  }
+
+  // 对象形式 - 合并全局属性
+  return {
+    link: true,
+    type: 'primary',
+    // 继承全局属性（如 nameField）
+    ...attrs,
+    // 合并预设配置
+    ...PRESET_BUTTONS[opt.code],
+    // 当前按钮配置
+    ...opt,
+  };
+}
+
+/** 解析动态属性 */
+function resolveButtonProps(opt: OperationButton, row: any): OperationButton {
+  const resolved: OperationButton = { ...opt };
+
+  // 动态处理所有函数类型属性
+  Object.keys(opt).forEach((key) => {
+    if (isFunction(opt[key])) {
+      resolved[key] = opt[key](row);
+    }
+  });
+
+  return resolved;
+}
+
+/** 渲染按钮组 */
+function renderButtonGroup(
+  operations: OperationButton[],
+  align: string,
+  globalProps: any,
+  row: any,
+  onClick?: (ctx: { code: string; row: any }) => void,
+) {
+  return h(
+    'div',
+    {
+      class: 'flex table-operations',
+      style: { justifyContent: align },
+    },
+    operations.map((opt) => renderButton(opt, globalProps, row, onClick)),
+  );
+}
+
+/** 渲染单个按钮 */
+function renderButton(
+  opt: OperationButton,
+  globalProps: any,
+  row: any,
+  onClick?: (ctx: { code: string; row: any }) => void,
+) {
+  const { icon, text, code, disabled, ...buttonProps } = opt;
+
+  // 合并全局属性
+  const mergedProps = {
+    size: 'small',
+    link: true,
+    ...globalProps,
+    ...buttonProps,
+    disabled,
+    onClick: disabled ? undefined : () => onClick?.({ code, row }),
+  };
+
+  return h(ElButton, mergedProps, {
+    default: () => [
+      icon && h(IconifyIcon, { class: 'size-5', icon }),
+      text && h('span', text),
+    ],
+  });
+}
 
 // 导出表格 hooks
 export { useVbenVxeGrid };
