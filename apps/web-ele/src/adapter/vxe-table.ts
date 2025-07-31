@@ -5,7 +5,7 @@ import { h } from 'vue';
 import { IconifyIcon } from '@vben/icons';
 import { $te } from '@vben/locales';
 import { setupVbenVxeTable, useVbenVxeGrid } from '@vben/plugins/vxe-table';
-import { isFunction } from '@vben/utils';
+import { isFunction, isString } from '@vben/utils';
 
 import { ElButton, ElImage } from 'element-plus';
 
@@ -74,12 +74,47 @@ setupVbenVxeTable({
       } as VxeTableGridOptions,
     });
 
-    // 自定义渲染器：图片单元格
+    /**
+     * 优化后的图片单元格渲染器 - 支持三种场景
+     * 1. 单个 URL 字符串
+     * 2. URL 字符串数组
+     * 3. 对象数组 [{url: ''}, {url: ''}]
+     * 同时修复预览弹出框位置问题
+     */
     vxeUI.renderer.add('CellImage', {
       renderTableDefault(_renderOpts, params) {
         const { column, row } = params;
-        const src = row[column.field]; // 获取图片地址
-        return h(ElImage, { src, previewSrcList: [src] }); // 渲染图片并支持预览
+        const fieldValue = row[column.field];
+
+        // 场景1: 单个 URL 字符串
+        if (isString(fieldValue)) {
+          return renderImageCell([fieldValue]);
+        }
+
+        // 场景2: URL 字符串数组
+        if (
+          Array.isArray(fieldValue) &&
+          fieldValue.every((item) => isString(item))
+        ) {
+          return renderImageCell(fieldValue);
+        }
+
+        // 场景3: 对象数组 [{url: ''}, {url: ''}]
+        if (
+          Array.isArray(fieldValue) &&
+          fieldValue.every((item) => item && item.url)
+        ) {
+          const urls = fieldValue.map((item) => item.url).filter(Boolean);
+          return renderImageCell(urls);
+        }
+
+        // 其他情况：单个对象 {url: ''}
+        if (fieldValue && fieldValue.url) {
+          return renderImageCell([fieldValue.url]);
+        }
+
+        // 无效数据情况
+        return h('span', '--');
       },
     });
 
@@ -138,6 +173,27 @@ setupVbenVxeTable({
   useVbenForm, // 表单适配
 });
 
+/** 渲染图片单元格 - 修复预览位置问题 */
+function renderImageCell(urls: string[]) {
+  // 如果没有有效图片，显示占位符
+  if (!urls || urls.every((url) => !url)) {
+    return h('span', '--');
+  }
+
+  // 只显示第一张图片作为缩略图
+  const firstImage = urls[0];
+
+  // 创建图片组件 - 添加 preview-teleported 解决预览位置问题
+  return h(ElImage, {
+    src: firstImage,
+    style: 'width: 60px; height: 60px;',
+    previewSrcList: urls,
+    hideOnClickModal: true,
+    previewTeleported: true, // 关键：预览层挂载到 body
+    showProgress: true, // 是否在预览图片时显示进度条
+  });
+}
+
 /** 标准化按钮配置 - 支持全局属性继承 */
 function normalizeOption(opt: OperationOption, attrs: any): OperationButton {
   // 字符串简写形式
@@ -172,7 +228,8 @@ function resolveButtonProps(opt: OperationButton, row: any): OperationButton {
   // 动态处理所有函数类型属性
   Object.keys(opt).forEach((key) => {
     if (isFunction(opt[key])) {
-      resolved[key] = opt[key](row);
+      // 特殊处理 disabled 属性，确保返回布尔值
+      resolved[key] = key === 'disabled' ? !!opt[key](row) : opt[key](row);
     }
   });
 
@@ -206,14 +263,17 @@ function renderButton(
 ) {
   const { icon, text, code, disabled, ...buttonProps } = opt;
 
+  // 确保 disabled 是布尔值
+  const isDisabled = disabled === true;
+
   // 合并全局属性
   const mergedProps = {
     size: 'small',
     link: true,
     ...globalProps,
     ...buttonProps,
-    disabled,
-    onClick: disabled ? undefined : () => onClick?.({ code, row }),
+    disabled: isDisabled,
+    onClick: isDisabled ? undefined : () => onClick?.({ code, row }),
   };
 
   return h(ElButton, mergedProps, {

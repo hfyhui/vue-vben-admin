@@ -46,6 +46,11 @@ export async function getExampleTableApi(params: {
         Math.floor(Math.random() * 6)
       ],
       checkbox: ['A', 'B', 'C'].filter(() => Math.random() > 0.5),
+      img: [
+        'http://gips1.baidu.com/it/u=3874647369,3220417986&fm=3028&app=3028&f=JPEG&fmt=auto?w=720&h=1280',
+        'http://gips2.baidu.com/it/u=1674525583,3037683813&fm=3028&app=3028&f=JPEG&fmt=auto?w=1024&h=1024',
+      ],
+
       checkbox1: ['A', 'B', 'C', 'D'].filter(() => Math.random() > 0.5),
       checkbotton: ['A', 'B', 'C'].filter(() => Math.random() > 0.5),
       date: dayjs()
@@ -100,28 +105,7 @@ export const getFormOptions = (
     },
     { component: 'Input', fieldName: 'string', label: 'String' },
     { component: 'InputNumber', fieldName: 'number', label: 'Number' },
-    {
-      component: 'RadioGroup',
-      fieldName: 'radio',
-      label: 'Radio',
-      componentProps: {
-        options: [
-          { value: 'A', label: 'A' },
-          { value: 'B', label: 'B' },
-          { value: 'C', label: 'C' },
-          { value: 'D', label: 'D' },
-          { value: 'E', label: 'E' },
-        ],
-      },
-    },
-    {
-      component: 'CheckboxGroup',
-      fieldName: 'checkbox',
-      label: 'Checkbox',
-      componentProps: {
-        options: ['A', 'B', 'C'].map((v) => ({ value: v, label: `选项${v}` })),
-      },
-    },
+
     // 只保留一个日期字段配置
     {
       component: 'DatePicker',
@@ -167,6 +151,13 @@ export function useColumns(
     { field: 'api', title: 'ApiSelect', width: 150 },
     { field: 'apiTree', title: 'ApiTreeSelect', width: 150 },
     { field: 'string', title: 'String', width: 150 },
+
+    {
+      cellRender: { name: 'CellImage' },
+      field: 'img',
+      title: 'Render Image',
+      width: 130,
+    },
     { field: 'number', title: 'Number', width: 150 },
     { field: 'radio', title: 'Radio', width: 150 },
     { field: 'radioButton', title: 'RadioButton', width: 150 },
