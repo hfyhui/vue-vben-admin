@@ -31,6 +31,8 @@ const PRESET_BUTTONS: Record<string, Partial<OperationButton>> = {
   edit: { text: $t('common.edit') },
   view: { text: $t('common.view') },
   detail: { type: 'warning', text: $t('common.detail') },
+  enable: { type: 'success', text: $t('common.enable') },
+  disable: { type: 'warning', text: $t('common.disable') },
 };
 
 // 对齐方式映射

@@ -187,6 +187,8 @@ export function useColumns(
         name: 'CellOperation',
         options: [
           'edit', // 默认的编辑按钮
+          'enable',
+          'disable',
           {
             code: 'delete', // 默认的删除按钮
             disabled: (row: SystemDeptApi.SystemDept) => {
@@ -201,7 +203,7 @@ export function useColumns(
       // 方法二 通过slots完成
       // slots: { default: 'action' },
       title: '操作',
-      width: 120,
+      width: 180,
     },
   ];
 }

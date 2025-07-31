@@ -21,5 +21,7 @@
   "noMoreData": "没有更多数据",
   "select": "请选择",
   "selectAll": "全选",
-  "selectNone": "全不选"
+  "selectNone": "全不选",
+  "enable": "启用",
+  "disable": "禁用"
 }
