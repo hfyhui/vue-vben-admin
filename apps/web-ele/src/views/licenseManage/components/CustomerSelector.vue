@@ -4,7 +4,7 @@ import type { PropType } from 'vue';
 import { computed, nextTick, ref, watch } from 'vue';
 
 import { ElMessage, ElIcon } from 'element-plus';
-import { Delete } from '@element-plus/icons-vue';
+import { Delete, Download } from '@element-plus/icons-vue';
 
 import { $t } from '#/locales';
 
@@ -130,6 +130,31 @@ async function onDeleteKey(keyId: string) {
     ElMessage.error($t('licenseManage.key.deleteFailed') || '删除失败');
   }
 }
+
+// 下载密钥
+async function onDownloadKey(keyId: string) {
+  try {
+    // 创建下载链接
+    const downloadUrl = `/license/key/download?keyId=${keyId}`;
+    
+    // 创建一个临时的 a 标签来触发下载
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = `key_${keyId}.pem`; // 设置下载文件名
+    link.style.display = 'none';
+    
+    // 添加到 DOM 并触发点击
+    document.body.appendChild(link);
+    link.click();
+    
+    // 清理临时元素
+    document.body.removeChild(link);
+    
+    ElMessage.success('下载成功');
+  } catch (error) {
+    ElMessage.error('下载失败');
+  }
+}
 </script>
 
 <template>
@@ -206,6 +231,14 @@ async function onDeleteKey(keyId: string) {
                 }}</span>
               </div>
               <div class="key-actions">
+                <el-icon 
+                  class="download-icon" 
+                  :class="{ 'show': hoveredKeyId === key.id }"
+                  @click="onDownloadKey(key.id)"
+                  title="下载密钥"
+                >
+                  <Download />
+                </el-icon>
                 <el-popconfirm
                   @confirm="onDeleteKey(key.id)"
                   :title="$t('licenseManage.key.deleteConfirm')"
@@ -335,13 +368,13 @@ async function onDeleteKey(keyId: string) {
 
 .key-name {
   font-size: 14px;
-  font-weight: 500;
+  font-weight: normal;
   line-height: 1.4;
   white-space: nowrap;
 }
 
 .key-date {
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.2;
   white-space: nowrap;
 }
@@ -353,13 +386,14 @@ async function onDeleteKey(keyId: string) {
 }
 
 .delete-icon {
-  font-size: 20px;
+  font-size: 22px;
   color: #f56c6c;
   cursor: pointer;
   opacity: 0;
   transition: all 0.2s ease;
   padding: 4px;
   border-radius: 4px;
+  font-weight: bold;
 }
 
 .delete-icon.show {
@@ -369,6 +403,27 @@ async function onDeleteKey(keyId: string) {
 .delete-icon:hover {
   color: #f56c6c;
   background: #fef0f0;
+}
+
+.download-icon {
+  font-size: 22px;
+  color: #409eff;
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.2s ease;
+  padding: 4px;
+  border-radius: 4px;
+  margin-right: 8px;
+  font-weight: bold;
+}
+
+.download-icon.show {
+  opacity: 1;
+}
+
+.download-icon:hover {
+  color: #409eff;
+  background: #f0f9ff;
 }
 
 .empty-key-message {
