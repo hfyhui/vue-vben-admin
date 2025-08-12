@@ -2,7 +2,7 @@
  * @Author: 小妹 cuiling.liu@callfanai.com
  * @Date: 2025-07-31 16:07:34
  * @LastEditors: 小妹 cuiling.liu@callfanai.com
- * @LastEditTime: 2025-08-12 11:06:04
+ * @LastEditTime: 2025-08-12 17:03:41
  * @FilePath: \workSpace\vben-web\apps\web-ele\src\views\licenseManage\components\searchForm.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -46,13 +46,18 @@ const [SearchForm, formApi] = useVbenForm({
     },
     {
       component: 'DatePicker',
-      fieldName: 'expirationTime',
+      fieldName: 'expirationTimes',
       labelWidth: 60,
-      label: $t('licenseManage.form.expireTime') || '到期时间',
+      label: $t('licenseManage.form.expireTime') || '过期时间',
       componentProps: {
-        placeholder: $t('licenseManage.form.expireTime') || '请选择到期时间',
-        type: 'date',
-        style: 'width: 180px;',
+        type: 'datetimerange',
+        rangeSeparator: '至',
+        startPlaceholder: '开始时间',
+        endPlaceholder: '结束时间',
+        placeholder: '请选择时间范围',
+        format: 'YYYY-MM-DD HH:mm:ss',
+        valueFormat: 'YYYY-MM-DD HH:mm:ss',
+        style: 'width: 360px;',
       },
     },
   ],

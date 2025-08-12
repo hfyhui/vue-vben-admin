@@ -87,12 +87,18 @@ const gridOptions: VxeGridProps<any> = {
   proxyConfig: {
     ajax: {
       query: async ({ page }) => {
+        // 处理时间范围，转换为 expirationTimes 格式
+        let expirationTimes = undefined;
+        if (searchFormData.value?.expirationTimes && Array.isArray(searchFormData.value.expirationTimes)) {
+          expirationTimes = searchFormData.value.expirationTimes;
+        }
+        
         const res = await getLicenseListApi({
           page: page.currentPage,
           pageSize: page.pageSize,
           customerName: searchFormData.value?.customerName,
           authorizationType: searchFormData.value?.authorizationType,
-          expirationTime: searchFormData.value?.expirationTime,
+          expirationTimes,
         });
         return res.data;
       },

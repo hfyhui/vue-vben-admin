@@ -36,7 +36,7 @@ const [SearchForm, formApi] = useVbenForm({
         placeholder:
           $t('customerManage.search.customerType') || '请选择客户类型',
         allowClear: true,
-        style: 'width: 140px;',
+        style: 'width: 180px;',
       },
     },
   ],

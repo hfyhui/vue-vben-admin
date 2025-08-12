@@ -5,7 +5,7 @@ import { proxyClient } from '../request';
  * 字段说明：
  * - customerId: 客户ID
  * - authorizationType: 授权类型 (TRIAL: 试用, OFFICIALLY: 正式)
- * - expirationTime: 过期时间 (格式: yyyy-MM-dd HH:mm:ss)
+ * - expirationTimes: 执行时间范围 (格式: ["2025-08-11 00:00:00","2025-08-12 23:59:59"])
  * - features: 授权应用对象
  * - concurrentUsers: 最大并发数量
  * - fingerprintFeature: 指纹特征（文本存储）
@@ -17,7 +17,7 @@ export interface LicenseInfo {
   customerId?: string;
   customerName?: string;
   authorizationType?: 'OFFICIALLY' | 'TRIAL';
-  expirationTime?: string;
+  expirationTimes?: string[];
   features?: object;
   concurrentUsers?: number;
   fingerprintFeature?: string;
@@ -36,13 +36,13 @@ export interface LicenseQueryParams {
   customerId?: string;
   customerName?: string;
   authorizationType?: 'OFFICIALLY' | 'TRIAL';
-  expirationTime?: string;
+  expirationTimes?: string[];
 }
 
 export interface LicenseCreateParams {
   customerId?: string;
   authorizationType?: 'OFFICIALLY' | 'TRIAL';
-  expirationTime?: string;
+  expirationTimes?: string[];
   features?: object;
   concurrentUsers?: number;
   fingerprintFeature?: string;
@@ -157,12 +157,14 @@ export async function downloadLicenseApi(id: string): Promise<void> {
   a.remove();
   URL.revokeObjectURL(url);
 }
+
 export interface CustomerListQueryParams {
   page?: number;
   pageSize?: number;
   name?: string;
   type?: string;
 }
+
 // 查询客户列表接口
 export async function getCustomerListApi() {
   try {
@@ -174,6 +176,7 @@ export async function getCustomerListApi() {
     return [];
   }
 }
+
 export interface CustomerKey {
   id?: string;
   customerId?: string;
@@ -194,9 +197,11 @@ export interface ProductTreeItem {
   hierarchy: number;
   children: ProductTreeItem[];
 }
+
 export interface KeyListQueryParams {
   customerId: string;
 }
+
 export interface KeyListResponse {
   data: {
     code: number;
@@ -225,6 +230,7 @@ export async function getCustomerKeys(
     return [];
   }
 }
+
 // 生成密钥接口参数
 export interface GenerateKeyParams {
   customerId?: string;
@@ -304,6 +310,7 @@ export async function getProductTreeApi(): Promise<ProductTreeItem[]> {
     return [];
   }
 }
+
 // 同步 SSO 应用
 export async function syncSsoAppApi(): Promise<boolean> {
   try {
