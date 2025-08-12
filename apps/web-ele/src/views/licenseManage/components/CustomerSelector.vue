@@ -160,7 +160,7 @@ async function onDeleteKey(keyId: string) {
     <!-- 密钥管理Dialog -->
     <el-dialog
       v-model="showDialog"
-      :title="$t('licenseManage.key.manage')"
+      :title="$t('licenseManage.key.add')"
       width="360px"
       :close-on-click-modal="false"
       :destroy-on-close="true"
@@ -168,9 +168,6 @@ async function onDeleteKey(keyId: string) {
       <div class="dialog-content">
         <!-- 新增密钥输入区 -->
         <div class="add-key-block">
-          <span style="font-size: 14px; font-weight: bold">
-            {{ $t('licenseManage.key.add') }}&nbsp;&nbsp;
-          </span>
           <el-input
             v-model="newKeyName"
             :placeholder="$t('licenseManage.key.inputRemark')"
@@ -186,7 +183,7 @@ async function onDeleteKey(keyId: string) {
         <div class="key-list-block">
           <div
             v-if="keyList.length === 0"
-            style="margin-top: 16px; color: #999"
+            class="empty-key-message"
           >
             {{ $t('licenseManage.key.empty') }}
           </div>
@@ -340,14 +337,12 @@ async function onDeleteKey(keyId: string) {
   font-size: 14px;
   font-weight: 500;
   line-height: 1.4;
-  color: #303133;
   white-space: nowrap;
 }
 
 .key-date {
   font-size: 12px;
   line-height: 1.2;
-  color: #909399;
   white-space: nowrap;
 }
 
@@ -374,5 +369,13 @@ async function onDeleteKey(keyId: string) {
 .delete-icon:hover {
   color: #f56c6c;
   background: #fef0f0;
+}
+
+.empty-key-message {
+  margin-top: 16px;
+  color: #999;
+  text-align: center;
+  padding: 20px 0;
+  font-size: 14px;
 }
 </style>

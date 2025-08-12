@@ -306,7 +306,7 @@ function onSearchForm(values: Record<string, any>) {
       </template>
     </Grid>
 
-    <FormModal class="w-[900px]">
+    <FormModal class="w-[700px]">
       <LicenseForm
         ref="formApiRef"
         :visible="showForm"

@@ -74,7 +74,7 @@
     "deleteConfirm": "Are you sure to delete this key?",
     "deleteSuccess": "Key deleted successfully!",
     "deleteFailed": "Key deletion failed!",
-    "empty": "No key yet, please add first.",
+    "empty": "No key yet",
     "name": "Key Name",
     "createdAt": "Created At"
   }

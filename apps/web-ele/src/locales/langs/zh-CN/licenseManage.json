@@ -74,7 +74,7 @@
     "deleteConfirm": "确定删除该密钥？",
     "deleteSuccess": "密钥删除成功！",
     "deleteFailed": "密钥删除失败！",
-    "empty": "暂无密钥，请先新增。",
+    "empty": "暂无密钥",
     "name": "密钥名称",
     "createdAt": "创建时间"
   }

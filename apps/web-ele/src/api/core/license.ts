@@ -71,7 +71,7 @@ export async function createLicenseApi(
   data: LicenseCreateParams,
 ): Promise<LicenseInfo> {
   const response = await proxyClient.post('/license/save', data);
-  if (response.data && response.data.code === 100_000) {
+  if (response.data && response.data.code === 100000) {
     return response.data.data || response.data;
   } else {
     const errorMsg = response.data?.msg || '创建失败';
@@ -84,7 +84,7 @@ export async function updateLicenseApi(
   data: Partial<LicenseCreateParams>,
 ): Promise<LicenseInfo> {
   const response = await proxyClient.put(`/license/${id}`, data);
-  if (response.data && response.data.code === 100_000) {
+  if (response.data && response.data.code === 100000) {
     return response.data.data || response.data;
   } else {
     const errorMsg = response.data?.msg || '更新失败';
@@ -110,7 +110,7 @@ export async function deleteLicenseApi(ids: string | string[]): Promise<void> {
 export async function getLicenseDetailApi(id: string): Promise<LicenseInfo> {
   const response = await proxyClient.get(`/license/${id}`);
 
-  if (response.data && response.data.code === 100_000) {
+  if (response.data && response.data.code === 100000) {
     return response.data.data || response.data;
   } else {
     const errorMsg = response.data?.msg || '获取详情失败';
@@ -127,7 +127,7 @@ export async function importLicenseApi(file: File): Promise<any> {
         'Content-Type': 'multipart/form-data',
       },
     });
-    if (response.data && response.data.code === 100_000) {
+    if (response.data && response.data.code === 100000) {
       return response.data;
     } else {
       const errorMsg = response.data?.msg || '导入失败';
@@ -217,7 +217,7 @@ export async function getCustomerKeys(
 ): Promise<CustomerKey[]> {
   try {
     const response = await getKeyListApi({ customerId });
-    if (response && response.data && response.data.code === 100_000) {
+    if (response && response.data && response.data.code === 100000) {
       return response.data.data;
     }
     return [];
@@ -251,7 +251,7 @@ export async function deleteCustomerKey(keyId: string): Promise<boolean> {
     const response = await proxyClient.delete(`/license/key/delete`, {
       data: { keyId },
     });
-    if (response && response.data && response.data.code === 100_000) {
+    if (response && response.data && response.data.code === 100000) {
       return true;
     }
     return false;
@@ -265,7 +265,7 @@ export async function getKeyDetail(
 ): Promise<CustomerKey | undefined> {
   try {
     const response = await proxyClient.get(`/license/key/detail/${keyId}`);
-    if (response && response.data && response.data.code === 100_000) {
+    if (response && response.data && response.data.code === 100000) {
       return response.data.data;
     }
     return undefined;
@@ -283,7 +283,7 @@ export async function switchCustomerKey(
       customerId,
       keyId,
     });
-    if (response && response.data && response.data.code === 100_000) {
+    if (response && response.data && response.data.code === 100000) {
       return true;
     }
     return false;
@@ -296,7 +296,7 @@ export async function switchCustomerKey(
 export async function getProductTreeApi(): Promise<ProductTreeItem[]> {
   try {
     const response = await proxyClient.get('/license/product/tree');
-    if (response && response.data && response.data.code === 100_000) {
+    if (response && response.data && response.data.code === 100000) {
       return response.data.data;
     }
     return [];
@@ -308,7 +308,7 @@ export async function getProductTreeApi(): Promise<ProductTreeItem[]> {
 export async function syncSsoAppApi(): Promise<boolean> {
   try {
     const response = await proxyClient.get('/license/sync/app');
-    if (response && response.data && response.data.code === 100_000) {
+    if (response && response.data && response.data.code === 100000) {
       return true;
     }
     return false;

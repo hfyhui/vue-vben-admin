@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { ref, watch } from 'vue';
+import { Edit, Delete, Check, Close } from '@element-plus/icons-vue';
 
 import { $t } from '#/locales';
 
@@ -49,6 +50,12 @@ const removeShareholder = (index: number) => {
 
 const updateShareholder = (index: number, field: string, value: any) => {
   shareholders.value[index][field] = value;
+};
+
+// 根据证件类型值获取对应的标签
+const getLabelByValue = (value: string) => {
+  const option = idTypeOptions.find(opt => opt.value === value);
+  return option ? option.label : value;
 };
 
 const editRow = (index: number) => {
@@ -159,7 +166,7 @@ defineExpose({
             </el-select>
           </template>
           <template v-else>
-            <span>{{ row.shareholderIdType || '-' }}</span>
+            <span>{{ getLabelByValue(row.shareholderIdType) || '-' }}</span>
           </template>
         </template>
       </el-table-column>
@@ -188,28 +195,40 @@ defineExpose({
 
       <el-table-column
         :label="$t('customerManage.shareholder.action')"
-        width="150"
+        width="100"
       >
         <template #default="{ row, $index }">
           <template v-if="row.isEditing">
-            <el-button type="success" size="small" @click="saveRow($index)">
-              {{ $t('customerManage.shareholder.save') }}
-            </el-button>
-            <el-button type="info" size="small" @click="cancelRow($index)">
-              {{ $t('customerManage.shareholder.cancel') }}
-            </el-button>
+            <el-button
+              type="success"
+              size="small"
+              :icon="Check"
+              circle
+              @click="saveRow($index)"
+            />
+            <el-button
+              type="info"
+              size="small"
+              :icon="Close"
+              circle
+              @click="cancelRow($index)"
+            />
           </template>
           <template v-else>
-            <el-button type="primary" size="small" @click="editRow($index)">
-              {{ $t('customerManage.shareholder.edit') }}
-            </el-button>
+            <el-button
+              type="primary"
+              size="small"
+              :icon="Edit"
+              circle
+              @click="editRow($index)"
+            />
             <el-button
               type="danger"
               size="small"
+              :icon="Delete"
+              circle
               @click="removeShareholder($index)"
-            >
-              {{ $t('customerManage.shareholder.delete') }}
-            </el-button>
+            />
           </template>
         </template>
       </el-table-column>
@@ -242,11 +261,6 @@ defineExpose({
 .el-table .cell {
   line-height: 1.5;
 }
-
-.el-table .cell span {
-  color: #606266;
-}
-
 /* 操作按钮间距 */
 .el-button + .el-button {
   margin-left: 4px;

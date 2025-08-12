@@ -120,7 +120,6 @@ async function handleSync() {
 
 .tree-header {
   padding-left: 28px;
-  padding-top: -12px;
 }
 
 .title {
