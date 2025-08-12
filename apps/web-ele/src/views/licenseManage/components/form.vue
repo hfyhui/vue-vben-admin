@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { h, ref, watch } from 'vue';
 
-import { z } from 'zod';
+import { ElMessage } from 'element-plus';
+import { z } from '#/adapter/form';
 
 import { useVbenForm } from '#/adapter/form';
 import { $t } from '#/locales';
@@ -9,93 +10,106 @@ import { $t } from '#/locales';
 import AppTreeSelector from './AppTreeSelector.vue';
 import CustomerSelector from './CustomerSelector.vue';
 
-const props = defineProps<{ modelValue?: any; visible: boolean }>();
+const props = defineProps<{
+  customerList?: { label: string; value: string }[];
+  modelValue?: any;
+  visible: boolean;
+}>();
 const emit = defineEmits(['update:visible', 'submit']);
 
 const customerKeyStatus = ref(false);
+const selectedKeyId = ref<null | string>(null);
 
 const schema = [
   {
     component: h(CustomerSelector, {
+      customerList: props.customerList || [],
       onKeyStatusChange: (status: boolean) =>
         (customerKeyStatus.value = status),
+      'onUpdate:keyId': (keyId: null | string) => {
+        selectedKeyId.value = keyId;
+      },
     }),
-    fieldName: 'customer',
+    fieldName: 'customerId',
     label: $t('licenseManage.form.customer'),
     required: true,
-    componentProps: {},
+    componentProps: {
+      style: 'width: 340px;',
+    },
     rules: 'selectRequired',
   },
+  // 授权应用
   {
     component: h(AppTreeSelector),
-    fieldName: 'apps',
+    fieldName: 'features',
     label: $t('licenseManage.form.apps'),
     required: true,
-    defaultValue: [],
-    componentProps: {},
+    defaultValue: {},
     rules: z
       .any()
-      .refine((val) => val && Array.isArray(val) && val.length > 0, {
-        message:
-          $t('licenseManage.form.apps') +
-          $t('licenseManage.message.selectToDelete'),
-      }),
+      .refine(
+        (val) => val && typeof val === 'object' && Object.keys(val).length > 0,
+        {
+          message: $t('licenseManage.form.apps'),
+        },
+      ),
   },
   {
     component: 'RadioGroup',
-    fieldName: 'licenseType',
+    fieldName: 'authorizationType',
     label: $t('licenseManage.form.licenseType'),
     required: true,
-    defaultValue: 'trial',
+    defaultValue: 'TRIAL',
     componentProps: {
       options: [
-        { label: $t('licenseManage.form.trial'), value: 'trial' },
-        { label: $t('licenseManage.form.official'), value: 'official' },
+        { label: $t('licenseManage.form.trial'), value: 'TRIAL' },
+        { label: $t('licenseManage.form.official'), value: 'OFFICIALLY' },
       ],
     },
     rules: 'selectRequired',
   },
   {
     component: 'DatePicker',
-    fieldName: 'expireTime',
+    fieldName: 'expirationTime',
     label: $t('licenseManage.form.expireTime'),
     required: true,
     componentProps: {
       type: 'datetime',
       placeholder: $t('licenseManage.form.expireTime'),
+      format: 'YYYY-MM-DD HH:mm:ss',
+      valueFormat: 'YYYY-MM-DD HH:mm:ss',
+      style: 'width: 340px;',
     },
     rules: 'selectRequired',
   },
   {
     component: 'InputNumber',
-    fieldName: 'maxUsers',
+    fieldName: 'concurrentUsers',
     label: $t('licenseManage.form.maxUsers'),
     required: true,
-    defaultValue: 10,
     componentProps: {
       min: 1,
       max: 2000,
       controls: true,
       placeholder: $t('licenseManage.form.maxUsers'),
+      style: 'width: 340px;',
     },
     rules: 'required',
   },
   {
     component: 'Input',
-    fieldName: 'fingerprint',
+    fieldName: 'fingerprintFeature',
     label: $t('licenseManage.form.fingerprint'),
+    required: true,
     componentProps: {
       placeholder: $t('licenseManage.form.fingerprint'),
+      style: 'width: 340px;',
       maxlength: 2000,
+      showWordLimit: true,
+      type: 'textarea',
+      rows: 3,
     },
-    rules: z
-      .string()
-      .max(2000, {
-        message:
-          $t('licenseManage.message.maxFingerprint') ||
-          '限制不超过2000个字符长度',
-      })
-      .optional(),
+    rules: 'required',
   },
   {
     component: 'Input',
@@ -103,13 +117,16 @@ const schema = [
     label: $t('licenseManage.form.remark'),
     componentProps: {
       placeholder: $t('licenseManage.form.remark'),
+      style: 'width: 340px;',
       maxlength: 100,
+      showWordLimit: true,
+      type: 'textarea',
+      rows: 2,
     },
     rules: z
       .string()
       .max(100, {
-        message:
-          $t('licenseManage.message.maxRemark') || '限制不超过100个字符长度',
+        message: '备注不超过100个字符',
       })
       .optional(),
   },
@@ -117,10 +134,10 @@ const schema = [
 
 const [Form, formApi] = useVbenForm({
   schema,
-  wrapperClass: 'grid-cols-1',
-  commonConfig: { labelWidth: 130 },
-  submitButtonOptions: { content: $t('licenseManage.form.save') },
-  resetButtonOptions: { content: $t('licenseManage.form.cancel') },
+  wrapperClass: 'grid grid-cols-1 gap-4',
+  commonConfig: { labelWidth: 140 },
+  submitButtonOptions: { show: false }, // 不显示表单自带的保存按钮
+  resetButtonOptions: { show: false }, // 不显示表单自带的取消按钮
   handleSubmit,
   handleReset,
 });
@@ -144,15 +161,48 @@ function handleSubmit(values: any) {
     );
     return;
   }
-  emit('submit', values);
+
+  const submitData = {
+    ...values,
+    keyId: selectedKeyId.value,
+  };
+  emit('submit', submitData);
   emit('update:visible', false);
 }
 function handleReset() {
   if (formApi.resetForm) formApi.resetForm();
   emit('update:visible', false);
 }
+
+defineExpose({ validateAndSubmitForm: formApi.validateAndSubmitForm });
 </script>
 
 <template>
-  <Form />
+  <div class="license-form-container">
+    <Form />
+  </div>
 </template>
+
+<style scoped>
+.license-form-container {
+  width: 100%;
+}
+
+:deep(.grid) {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+:deep(.el-form-item) {
+  margin-bottom: 1rem;
+}
+
+:deep(.el-form-item__label) {
+  font-weight: 500;
+  color: #333;
+}
+:deep(.pb-6) {
+  padding-bottom:18px !important;
+}
+</style>

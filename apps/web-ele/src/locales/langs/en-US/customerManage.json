@@ -11,11 +11,13 @@
     "add": "Add",
     "edit": "Edit",
     "delete": "Delete",
-    "batchDelete": "Batch Delete"
+    "batchDelete": "Batch Delete",
+    "view": "View"
   },
   "table": {
     "customerName": "Customer Name",
     "customerType": "Customer Type",
+    "certificateCode": "Certificate Code",
     "creditCode": "Credit Code",
     "legalName": "Legal Name",
     "legalIdType": "Legal ID Type",

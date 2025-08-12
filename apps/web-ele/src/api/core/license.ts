@@ -1,33 +1,53 @@
-// license.ts 假数据和接口模板，所有类型和接口都在本文件内
+import { proxyClient } from '../request';
 
+/**
+ * 许可证信息接口
+ * 字段说明：
+ * - customerId: 客户ID
+ * - authorizationType: 授权类型 (TRIAL: 试用, OFFICIALLY: 正式)
+ * - expirationTime: 过期时间 (格式: yyyy-MM-dd HH:mm:ss)
+ * - features: 授权应用对象
+ * - concurrentUsers: 最大并发数量
+ * - fingerprintFeature: 指纹特征（文本存储）
+ * - remark: 备注
+ * - keyId: 密钥ID
+ */
 export interface LicenseInfo {
   id: string;
-  customer: string;
-  apps: string[];
-  licenseType: 'official' | 'trial';
-  expireTime: string;
-  maxUsers: number;
-  licenseKey: string;
-  fingerprint: string;
-  remark: string;
+  customerId?: string;
+  customerName?: string;
+  authorizationType?: 'OFFICIALLY' | 'TRIAL';
+  expirationTime?: string;
+  features?: object;
+  concurrentUsers?: number;
+  fingerprintFeature?: string;
+  remark?: string;
+  keyId?: string;
 }
 
 export interface LicenseQueryParams {
   page: number;
   pageSize: number;
-  customer?: string;
-  licenseType?: string;
+  optimizeCountSql?: boolean;
+  searchCount?: boolean;
+  optimizeJoinOfCountSql?: boolean;
+  maxLimit?: number;
+  countId?: string;
+  customerId?: string;
+  customerName?: string;
+  authorizationType?: 'OFFICIALLY' | 'TRIAL';
+  expirationTime?: string;
 }
 
 export interface LicenseCreateParams {
-  customer: string;
-  apps: string[];
-  licenseType: 'official' | 'trial';
-  expireTime: string;
-  maxUsers: number;
-  licenseKey: string;
-  fingerprint: string;
-  remark: string;
+  customerId?: string;
+  authorizationType?: 'OFFICIALLY' | 'TRIAL';
+  expirationTime?: string;
+  features?: object;
+  concurrentUsers?: number;
+  fingerprintFeature?: string;
+  remark?: string;
+  keyId?: string;
 }
 
 export interface ApiResponse<T = any> {
@@ -35,300 +55,264 @@ export interface ApiResponse<T = any> {
   data: T;
   message: string;
 }
-
 export interface PageResponse<T = any> {
   items: T[];
   total: number;
 }
 
-const MOCK_LICENSE_DATA: LicenseInfo[] = [
-  {
-    id: '1',
-    customer: 'a',
-    apps: ['local', 'local-1', 'cloud', 'cloud-1'],
-    licenseType: 'trial',
-    expireTime: '2025-12-30 23:59:59',
-    maxUsers: 10,
-    licenseKey: 'TRIAL-123456',
-    fingerprint: 'trial-fingerprint-001',
-    remark: '试用license',
-  },
-  {
-    id: '2',
-    customer: 'b',
-    apps: ['cloud', 'cloud-2', 'seo'],
-    licenseType: 'official',
-    expireTime: '2026-12-30 23:59:59',
-    maxUsers: 20,
-    licenseKey: 'OFFICIAL-654321',
-    fingerprint: 'official-fingerprint-002',
-    remark: '正式license',
-  },
-];
-
-function sleep(time = 400) {
-  return new Promise((resolve) => setTimeout(resolve, time));
-}
-
 export async function getLicenseListApi(
   params: LicenseQueryParams,
-): Promise<ApiResponse<PageResponse<LicenseInfo>>> {
-  await sleep();
-  const filtered = MOCK_LICENSE_DATA.filter((item) => {
-    const matchCustomer = !params.customer || item.customer === params.customer;
-    const matchType =
-      !params.licenseType || item.licenseType === params.licenseType;
-    return matchCustomer && matchType;
-  });
-  const total = filtered.length;
-  const items = filtered.slice(
-    (params.page - 1) * params.pageSize,
-    params.page * params.pageSize,
-  );
-  return {
-    code: 0,
-    data: { items, total },
-    message: 'success',
-  };
+): Promise<{ data: PageResponse<LicenseInfo> }> {
+  const response = await proxyClient.post('/license/page', params);
+  return response.data;
 }
 
 export async function createLicenseApi(
   data: LicenseCreateParams,
-): Promise<ApiResponse<LicenseInfo>> {
-  await sleep();
-  const newLicense: LicenseInfo = {
-    id: Date.now().toString(),
-    ...data,
-  };
-  MOCK_LICENSE_DATA.unshift(newLicense);
-  return {
-    code: 0,
-    data: newLicense,
-    message: '创建成功',
-  };
+): Promise<LicenseInfo> {
+  const response = await proxyClient.post('/license/save', data);
+  if (response.data && response.data.code === 100_000) {
+    return response.data.data || response.data;
+  } else {
+    const errorMsg = response.data?.msg || '创建失败';
+    throw new Error(errorMsg);
+  }
 }
 
 export async function updateLicenseApi(
   id: string,
   data: Partial<LicenseCreateParams>,
-): Promise<ApiResponse<LicenseInfo>> {
-  await sleep();
-  const idx = MOCK_LICENSE_DATA.findIndex((item) => item.id === id);
-  if (idx === -1) {
-    return { code: 404, data: {} as LicenseInfo, message: '未找到license' };
+): Promise<LicenseInfo> {
+  const response = await proxyClient.put(`/license/${id}`, data);
+  if (response.data && response.data.code === 100_000) {
+    return response.data.data || response.data;
+  } else {
+    const errorMsg = response.data?.msg || '更新失败';
+    throw new Error(errorMsg);
   }
-  // 合并时保证所有必填字段不为undefined
-  const old = MOCK_LICENSE_DATA[idx];
-  if (!old) {
-    return { code: 404, data: {} as LicenseInfo, message: '未找到license' };
-  }
-  MOCK_LICENSE_DATA[idx] = {
-    id: old.id,
-    customer: data.customer ?? old.customer,
-    apps: data.apps ?? old.apps,
-    licenseType: data.licenseType ?? old.licenseType,
-    expireTime: data.expireTime ?? old.expireTime,
-    maxUsers: typeof data.maxUsers === 'number' ? data.maxUsers : old.maxUsers,
-    licenseKey: data.licenseKey ?? old.licenseKey,
-    fingerprint: data.fingerprint ?? old.fingerprint,
-    remark: data.remark ?? old.remark,
-  };
-  return {
-    code: 0,
-    data: MOCK_LICENSE_DATA[idx],
-    message: '更新成功',
-  };
 }
 
-export async function deleteLicenseApi(id: string): Promise<ApiResponse<null>> {
-  await sleep();
-  const idx = MOCK_LICENSE_DATA.findIndex((item) => item.id === id);
-  if (idx === -1) {
-    return { code: 404, data: null, message: '未找到license' };
+export async function deleteLicenseApi(ids: string | string[]): Promise<void> {
+  let response;
+  if (Array.isArray(ids)) {
+    response = await proxyClient.delete('/license/delete', { data: { ids } });
+  } else {
+    response = await proxyClient.delete('/license/delete', { data: { ids: [ids] } });
   }
-  MOCK_LICENSE_DATA.splice(idx, 1);
-  return { code: 0, data: null, message: '删除成功' };
+  if (response.data && response.data.code === 100000) {
+    return;
+  } else {
+    const errorMsg = response.data?.msg || '删除失败';
+    throw new Error(errorMsg);
+  }
 }
 
-export async function batchDeleteLicenseApi(
-  ids: string[],
-): Promise<ApiResponse<null>> {
-  await sleep();
-  let count = 0;
-  for (const id of ids) {
-    const idx = MOCK_LICENSE_DATA.findIndex((item) => item.id === id);
-    if (idx !== -1) {
-      MOCK_LICENSE_DATA.splice(idx, 1);
-      count++;
-    }
+export async function getLicenseDetailApi(id: string): Promise<LicenseInfo> {
+  const response = await proxyClient.get(`/license/${id}`);
+
+  if (response.data && response.data.code === 100_000) {
+    return response.data.data || response.data;
+  } else {
+    const errorMsg = response.data?.msg || '获取详情失败';
+    throw new Error(errorMsg);
   }
-  return { code: 0, data: null, message: `成功删除${count}条` };
 }
 
-export async function getLicenseDetailApi(
-  id: string,
-): Promise<ApiResponse<LicenseInfo>> {
-  await sleep();
-  const license = MOCK_LICENSE_DATA.find((item) => item.id === id);
-  if (!license) {
-    return { code: 404, data: {} as LicenseInfo, message: '未找到license' };
-  }
-  return { code: 0, data: { ...license }, message: 'success' };
-}
-
-export async function importLicenseApi(
-  file: File,
-): Promise<ApiResponse<LicenseInfo>> {
-  await sleep();
+export async function importLicenseApi(file: File): Promise<any> {
   try {
-    const content = await file.text();
-    const licenseData = JSON.parse(content);
-    if (!licenseData.customer || !licenseData.licenseType) {
-      return {
-        code: 400,
-        data: {} as LicenseInfo,
-        message: '无效的license文件格式',
-      };
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await proxyClient.post('/license/import', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    if (response.data && response.data.code === 100_000) {
+      return response.data;
+    } else {
+      const errorMsg = response.data?.msg || '导入失败';
+      throw new Error(errorMsg);
     }
-    const newLicense: LicenseInfo = {
-      id: Date.now().toString(),
-      customer: licenseData.customer,
-      apps: Array.isArray(licenseData.apps) ? licenseData.apps : [],
-      licenseType: licenseData.licenseType,
-      expireTime: licenseData.expireTime,
-      maxUsers:
-        typeof licenseData.maxUsers === 'number' ? licenseData.maxUsers : 10,
-      licenseKey: licenseData.licenseKey || '',
-      fingerprint: licenseData.fingerprint || '',
-      remark: licenseData.remark || '',
-    };
-    MOCK_LICENSE_DATA.unshift(newLicense);
-    return {
-      code: 0,
-      data: newLicense,
-      message: '导入成功',
-    };
-  } catch {
-    return {
-      code: 400,
-      data: {} as LicenseInfo,
-      message: '解析license文件失败',
-    };
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('导入失败');
   }
 }
 
-export async function downloadLicenseApi(
-  id: string,
-): Promise<ApiResponse<null>> {
-  await sleep();
-  const license = MOCK_LICENSE_DATA.find((item) => item.id === id);
-  if (!license) {
-    return { code: 404, data: null, message: '未找到license' };
-  }
-  const blob = new Blob([JSON.stringify(license, null, 2)], {
-    type: 'application/json',
+export async function downloadLicenseApi(id: string): Promise<void> {
+  const response = await proxyClient.get(`/license/download/${id}`, {
+    responseType: 'blob',
   });
+
+  // 创建下载链接
+  const blob = new Blob([response.data], { type: 'application/octet-stream' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `license_${license.customer}_${license.id}.json`;
+  a.download = `license_${id}.lic`;
   document.body.append(a);
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
-  return { code: 0, data: null, message: '下载成功' };
 }
-
-// ====== 密钥相关假数据和接口 ======
+export interface CustomerListQueryParams {
+  page?: number;
+  pageSize?: number;
+  name?: string;
+  type?: string;
+}
+// 查询客户列表接口
+export async function getCustomerListApi() {
+  try {
+    const response = await proxyClient.post('/license/customer/list');
+    if (response && response.data.code === 100000) {
+      return response.data;
+    }
+  } catch (error) {
+    return [];
+  }
+}
 export interface CustomerKey {
-  id: string;
-  customer: string;
-  name: string;
-  publicKey: string;
-  privateKey: string;
-  createdAt: string;
+  id?: string;
+  customerId?: string;
+  customersName?: string;
+  name?: string;
+  keyRemark?: string;
+  publicKey?: string;
+  privateKey?: string;
+  createdAt?: string;
+  customer?: string;
 }
 
-const MOCK_KEY_DATA: CustomerKey[] = [
-  {
-    id: 'k1',
-    customer: 'a',
-    name: '客户A密钥1',
-    publicKey: 'pubkey-a-1',
-    privateKey: 'prikey-a-1',
-    createdAt: '2024-06-01 10:00:00',
-  },
-  {
-    id: 'k2',
-    customer: 'a',
-    name: '客户A密钥2',
-    publicKey: 'pubkey-a-2',
-    privateKey: 'prikey-a-2',
-    createdAt: '2024-07-01 10:00:00',
-  },
-  {
-    id: 'k3',
-    customer: 'b',
-    name: '客户B密钥1',
-    publicKey: 'pubkey-b-1',
-    privateKey: 'prikey-b-1',
-    createdAt: '2024-06-15 10:00:00',
-  },
-];
+// 产品清单树形结构接口
+export interface ProductTreeItem {
+  menuId: string;
+  menuName: string;
+  parentId: string;
+  hierarchy: number;
+  children: ProductTreeItem[];
+}
+export interface KeyListQueryParams {
+  customerId: string;
+}
+export interface KeyListResponse {
+  data: {
+    code: number;
+    data: CustomerKey[];
+  };
+  message: string;
+}
+
+// 查询密钥列表接口
+export async function getKeyListApi(
+  params: KeyListQueryParams,
+): Promise<KeyListResponse> {
+  return await proxyClient.post<KeyListResponse>('/license/key/list', params);
+}
 
 export async function getCustomerKeys(
   customerId: string,
 ): Promise<CustomerKey[]> {
-  await sleep();
-  return MOCK_KEY_DATA.filter((k) => k.customer === customerId);
+  try {
+    const response = await getKeyListApi({ customerId });
+    if (response && response.data && response.data.code === 100_000) {
+      return response.data.data;
+    }
+    return [];
+  } catch {
+    return [];
+  }
+}
+// 生成密钥接口参数
+export interface GenerateKeyParams {
+  customerId?: string;
+  keyRemark?: string;
 }
 
 export async function createCustomerKey(
   customerId: string,
   keyData: Partial<CustomerKey>,
 ): Promise<CustomerKey> {
-  await sleep();
-  const newKey: CustomerKey = {
-    id: `k${Date.now()}`,
-    customer: customerId,
-    name: keyData.name || '新密钥',
-    publicKey: keyData.publicKey || `pubkey-${Date.now()}`,
-    privateKey: keyData.privateKey || `prikey-${Date.now()}`,
-    createdAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
+  const params: GenerateKeyParams = {
+    customerId: customerId,
+    keyRemark: keyData.name || keyData.keyRemark,
   };
-  MOCK_KEY_DATA.unshift(newKey);
-  return newKey;
+  const response = await proxyClient.post('/license/key/generate', params);
+  if (response && response.data && response.data.code === 100000) {
+    return response.data.data;
+  }
+  throw new Error('创建密钥失败');
 }
 
 export async function deleteCustomerKey(keyId: string): Promise<boolean> {
-  await sleep();
-  const idx = MOCK_KEY_DATA.findIndex((k) => k.id === keyId);
-  if (idx !== -1) {
-    // 证书失效逻辑：将所有用此密钥生成的license置为无效
-    const key = MOCK_KEY_DATA[idx];
-    for (const lic of MOCK_LICENSE_DATA) {
-      if (lic.customer === key.customer) {
-        lic.licenseKey = '无效';
-      }
+  try {
+    const response = await proxyClient.delete(`/license/key/delete`, {
+      data: { keyId },
+    });
+    if (response && response.data && response.data.code === 100_000) {
+      return true;
     }
-    MOCK_KEY_DATA.splice(idx, 1);
-    return true;
+    return false;
+  } catch {
+    return false;
   }
-  return false;
 }
 
 export async function getKeyDetail(
   keyId: string,
 ): Promise<CustomerKey | undefined> {
-  await sleep();
-  return MOCK_KEY_DATA.find((k) => k.id === keyId);
+  try {
+    const response = await proxyClient.get(`/license/key/detail/${keyId}`);
+    if (response && response.data && response.data.code === 100_000) {
+      return response.data.data;
+    }
+    return undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 export async function switchCustomerKey(
-  _customerId: string,
-  _keyId: string,
+  customerId: string,
+  keyId: string,
 ): Promise<boolean> {
-  await sleep();
-  // 这里只做切换标记，实际业务可扩展
-  return true;
+  try {
+    const response = await proxyClient.post('/license/key/switch', {
+      customerId,
+      keyId,
+    });
+    if (response && response.data && response.data.code === 100_000) {
+      return true;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+// 获取产品清单树形结构
+export async function getProductTreeApi(): Promise<ProductTreeItem[]> {
+  try {
+    const response = await proxyClient.get('/license/product/tree');
+    if (response && response.data && response.data.code === 100_000) {
+      return response.data.data;
+    }
+    return [];
+  } catch {
+    return [];
+  }
+}
+// 同步 SSO 应用
+export async function syncSsoAppApi(): Promise<boolean> {
+  try {
+    const response = await proxyClient.get('/license/sync/app');
+    if (response && response.data && response.data.code === 100_000) {
+      return true;
+    }
+    return false;
+  } catch {
+    return false;
+  }
 }

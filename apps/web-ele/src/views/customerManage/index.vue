@@ -1,58 +1,87 @@
 <script lang="ts" setup>
 import type { VxeGridListeners, VxeGridProps } from '#/adapter/vxe-table';
 
-import { ref } from 'vue';
+import { nextTick, ref } from 'vue';
 
-import {ElMessage, ElMessageBox} from 'element-plus';
+import { ElMessage, ElMessageBox } from 'element-plus';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
+import { $t } from '#/locales';
 
 import {
   batchDeleteCustomerApi,
   createCustomerApi,
   deleteCustomerApi,
+  getCustomerDetailApi,
   getCustomerListApi,
   updateCustomerApi,
 } from '../../api/core/customer';
+import { getDictApi } from '../../api/core/dict';
 import CustomerForm from './components/form.vue';
+import SearchForm from './components/searchForm.vue';
+import CustomerViewForm from './components/viewForm.vue';
 
-const customerTypes = [
-  { label: '公司', value: 'company' },
-  { label: '组织', value: 'org' },
-  { label: '个人', value: 'person' },
-];
+const customerTypes = ref<any[]>([]);
+const idTypeOptions = ref<any[]>([]);
+const dictLoaded = ref(false);
 
 const searchForm = ref({
-  name: '',
-  type: '',
+  customersName: '',
+  customersType: '',
 });
+const loadDictData = async () => {
+  try {
+    const res = await getDictApi();
+    customerTypes.value = res.data.data.LICENSE_CUSTOMER_TYPE?.children || [];
+    idTypeOptions.value = res.data.data.CERTIFICATE_TYPE?.children || [];
+    dictLoaded.value = true;
+  } catch {}
+};
+loadDictData();
 const selectedRows = ref<any[]>([]);
 
 const showForm = ref(false);
+const showViewForm = ref(false);
 const editData = ref<any>(null);
+const viewData = ref<any>(null);
 
 const gridOptions: VxeGridProps<any> = {
   columns: [
     { type: 'checkbox', width: 50, align: 'center' },
-    { field: 'name', title: '客户名称', minWidth: 120 },
     {
-      field: 'type',
-      title: '客户类型',
-      minWidth: 100,
-      formatter: ({ cellValue }) => {
-        if (cellValue === 'company') return '公司';
-        if (cellValue === 'org') return '组织';
-        if (cellValue === 'person') return '个人';
-        return '';
-      },
+      field: 'customersName',
+      title: $t('customerManage.table.customerName'),
+      minWidth: 120,
     },
-    { field: 'creditCode', title: '社会统一信用代码', minWidth: 180 },
-    { field: 'legalName', title: '法人姓名', minWidth: 120 },
-    { field: 'legalIdType', title: '法人证件类型', minWidth: 120 },
-    { field: 'legalIdNo', title: '法人证件号码', minWidth: 180 },
+    {
+      field: 'customersTypeName',
+      title: $t('customerManage.table.customerType'),
+      minWidth: 100,
+    },
+    {
+      field: 'certificateCode',
+      title: $t('customerManage.table.certificateCode'),
+      minWidth: 180,
+      slots: { default: 'certificateCode' },
+    },
+    {
+      field: 'legalPerson',
+      title: $t('customerManage.table.legalName'),
+      minWidth: 120,
+    },
+    {
+      field: 'legalPersonIdTypeName',
+      title: $t('customerManage.table.legalIdType'),
+      minWidth: 120,
+    },
+    {
+      field: 'legalPersonIdNumber',
+      title: $t('customerManage.table.legalIdNo'),
+      minWidth: 180,
+    },
     {
       field: 'action',
-      title: '操作',
+      title: $t('customerManage.table.operation'),
       width: 180,
       slots: { default: 'action' },
       fixed: 'right',
@@ -75,17 +104,16 @@ const gridOptions: VxeGridProps<any> = {
         const res = await getCustomerListApi({
           page: page.currentPage,
           pageSize: page.pageSize,
-          name: form?.name,
-          type: form?.type,
+          customersName: form?.customersName || searchForm.value.customersName,
+          customersType: form?.customersType || searchForm.value.customersType,
         });
-        return res.data;
+        return res.data.data;
       },
     },
-    props: {
-      result: 'items',
+    response: {
+      result: 'records',
       total: 'total',
     },
-    form: searchForm.value,
   },
 };
 
@@ -99,44 +127,79 @@ const [Grid, gridApi] = useVbenVxeGrid({
   gridEvents,
 });
 
-function onSearch() {
-  gridApi.query();
-}
-function onReset() {
-  searchForm.value.name = '';
-  searchForm.value.type = '';
+function onSearch(values?: any) {
+  if (values) {
+    searchForm.value = values;
+  }
   gridApi.query();
 }
 function onAdd() {
   editData.value = null;
   showForm.value = true;
 }
-function onEdit(row: any) {
-  // 可选：可用getCustomerDetailApi(row.id)获取详情
-  editData.value = { ...row };
-  showForm.value = true;
+
+function onFormDialogClose() {
+  editData.value = null;
+  showForm.value = false;
+  nextTick(() => {
+    if (gridApi && gridApi.query) {
+      gridApi.query();
+    }
+  });
+}
+async function onView(row: any) {
+  try {
+    // 调用详情接口获取完整数据
+    const res = await getCustomerDetailApi(row.id);
+    viewData.value = res.data.data;
+    showViewForm.value = true;
+  } catch (error) {
+    console.error('获取客户详情失败:', error);
+    ElMessage.error('获取客户详情失败');
+  }
+}
+
+async function onEdit(row: any) {
+  try {
+    // 调用详情接口获取完整数据
+    const res = await getCustomerDetailApi(row.id);
+    editData.value = res.data.data;
+    showForm.value = true;
+  } catch (error) {
+    console.error('获取客户详情失败:', error);
+    ElMessage.error('获取客户详情失败');
+  }
 }
 async function onDelete(row: any) {
-  await ElMessageBox.confirm('确定要删除该客户吗？', '提示', {
-    type: 'warning',
-  });
-  await deleteCustomerApi(row.id);
-  gridApi.query();
-  ElMessage.success('删除成功');
+  try {
+    await ElMessageBox.confirm('确定要删除该客户吗？', '提示', {
+      type: 'warning',
+    });
+    await deleteCustomerApi(row.id);
+    gridApi.query();
+    ElMessage.success('删除成功');
+  } catch (error) {
+    console.error('删除失败:', error);
+    ElMessage.error('删除失败');
+  }
 }
 async function onBatchDelete() {
   if (selectedRows.value.length === 0) {
     ElMessage.warning('请先选择要删除的客户');
     return;
   }
-  await ElMessageBox.confirm('确定要删除选中的客户吗？', '提示', {
-    type: 'warning',
-  });
-  const ids = selectedRows.value.map((row) => row.id);
-  await batchDeleteCustomerApi(ids);
-  selectedRows.value = [];
-  gridApi.query();
-  ElMessage.success('删除成功');
+  try {
+    await ElMessageBox.confirm('确定要删除选中的客户吗？', '提示', {
+      type: 'warning',
+    });
+    const ids = selectedRows.value.map((row) => row.id);
+    await batchDeleteCustomerApi(ids);
+    selectedRows.value = [];
+    gridApi.query();
+    ElMessage.success('删除成功');
+  } catch {
+    ElMessage.error('批量删除失败');
+  }
 }
 async function submit(values: any) {
   if (editData.value && editData.value.id) {
@@ -146,6 +209,7 @@ async function submit(values: any) {
     await createCustomerApi(values);
     ElMessage.success('新增成功');
   }
+  editData.value = null;
   showForm.value = false;
   gridApi.query();
 }
@@ -154,66 +218,65 @@ async function submit(values: any) {
 <template>
   <div class="customer-manage-root">
     <div class="search-card">
-      <ElForm
-        :inline="true"
-        :model="searchForm"
-        class="search-form"
-        size="large"
-      >
-        <ElFormItem label="客户名称">
-          <ElInput
-            v-model="searchForm.name"
-            placeholder="客户名称"
-            style="width: 220px"
-            clearable
-          />
-        </ElFormItem>
-        <ElFormItem label="客户类型">
-          <ElSelect
-            v-model="searchForm.type"
-            placeholder="客户类型"
-            style="width: 180px"
-            clearable
-          >
-            <ElOption
-              v-for="item in customerTypes"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
-            />
-          </ElSelect>
-        </ElFormItem>
-        <ElFormItem>
-          <ElButton type="primary" @click="onSearch">搜索</ElButton>
-          <ElButton @click="onReset">重置</ElButton>
-        </ElFormItem>
-      </ElForm>
+      <SearchForm
+        v-if="dictLoaded"
+        @search="onSearch"
+        :customer-types="customerTypes"
+      />
     </div>
     <div class="action-bar">
-      <ElButton type="primary" @click="onAdd">新增客户</ElButton>
-      <ElButton type="danger" @click="onBatchDelete">批量删除</ElButton>
+      <ElButton type="primary" @click="onAdd">
+        {{ $t('customerManage.action.add') }}
+      </ElButton>
+      <ElButton type="danger" @click="onBatchDelete">
+        {{ $t('customerManage.action.batchDelete') }}
+      </ElButton>
     </div>
     <Grid>
+      <template #certificateCode="{ row }">
+        <span>
+          {{ row.certificateCode }}
+        </span>
+      </template>
       <template #action="{ row }">
-        <ElButton type="text" @click="onEdit(row)">编辑</ElButton>
-        <ElButton type="text" @click="onDelete(row)" style="color: #f56c6c">
-          删除
+        <ElButton link @click="onEdit(row)">
+          {{ $t('customerManage.action.edit') }}
+        </ElButton>
+        <ElButton link @click="onView(row)">
+          {{ $t('customerManage.action.view') }}
+        </ElButton>
+        <ElButton link @click="onDelete(row)" style="color: #f56c6c">
+          {{ $t('customerManage.action.delete') }}
         </ElButton>
       </template>
     </Grid>
     <ElDialog
       v-model="showForm"
-      title="客户信息"
-      width="940px"
+      :title="
+        editData && editData.id
+          ? $t('customerManage.form.edit')
+          : $t('customerManage.form.add')
+      "
+      width="800px"
       :close-on-click-modal="false"
+      @close="onFormDialogClose"
     >
       <CustomerForm
         :visible="showForm"
         :model-value="editData"
+        :customer-types="customerTypes"
+        :id-type-options="idTypeOptions"
         @submit="submit"
         @update:visible="showForm = $event"
       />
     </ElDialog>
+    <CustomerViewForm
+      :visible="showViewForm"
+      :model-value="viewData"
+      :customer-types="customerTypes"
+      :id-type-options="idTypeOptions"
+      @update:visible="showViewForm = $event"
+    />
   </div>
 </template>
 

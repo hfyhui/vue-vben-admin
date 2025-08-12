@@ -16,6 +16,9 @@
     "delete": "删除"
   },
   "actionTitle": "操作",
+  "status": "状态",
+  "statusNormal": "正常",
+  "statusInvalid": "无效",
   "form": {
     "customer": "客户",
     "apps": "授权应用",
@@ -27,7 +30,16 @@
     "save": "保存",
     "cancel": "取消",
     "trial": "试用",
-    "official": "正式"
+    "official": "正式",
+    "licenseName": "许可证名称",
+    "licenseCode": "许可证代码",
+    "version": "版本号",
+    "description": "描述",
+    "contactInfo": "联系信息",
+    "company": "公司名称",
+    "email": "邮箱地址",
+    "phone": "联系电话",
+    "address": "地址"
   },
   "detail": {
     "title": "License详情",
@@ -55,10 +67,13 @@
     "manage": "密钥管理",
     "add": "新增秘钥",
     "inputName": "请输入密钥名称",
+    "inputRemark": "请输入密钥描述",
     "addSuccess": "密钥新增成功！",
     "switch": "切换",
     "switchSuccess": "已切换密钥：",
     "deleteConfirm": "确定删除该密钥？",
+    "deleteSuccess": "密钥删除成功！",
+    "deleteFailed": "密钥删除失败！",
     "empty": "暂无密钥，请先新增。",
     "name": "密钥名称",
     "createdAt": "创建时间"

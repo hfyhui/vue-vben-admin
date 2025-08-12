@@ -2,6 +2,10 @@
 import { useVbenForm } from '#/adapter/form';
 import { $t } from '#/locales';
 
+// 定义 props
+const props = defineProps<{
+  customerTypes: any[];
+}>();
 const emit = defineEmits(['search']);
 
 const [SearchForm, formApi] = useVbenForm({
@@ -9,7 +13,7 @@ const [SearchForm, formApi] = useVbenForm({
   schema: [
     {
       component: 'Input',
-      fieldName: 'name',
+      fieldName: 'customersName',
       labelWidth: 60,
       label: $t('customerManage.search.customerName') || '客户名称',
       componentProps: {
@@ -20,21 +24,15 @@ const [SearchForm, formApi] = useVbenForm({
     },
     {
       component: 'Select',
-      fieldName: 'type',
+      fieldName: 'customersType',
       labelWidth: 60,
       label: $t('customerManage.search.customerType') || '客户类型',
       componentProps: {
-        options: [
-          {
-            label: $t('customerManage.types.company') || '企业',
-            value: 'company',
-          },
-          { label: $t('customerManage.types.org') || '组织', value: 'org' },
-          {
-            label: $t('customerManage.types.person') || '个人',
-            value: 'person',
-          },
-        ],
+        options:
+          props.customerTypes?.map((item: any) => ({
+            label: item.content,
+            value: item.name,
+          })) || [],
         placeholder:
           $t('customerManage.search.customerType') || '请选择客户类型',
         allowClear: true,

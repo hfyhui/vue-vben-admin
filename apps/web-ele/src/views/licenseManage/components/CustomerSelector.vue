@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import { getCurrentInstance, nextTick, ref, watch } from 'vue';
+import type { PropType } from 'vue';
 
-import { ElMessage } from 'element-plus';
+import { computed, nextTick, ref, watch } from 'vue';
+
+import { ElMessage, ElIcon } from 'element-plus';
+import { Delete } from '@element-plus/icons-vue';
 
 import { $t } from '#/locales';
 
@@ -16,16 +19,18 @@ const props = defineProps({
     type: String,
     default: '',
   },
+  customerList: {
+    type: Array as PropType<{ label: string; value: string }[]>,
+    default: () => [],
+  },
 });
-const emit = defineEmits(['update:modelValue', 'keyStatusChange']);
-const { proxy } = getCurrentInstance();
-
-// 客户列表
-const customers = [
-  { label: $t('licenseManage.customer.a'), value: 'a' },
-  { label: $t('licenseManage.customer.b'), value: 'b' },
-];
-
+const emit = defineEmits([
+  'update:modelValue',
+  'keyStatusChange',
+  'update:keyId',
+]);
+const customers = computed(() => props.customerList);
+const customersLoading = ref(false);
 const selectedCustomer = ref(props.modelValue || ''); // 当前选中客户
 const keyList = ref<any[]>([]); // 当前客户密钥列表
 const hasKey = ref(false); // 是否有密钥
@@ -34,7 +39,8 @@ const newKeyName = ref(''); // 新密钥名称
 const addKeyLoading = ref(false); // 新增密钥loading
 const addKeySuccess = ref(false); // 新增密钥成功提示
 const keyInputRef = ref(); // 输入框ref
-
+const hoveredKeyId = ref<null | string>(null); // 鼠标悬停的密钥ID
+const selectedKeyId = ref<null | string>(null); // 当前选中的密钥ID
 // 监听外部modelValue变化
 watch(
   () => props.modelValue,
@@ -44,11 +50,10 @@ watch(
   },
   { immediate: true },
 );
-
-// 选择客户时，更新modelValue并拉取密钥
 function onCustomerChange(val: string) {
   emit('update:modelValue', val);
-  fetchKeys(val);
+  selectedKeyId.value = null;
+  emit('update:keyId', null);
   showDialog.value = false;
 }
 
@@ -66,12 +71,12 @@ async function fetchKeys(customerId: string) {
   emit('keyStatusChange', hasKey.value);
 }
 
-// 点击logo按钮，未选客户时弹出提示，否则弹出Dialog
 function onLogoClick() {
   if (!selectedCustomer.value) {
-    proxy?.$message?.warning($t('licenseManage.customer.select'));
+    ElMessage.warning($t('licenseManage.customer.select'));
     return;
   }
+  fetchKeys(selectedCustomer.value);
   showDialog.value = true;
   newKeyName.value = '';
   addKeySuccess.value = false;
@@ -82,10 +87,13 @@ function onLogoClick() {
 
 // 新增密钥
 async function onAddKey() {
-  if (!newKeyName.value || !selectedCustomer.value) return;
+  if (!newKeyName.value || !newKeyName.value.trim() || !selectedCustomer.value)
+    return;
   addKeyLoading.value = true;
   addKeySuccess.value = false;
-  await createCustomerKey(selectedCustomer.value, { name: newKeyName.value });
+  await createCustomerKey(selectedCustomer.value, {
+    keyRemark: newKeyName.value.trim(),
+  });
   addKeyLoading.value = false;
   addKeySuccess.value = true;
   fetchKeys(selectedCustomer.value);
@@ -96,28 +104,43 @@ async function onAddKey() {
   }, 800);
 }
 
-// 切换密钥（这里只做提示，可扩展实际业务）
-function onSwitchKey(key) {
-  proxy?.$message?.success($t('licenseManage.key.switchSuccess') + key.name);
+function onSwitchKey(key: any) {
+  selectedKeyId.value = key.id;
+  emit('update:keyId', key.id);
+  ElMessage.success(
+    $t('licenseManage.key.switchSuccess') + (key.keyRemark || key.name),
+  );
   showDialog.value = false;
 }
 
 // 删除密钥
-async function onDeleteKey(keyId) {
-  await deleteCustomerKey(keyId);
-  fetchKeys(selectedCustomer.value);
+async function onDeleteKey(keyId: string) {
+  try {
+    const success = await deleteCustomerKey(keyId);
+    if (success) {
+      ElMessage.success($t('licenseManage.key.deleteSuccess') || '删除成功');
+      fetchKeys(selectedCustomer.value);
+      if (selectedKeyId.value === keyId) {
+        selectedKeyId.value = null;
+      }
+    } else {
+      ElMessage.error($t('licenseManage.key.deleteFailed') || '删除失败');
+    }
+  } catch {
+    ElMessage.error($t('licenseManage.key.deleteFailed') || '删除失败');
+  }
 }
 </script>
 
 <template>
   <div class="customer-selector">
-    <!-- 客户选择下拉框和密钥按钮同一行 -->
     <div class="customer-row">
       <el-select
         v-model="selectedCustomer"
         :placeholder="$t('licenseManage.customer.select')"
         @change="onCustomerChange"
         clearable
+        :loading="customersLoading"
       >
         <el-option
           v-for="item in customers"
@@ -138,7 +161,7 @@ async function onDeleteKey(keyId) {
     <el-dialog
       v-model="showDialog"
       :title="$t('licenseManage.key.manage')"
-      width="480px"
+      width="360px"
       :close-on-click-modal="false"
       :destroy-on-close="true"
     >
@@ -150,19 +173,14 @@ async function onDeleteKey(keyId) {
           </span>
           <el-input
             v-model="newKeyName"
-            :placeholder="$t('licenseManage.key.inputName')"
+            :placeholder="$t('licenseManage.key.inputRemark')"
             ref="keyInputRef"
             @keyup.enter="onAddKey"
-            style="width: 220px; margin-right: 8px"
+            @blur="onAddKey"
+            style="width: 180px"
+            maxlength="15"
+            show-word-limit
           />
-          <el-button
-            type="primary"
-            size="small"
-            @click="onAddKey"
-            :loading="addKeyLoading"
-          >
-            {{ $t('licenseManage.form.save') }}
-          </el-button>
         </div>
         <!-- 密钥列表 -->
         <div class="key-list-block">
@@ -172,52 +190,45 @@ async function onDeleteKey(keyId) {
           >
             {{ $t('licenseManage.key.empty') }}
           </div>
-          <el-table
-            v-else
-            :data="keyList"
-            border
-            size="small"
-            style="margin-top: 16px"
-          >
-            <el-table-column
-              prop="name"
-              :label="$t('licenseManage.key.name')"
-              min-width="120"
-            />
-            <el-table-column
-              prop="createdAt"
-              :label="$t('licenseManage.key.createdAt')"
-              min-width="120"
-            />
-            <el-table-column
-              :label="$t('licenseManage.actionTitle')"
-              min-width="120"
+          <div v-else class="key-list" style="margin-top: 16px">
+            <div
+              v-for="(key, index) in keyList"
+              :key="key.id || index"
+              class="key-item"
+              :class="{ 'key-item-active': selectedKeyId === key.id }"
+              @dblclick="onSwitchKey(key)"
+              @mouseenter="hoveredKeyId = key.id"
+              @mouseleave="hoveredKeyId = null"
             >
-              <template #default="scope">
-                <div style="display: flex; gap: 2px; align-items: center">
-                  <el-button
-                    size="small"
-                    type="success"
-                    @click="onSwitchKey(scope.row)"
-                  >
-                    {{ $t('licenseManage.key.switch') }}
-                  </el-button>
-                  <el-popconfirm
-                    @confirm="onDeleteKey(scope.row.id)"
-                    :title="$t('licenseManage.key.deleteConfirm')"
-                    :width="180"
-                    popper-class="popconfirm-single-line"
-                  >
-                    <template #reference>
-                      <el-button size="small" type="danger">
-                        {{ $t('licenseManage.action.delete') }}
-                      </el-button>
-                    </template>
-                  </el-popconfirm>
-                </div>
-              </template>
-            </el-table-column>
-          </el-table>
+              <div class="key-info">
+                <span class="key-name">{{
+                  key.keyRemark || key.name || '未命名密钥'
+                }}</span>
+                <span class="key-date">{{
+                  key.keyDate || key.createdAt || '未知时间'
+                }}</span>
+              </div>
+              <div class="key-actions">
+                <el-popconfirm
+                  @confirm="onDeleteKey(key.id)"
+                  :title="$t('licenseManage.key.deleteConfirm')"
+                  :width="180"
+                  popper-class="popconfirm-single-line"
+                  confirm-button-text="确定删除"
+                  cancel-button-text="取消"
+                >
+                  <template #reference>
+                    <el-icon 
+                      class="delete-icon" 
+                      :class="{ 'show': hoveredKeyId === key.id }"
+                    >
+                      <Delete />
+                    </el-icon>
+                  </template>
+                </el-popconfirm>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </el-dialog>
@@ -276,6 +287,7 @@ async function onDeleteKey(keyId) {
 
 .add-key-block {
   display: flex;
+  gap: 12px;
   align-items: center;
   margin-bottom: 16px;
 }
@@ -286,5 +298,81 @@ async function onDeleteKey(keyId) {
 
 .popconfirm-single-line .el-popconfirm__main {
   white-space: nowrap;
+}
+
+/* 密钥列表样式 */
+.key-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.key-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.key-item:hover {
+  background: rgb(64 158 255 / 10%);
+  box-shadow: 0 2px 8px rgb(64 158 255 / 10%);
+}
+
+.key-item-active {
+  background: #f0f9ff;
+  border-color: #409eff;
+  box-shadow: 0 2px 8px rgb(64 158 255 / 15%);
+}
+
+.key-info {
+  display: flex;
+  flex: 1;
+  flex-direction: row;
+  gap: 16px;
+  align-items: center;
+}
+
+.key-name {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: #303133;
+  white-space: nowrap;
+}
+
+.key-date {
+  font-size: 12px;
+  line-height: 1.2;
+  color: #909399;
+  white-space: nowrap;
+}
+
+.key-actions {
+  display: flex;
+  align-items: center;
+  margin-left: 12px;
+}
+
+.delete-icon {
+  font-size: 20px;
+  color: #f56c6c;
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.2s ease;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.delete-icon.show {
+  opacity: 1;
+}
+
+.delete-icon:hover {
+  color: #f56c6c;
+  background: #fef0f0;
 }
 </style>

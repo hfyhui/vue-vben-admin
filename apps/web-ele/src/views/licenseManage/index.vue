@@ -1,7 +1,9 @@
 <script lang="ts" setup>
 import type { VxeGridListeners, VxeGridProps } from '#/adapter/vxe-table';
 
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
+
+import { useVbenModal } from '@vben/common-ui';
 
 import { ElMessage, ElMessageBox } from 'element-plus';
 
@@ -9,10 +11,10 @@ import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import { $t } from '#/locales';
 
 import {
-  batchDeleteLicenseApi,
   createLicenseApi,
   deleteLicenseApi,
   downloadLicenseApi,
+  getCustomerListApi,
   getLicenseDetailApi,
   getLicenseListApi,
   importLicenseApi,
@@ -22,11 +24,18 @@ import LicenseDetail from './components/detail.vue';
 import LicenseForm from './components/form.vue';
 import SearchForm from './components/searchForm.vue';
 
+const searchFormData = ref<any>({});
+
 const selectedRows = ref<any[]>([]);
-const showForm = ref(false);
-const showDetail = ref(false);
 const editData = ref<any>(null);
 const detailData = ref<any>(null);
+const formApiRef = ref<any>(null);
+const showForm = ref(false);
+const showDetail = ref(false);
+
+// 客户列表数据
+const customerList = ref<{ label: string; value: string }[]>([]);
+const customerListLoading = ref(false);
 
 const gridOptions: VxeGridProps<any> = {
   columns: [
@@ -36,41 +45,25 @@ const gridOptions: VxeGridProps<any> = {
       title: $t('licenseManage.search.customerName'),
       minWidth: 150,
     },
-    { field: 'remark', title: $t('licenseManage.form.remark'), minWidth: 150 },
     {
-      field: 'licenseType',
+      field: 'authorizationTypeName',
       title: $t('licenseManage.form.licenseType'),
       minWidth: 100,
-      formatter: ({ cellValue }) => {
-        if (cellValue === 'trial') return $t('licenseManage.form.trial');
-        if (cellValue === 'official') return $t('licenseManage.form.official');
-        return '';
-      },
     },
     {
-      field: 'expireTime',
+      field: 'expirationTime',
       title: $t('licenseManage.form.expireTime'),
       minWidth: 150,
     },
     {
-      field: 'maxConcurrentUsers',
+      field: 'concurrentUsers',
       title: $t('licenseManage.form.maxUsers'),
-      minWidth: 120,
-    },
-    {
-      field: 'fingerprint',
-      title: $t('licenseManage.form.fingerprint'),
-      minWidth: 150,
-    },
-    {
-      field: 'status',
-      title: $t('licenseManage.status'),
       minWidth: 100,
-      formatter: ({ cellValue }) => {
-        if (cellValue === 'normal') return $t('licenseManage.statusNormal');
-        if (cellValue === 'invalid') return $t('licenseManage.statusInvalid');
-        return '';
-      },
+    },
+    {
+      field: 'licenseStatusName',
+      title: $t('licenseManage.status'),
+      minWidth: 80,
     },
     {
       field: 'action',
@@ -93,19 +86,19 @@ const gridOptions: VxeGridProps<any> = {
   },
   proxyConfig: {
     ajax: {
-      query: async ({ page, form }) => {
+      query: async ({ page }) => {
         const res = await getLicenseListApi({
           page: page.currentPage,
           pageSize: page.pageSize,
-          customer: form?.customerName,
-          licenseType: form?.licenseType,
-          // expireTimeRange: form?.expireTimeRange, // 如有需要可加
+          customerName: searchFormData.value?.customerName,
+          authorizationType: searchFormData.value?.authorizationType,
+          expirationTime: searchFormData.value?.expirationTime,
         });
         return res.data;
       },
     },
-    props: {
-      result: 'items',
+    response: {
+      result: 'records',
       total: 'total',
     },
   },
@@ -121,32 +114,87 @@ const [Grid, gridApi] = useVbenVxeGrid({
   gridEvents,
 });
 
+// 获取客户
+async function fetchCustomerList() {
+  customerListLoading.value = true;
+  try {
+    const response = await getCustomerListApi();
+    if (response && response.data) {
+      customerList.value = response.data.map((customer: any) => ({
+        label: customer.customersName,
+        value: customer.customerId,
+      }));
+    }
+  } catch {
+    customerList.value = [];
+  } finally {
+    customerListLoading.value = false;
+  }
+}
+
+const [FormModal, formModalApi] = useVbenModal({
+  title: $t('licenseManage.action.add'),
+  class: 'w-[900px]',
+  closeOnClickModal: false,
+  onCancel: () => formModalApi.close(),
+  contentClass: 'no-modal-scroll',
+  onConfirm: async () => {
+    if (formApiRef.value?.validateAndSubmitForm) {
+      await formApiRef.value.validateAndSubmitForm();
+    }
+  },
+});
+const [DetailModal, detailModalApi] = useVbenModal({
+  title: $t('licenseManage.detail.title'),
+  closeOnClickModal: false,
+  onCancel: () => detailModalApi.close(),
+  showCancelButton: false, // 不显示取消按钮
+  showConfirmButton: false, // 不显示确认按钮
+  contentClass: 'no-modal-scroll', // 新增：去除滚动条
+});
+
 function onAdd() {
   editData.value = null;
   showForm.value = true;
+  formModalApi.open();
 }
 function onEdit(row: any) {
   editData.value = { ...row };
   showForm.value = true;
+  formModalApi.open();
 }
 async function submit(values: any) {
-  if (editData.value && editData.value.id) {
-    await updateLicenseApi(editData.value.id, values);
-    ElMessage.success($t('licenseManage.message.editSuccess'));
-  } else {
-    await createLicenseApi(values);
-    ElMessage.success($t('licenseManage.message.addSuccess'));
+  try {
+    if (editData.value && editData.value.id) {
+      await updateLicenseApi(editData.value.id, values);
+      ElMessage.success($t('licenseManage.message.editSuccess'));
+    } else {
+      await createLicenseApi(values);
+      ElMessage.success($t('licenseManage.message.addSuccess'));
+    }
+    showForm.value = false;
+    formModalApi.close();
+    gridApi.query();
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : '操作失败');
   }
-  showForm.value = false;
-  gridApi.query();
 }
 async function onImportLicense(file: File) {
-  const res = await importLicenseApi(file);
-  if (res.code === 0) {
-    ElMessage.success($t('licenseManage.message.importSuccess'));
-    gridApi.query();
-  } else {
-    ElMessage.error(res.message || $t('licenseManage.message.importFail'));
+  try {
+    const result = await importLicenseApi(file);
+    if (result && result.code === 100_000) {
+      ElMessage.success($t('licenseManage.message.importSuccess'));
+      gridApi.query();
+    } else {
+      const errorMsg = result?.msg || $t('licenseManage.message.importFail');
+      ElMessage.error(errorMsg);
+    }
+  } catch (error) {
+    const errorMsg =
+      error instanceof Error
+        ? error.message
+        : $t('licenseManage.message.importFail');
+    ElMessage.error(errorMsg);
   }
   return false;
 }
@@ -155,49 +203,68 @@ async function onDownload(row: any) {
 }
 async function onView(row: any) {
   try {
-    const res = await getLicenseDetailApi(row.id);
-    if (res.code === 0) {
-      detailData.value = res.data;
-      showDetail.value = true;
-    } else {
-      ElMessage.error(res.message || $t('licenseManage.message.getDetailFail'));
-    }
-  } catch {
-    ElMessage.error($t('licenseManage.message.getDetailFail'));
+    const data = await getLicenseDetailApi(row.id);
+    detailData.value = data;
+    detailModalApi.open();
+  } catch (error) {
+    ElMessage.error(
+      error instanceof Error
+        ? error.message
+        : $t('licenseManage.message.getDetailFail'),
+    );
   }
 }
 async function onDelete(row: any) {
-  await ElMessageBox.confirm(
-    $t('licenseManage.message.deleteConfirm'),
-    $t('licenseManage.title'),
-    {
-      type: 'warning',
-    },
-  );
-  await deleteLicenseApi(row.id);
-  gridApi.query();
-  ElMessage.success($t('licenseManage.message.deleteSuccess'));
+  try {
+    await ElMessageBox.confirm(
+      $t('licenseManage.message.deleteConfirm'),
+      $t('licenseManage.title'),
+      {
+        type: 'warning',
+      },
+    );
+    await deleteLicenseApi(row.id);
+    gridApi.query();
+    ElMessage.success($t('licenseManage.message.deleteSuccess'));
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error(error instanceof Error ? error.message : '删除失败');
+    }
+  }
 }
 async function onBatchDelete() {
   if (selectedRows.value.length === 0) {
     ElMessage.warning($t('licenseManage.message.selectToDelete'));
     return;
   }
-  await ElMessageBox.confirm(
-    $t('licenseManage.message.batchDeleteConfirm'),
-    $t('licenseManage.title'),
-    {
-      type: 'warning',
-    },
-  );
-  const ids = selectedRows.value.map((row) => row.id);
-  await batchDeleteLicenseApi(ids);
-  selectedRows.value = [];
-  gridApi.query();
-  ElMessage.success($t('licenseManage.message.deleteSuccess'));
+
+  try {
+    await ElMessageBox.confirm(
+      $t('licenseManage.message.batchDeleteConfirm'),
+      $t('licenseManage.title'),
+      {
+        type: 'warning',
+      },
+    );
+    const ids = selectedRows.value.map((row) => row.id);
+    await deleteLicenseApi(ids);
+    selectedRows.value = [];
+    gridApi.query();
+    ElMessage.success($t('licenseManage.message.deleteSuccess'));
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error(error instanceof Error ? error.message : '批量删除失败');
+    }
+  }
 }
+
+// 页面初始化时获取客户列表
+onMounted(() => {
+  fetchCustomerList();
+});
 function onSearchForm(values: Record<string, any>) {
-  gridApi.query({ ...values, page: 1 });
+  searchFormData.value = values;
+  gridApi.query();
 }
 </script>
 
@@ -214,7 +281,7 @@ function onSearchForm(values: Record<string, any>) {
       <ElUpload
         :show-file-list="false"
         :before-upload="onImportLicense"
-        accept=".json"
+        accept=".lic"
         style="display: inline-block"
       >
         <ElButton type="primary">
@@ -239,34 +306,36 @@ function onSearchForm(values: Record<string, any>) {
       </template>
     </Grid>
 
-    <ElDialog
-      v-model="showForm"
-      :title="$t('licenseManage.action.add')"
-      width="600px"
-      :close-on-click-modal="false"
-    >
+    <FormModal class="w-[900px]">
       <LicenseForm
+        ref="formApiRef"
         :visible="showForm"
         :model-value="editData"
+        :customer-list="customerList"
         @submit="submit"
-        @update:visible="showForm = $event"
+        @update:visible="
+          (val) => {
+            showForm = val;
+            if (!val) formModalApi.close();
+          }
+        "
       />
-    </ElDialog>
+    </FormModal>
 
-    <ElDialog
-      v-model="showDetail"
-      :title="$t('licenseManage.detail.title')"
-      width="800px"
-      :close-on-click-modal="false"
-    >
+    <DetailModal>
       <LicenseDetail
         :visible="showDetail"
         :data="detailData"
-        @update:visible="showDetail = $event"
+        @update:visible="
+          (val) => {
+            showDetail = val;
+            if (!val) detailModalApi.close();
+          }
+        "
         @download="onDownload"
         @edit="onEdit"
       />
-    </ElDialog>
+    </DetailModal>
   </div>
 </template>
 

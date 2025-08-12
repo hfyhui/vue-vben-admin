@@ -1,91 +1,100 @@
 <script lang="ts" setup>
-import { h, watch } from 'vue';
+import { computed, markRaw, nextTick, watch } from 'vue';
 
 import { useVbenForm } from '#/adapter/form';
 import { $t } from '#/locales';
 
 import ShareholdersTable from './ShareholdersTable.vue';
 
-const props = defineProps<{ modelValue?: any; visible: boolean }>();
+const props = defineProps<{
+  customerTypes?: any[];
+  idTypeOptions?: any[];
+  modelValue?: any;
+  visible: boolean;
+}>();
 const emit = defineEmits(['update:visible', 'submit']);
 
-const idTypeOptions = [
-  $t('customerManage.form.idTypeIdCard'),
-  $t('customerManage.form.idTypeSocialCard'),
-  $t('customerManage.form.idTypeHKMacao'),
-  $t('customerManage.form.idTypeHousehold'),
-  $t('customerManage.form.idTypeOfficer'),
-  $t('customerManage.form.idTypeArmedPolice'),
-  $t('customerManage.form.idTypeVeteran'),
-  $t('customerManage.form.idTypeDisability'),
-  $t('customerManage.form.idTypeLiberiaPassport'),
-  $t('customerManage.form.idTypePassport'),
-  $t('customerManage.form.idTypeHKMacaoMainland'),
-  $t('customerManage.form.idTypeTaiwanMainland'),
-  $t('customerManage.form.idTypePermanentResident'),
-  $t('customerManage.form.idTypeForeignerPermit'),
-].map((label) => ({ label, value: label }));
+const idTypeOptions = computed(
+  () =>
+    props.idTypeOptions?.map((item: any) => ({
+      label: item.content,
+      value: item.name,
+    })) || [],
+);
+
+const customerTypes = computed(
+  () =>
+    props.customerTypes?.map((item: any) => ({
+      label: item.content,
+      value: item.name,
+    })) || [],
+);
 
 const schema = [
   {
     component: 'Input',
-    fieldName: 'name',
+    fieldName: 'customersName',
     label: $t('customerManage.form.name'),
     required: true,
     componentProps: {
       placeholder: $t('customerManage.form.namePlaceholder'),
       maxlength: 50,
+      style: {
+        width: '340px',
+      },
     },
     rules: 'required',
   },
   {
     component: 'RadioGroup',
-    fieldName: 'type',
+    fieldName: 'customersType',
     label: $t('customerManage.form.type'),
-    defaultValue: 'company',
+    defaultValue: 'COMPANY',
     componentProps: {
-      options: [
-        { label: $t('customerManage.types.company'), value: 'company' },
-        { label: $t('customerManage.types.org'), value: 'org' },
-        { label: $t('customerManage.types.person'), value: 'person' },
-      ],
+      options: customerTypes,
     },
   },
   {
     component: 'Input',
-    fieldName: 'creditCode',
+    fieldName: 'unifiedSocialCreditCode',
     label: $t('customerManage.form.creditCode'),
     componentProps: {
       placeholder: $t('customerManage.form.creditCodePlaceholder'),
       maxlength: 20,
+      style: {
+        width: '340px',
+      },
     },
     dependencies: {
       show(values: any) {
-        return values && values.type === 'company';
+        return values && values.customersType === 'COMPANY';
       },
-      triggerFields: ['type'],
+      triggerFields: ['customersType'],
     },
   },
   {
     component: 'Input',
-    fieldName: 'legalName',
+    fieldName: 'legalPerson',
     label: $t('customerManage.form.legalName'),
     required: true,
     componentProps: {
       placeholder: $t('customerManage.form.legalNamePlaceholder'),
       maxlength: 20,
+      style: {
+        width: '340px',
+      },
     },
     dependencies: {
       show(values: any) {
-        return values && values.type === 'company';
+        return values && values.customersType === 'COMPANY';
       },
-      triggerFields: ['type'],
+      triggerFields: ['customersType'],
     },
     rules: 'required',
   },
   {
     component: 'Select',
-    fieldName: 'legalIdType',
+    fieldName: 'legalPersonIdType',
     label: $t('customerManage.form.legalIdType'),
     required: true,
     componentProps: {
@@ -93,65 +102,60 @@ const schema = [
       options: idTypeOptions,
       filterable: true,
       clearable: true,
+      style: {
+        width: '340px',
+      },
     },
     dependencies: {
       show(values: any) {
-        return values && values.type === 'company';
+        return values && values.customersType === 'COMPANY';
       },
-      triggerFields: ['type'],
+      triggerFields: ['customersType'],
     },
     rules: 'required',
   },
   {
     component: 'Input',
-    fieldName: 'legalIdNo',
+    fieldName: 'legalPersonIdNumber',
     label: $t('customerManage.form.legalIdNo'),
     required: true,
     componentProps: {
-      placeholder: $t('customerManage.form.legalIdNoPlaceholder'),
+      placeholder: $t('customerManage.form.legalIdNo'),
       maxlength: 20,
+      style: {
+        width: '340px',
+      },
     },
     dependencies: {
       show(values: any) {
-        return values && values.type === 'company';
+        return values && values.customersType === 'COMPANY';
       },
-      triggerFields: ['type'],
+      triggerFields: ['customersType'],
     },
     rules: 'required',
   },
-  {
-    component: h(ShareholdersTable),
-    fieldName: 'shareholders',
-    label: $t('customerManage.form.shareholders'),
-    defaultValue: [],
-    componentProps: {
-      idTypeOptions,
-    },
-    dependencies: {
-      show(values: any) {
-        return values && values.type === 'company';
-      },
-      triggerFields: ['type'],
-    },
-  },
+
   {
     component: 'Input',
-    fieldName: 'personalCode',
+    fieldName: 'individualBusinessLicenseCode',
     label: $t('customerManage.form.personalCode'),
     componentProps: {
       placeholder: $t('customerManage.form.personalCodePlaceholder'),
       maxlength: 20,
+      style: {
+        width: '340px',
+      },
     },
     dependencies: {
       show(values: any) {
-        return values && values.type === 'org';
+        return values && values.customersType === 'ORGANIZATION';
       },
-      triggerFields: ['type'],
+      triggerFields: ['customersType'],
     },
   },
   {
     component: 'Select',
-    fieldName: 'personIdType',
+    fieldName: 'personalIdType',
     label: $t('customerManage.form.personIdType'),
     required: true,
     componentProps: {
@@ -159,31 +163,52 @@ const schema = [
       options: idTypeOptions,
       filterable: true,
       clearable: true,
+      style: {
+        width: '340px',
+      },
     },
     dependencies: {
       show(values: any) {
-        return values && values.type === 'person';
+        return values && values.customersType === 'PERSONAL';
       },
-      triggerFields: ['type'],
+      triggerFields: ['customersType'],
     },
     rules: 'required',
   },
   {
     component: 'Input',
-    fieldName: 'personIdNo',
+    fieldName: 'personalIdNumber',
     label: $t('customerManage.form.personIdNo'),
     required: true,
     componentProps: {
       placeholder: $t('customerManage.form.personIdNoPlaceholder'),
       maxlength: 20,
+      style: {
+        width: '340px',
+      },
     },
     dependencies: {
       show(values: any) {
-        return values && values.type === 'person';
+        return values && values.customersType === 'PERSONAL';
       },
-      triggerFields: ['type'],
+      triggerFields: ['customersType'],
     },
     rules: 'required',
+  },
+  {
+    component: markRaw(ShareholdersTable),
+    fieldName: 'shareholderInfos',
+    label: $t('customerManage.form.shareholders'),
+    defaultValue: [],
+    componentProps: {
+      idTypeOptions,
+    },
+    dependencies: {
+      show(values: any) {
+        return values && values.customersType === 'COMPANY';
+      },
+      triggerFields: ['customersType'],
+    },
   },
 ];
 
@@ -192,6 +217,8 @@ const [Form, formApi] = useVbenForm({
   wrapperClass: 'grid-cols-1',
   commonConfig: {
     labelWidth: 126,
+    showMessage: false,
+    showFeedback: false,
   },
   resetButtonOptions: {
     content: $t('customerManage.form.cancel'),
@@ -206,49 +233,48 @@ const [Form, formApi] = useVbenForm({
 watch(
   () => props.modelValue,
   (val) => {
-    if (val) {
-      if (formApi.setFieldValue) {
-        Object.keys(val).forEach((key) => {
-          // 特殊处理股东信息数组
-          if (key === 'shareholders' && Array.isArray(val[key])) {
-            formApi.setFieldValue(key, val[key]);
-          } else {
-            formApi.setFieldValue(key, val[key]);
-          }
-        });
-      } else if (formApi.setValues) {
-        formApi.setValues(val);
-      }
+    if (val && Object.keys(val).length > 0) {
+      nextTick(() => {
+        if (formApi.setValues) {
+          formApi.setValues(val);
+        } else if (formApi.setFieldValue) {
+          Object.keys(val).forEach((key) => {
+            // 特殊处理股东信息数组
+            if (key === 'shareholderInfos' && Array.isArray(val[key])) {
+              formApi.setFieldValue(key, val[key]);
+            } else {
+              formApi.setFieldValue(key, val[key]);
+            }
+          });
+        }
+      });
     } else {
       if (formApi.resetForm) {
         formApi.resetForm();
       }
     }
   },
-  { immediate: true },
+  { immediate: true, deep: true },
+);
+
+// 监听 visible 变化，当表单关闭时重置表单
+watch(
+  () => props.visible,
+  (visible) => {
+    if (!visible && formApi.resetForm) {
+      // 表单关闭时重置表单
+      nextTick(() => {
+        formApi.resetForm();
+      });
+    }
+  },
 );
 
 function handleSubmit(values: any) {
-  // 验证股东信息
-  if (values.type === 'company' && values.shareholders) {
-    // 过滤掉空的股东信息
-    values.shareholders = values.shareholders.filter(
-      (shareholder: any) =>
-        shareholder.name && shareholder.idType && shareholder.idNo,
-    );
-  }
-
   emit('submit', values);
   emit('update:visible', false);
 }
 function handleReset() {
-  if (formApi.resetForm) {
-    formApi.resetForm();
-    emit('update:visible', false);
-  }
-}
-
-function onDialogClose() {
   if (formApi.resetForm) {
     formApi.resetForm();
   }
@@ -257,16 +283,12 @@ function onDialogClose() {
 </script>
 
 <template>
-  <ElDialog
-    :model-value="props.visible"
-    :title="
-      props.modelValue && props.modelValue.id
-        ? $t('customerManage.form.edit')
-        : $t('customerManage.form.add')
-    "
-    width="940px"
-    @close="onDialogClose"
-  >
+  <div>
     <Form />
-  </ElDialog>
+  </div>
 </template>
+<style scoped>
+:deep(.pb-6) {
+  padding-bottom:20px !important;
+}
+</style>

@@ -16,6 +16,9 @@
     "delete": "Delete"
   },
   "actionTitle": "Action",
+  "status": "Status",
+  "statusNormal": "Normal",
+  "statusInvalid": "Invalid",
   "form": {
     "customer": "Customer",
     "apps": "Authorized Apps",
@@ -27,7 +30,16 @@
     "save": "Save",
     "cancel": "Cancel",
     "trial": "Trial",
-    "official": "Official"
+    "official": "Official",
+    "licenseName": "License Name",
+    "licenseCode": "License Code",
+    "version": "Version",
+    "description": "Description",
+    "contactInfo": "Contact Info",
+    "company": "Company Name",
+    "email": "Email Address",
+    "phone": "Phone Number",
+    "address": "Address"
   },
   "detail": {
     "title": "License Detail",
@@ -55,10 +67,13 @@
     "manage": "Key Management",
     "add": "Add Key",
     "inputName": "Please enter key name",
+    "inputRemark": "Please enter key description",
     "addSuccess": "Key added successfully!",
     "switch": "Switch",
     "switchSuccess": "Switched key: ",
     "deleteConfirm": "Are you sure to delete this key?",
+    "deleteSuccess": "Key deleted successfully!",
+    "deleteFailed": "Key deletion failed!",
     "empty": "No key yet, please add first.",
     "name": "Key Name",
     "createdAt": "Created At"
