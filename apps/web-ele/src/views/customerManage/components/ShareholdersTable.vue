@@ -40,6 +40,43 @@ const addShareholder = () => {
   shareholders.value.push(newShareholder);
 };
 
+// 校验股东信息是否完整
+const validateShareholders = () => {
+  if (shareholders.value.length === 0) {
+    return false;
+  }
+  
+  return shareholders.value.every(shareholder => 
+    shareholder.shareholderName && 
+    shareholder.shareholderIdType && 
+    shareholder.shareholderIdNumber
+  );
+};
+
+// 获取校验错误信息
+const getValidationErrors = () => {
+  const errors: string[] = [];
+  
+  if (shareholders.value.length === 0) {
+    errors.push($t('customerManage.message.addShareholders'));
+    return errors;
+  }
+  
+  shareholders.value.forEach((shareholder, index) => {
+    if (!shareholder.shareholderName) {
+      errors.push(`第${index + 1}行股东姓名不能为空`);
+    }
+    if (!shareholder.shareholderIdType) {
+      errors.push(`第${index + 1}行证件类型不能为空`);
+    }
+    if (!shareholder.shareholderIdNumber) {
+      errors.push(`第${index + 1}行证件号码不能为空`);
+    }
+  });
+  
+  return errors;
+};
+
 // 删除股东
 const removeShareholder = (index: number) => {
   shareholders.value.splice(index, 1);
@@ -75,6 +112,8 @@ defineExpose({
   addShareholder,
   removeShareholder,
   updateShareholder,
+  validateShareholders,
+  getValidationErrors,
 });
 </script>
 
@@ -91,11 +130,18 @@ defineExpose({
         :label="$t('customerManage.shareholder.name')"
         width="150"
       >
+        <template #header>
+          <span class="required-field">
+            {{ $t('customerManage.shareholder.name') }}
+            <span class="required-star">*</span>
+          </span>
+        </template>
         <template #default="{ row, $index }">
           <el-input
             v-model="row.shareholderName"
             :placeholder="$t('customerManage.shareholder.namePlaceholder')"
             maxlength="20"
+            :class="{ 'is-error': !row.shareholderName }"
             @input="
               (value) => updateShareholder($index, 'shareholderName', value)
             "
@@ -107,6 +153,12 @@ defineExpose({
         :label="$t('customerManage.shareholder.idType')"
         width="150"
       >
+        <template #header>
+          <span class="required-field">
+            {{ $t('customerManage.shareholder.idType') }}
+            <span class="required-star">*</span>
+          </span>
+        </template>
         <template #default="{ row, $index }">
           <el-select
             v-model="row.shareholderIdType"
@@ -114,6 +166,7 @@ defineExpose({
             style="width: 100%"
             filterable
             clearable
+            :class="{ 'is-error': !row.shareholderIdType }"
             @change="
               (value) => updateShareholder($index, 'shareholderIdType', value)
             "
@@ -132,11 +185,18 @@ defineExpose({
         :label="$t('customerManage.shareholder.idNo')"
         width="150"
       >
+        <template #header>
+          <span class="required-field">
+            {{ $t('customerManage.shareholder.idNo') }}
+            <span class="required-star">*</span>
+          </span>
+        </template>
         <template #default="{ row, $index }">
           <el-input
             v-model="row.shareholderIdNumber"
             :placeholder="$t('customerManage.shareholder.idNoPlaceholder')"
             maxlength="20"
+            :class="{ 'is-error': !row.shareholderIdNumber }"
             @input="
               (value) =>
                 updateShareholder($index, 'shareholderIdNumber', value)
@@ -190,5 +250,37 @@ defineExpose({
 /* 操作按钮间距 */
 .el-button + .el-button {
   margin-left: 4px;
+}
+
+/* 必填字段错误状态样式 */
+.is-error {
+  border-color: #f56c6c !important;
+}
+
+.is-error .el-input__inner {
+  border-color: #f56c6c !important;
+}
+
+.is-error .el-select .el-input__inner {
+  border-color: #f56c6c !important;
+}
+
+/* 必填字段标签样式 */
+.el-table .el-table__header .cell {
+  color: #303133;
+}
+
+/* 必填字段样式 */
+.required-field {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 红色星号样式 */
+.required-star {
+  color: #f56c6c;
+  font-weight: bold;
+  font-size: 14px;
 }
 </style>

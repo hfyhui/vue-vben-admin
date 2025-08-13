@@ -68,7 +68,9 @@
     "selectDelete": "Please select customers to delete first",
     "deleteSuccess": "Delete successful",
     "editSuccess": "Edit successful",
-    "addSuccess": "Add successful"
+    "addSuccess": "Add successful",
+    "addShareholders": "Please add shareholder information",
+    "completeShareholders": "Please complete shareholder information, all fields are required"
   },
   "types": {
     "company": "Company",

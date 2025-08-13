@@ -3,6 +3,7 @@ import { computed, markRaw, nextTick, watch } from 'vue';
 
 import { useVbenForm } from '#/adapter/form';
 import { $t } from '#/locales';
+import { ElMessage } from 'element-plus';
 
 import ShareholdersTable from './ShareholdersTable.vue';
 
@@ -270,7 +271,29 @@ watch(
   },
 );
 
-function handleSubmit(values: any) {  emit('submit', values);
+function handleSubmit(values: any) {
+  // 校验股东信息：如果客户类型为公司，股东信息不能为空
+  if (values.customersType === 'COMPANY') {
+    const shareholderInfos = values.shareholderInfos;
+    if (!shareholderInfos || !Array.isArray(shareholderInfos) || shareholderInfos.length === 0) {
+      ElMessage.warning($t('customerManage.message.addShareholders'));
+      return;
+    }
+    
+    // 检查每个股东信息的必填字段
+    const incompleteShareholders = shareholderInfos.filter(shareholder => 
+      !shareholder.shareholderName || 
+      !shareholder.shareholderIdType || 
+      !shareholder.shareholderIdNumber
+    );
+    
+    if (incompleteShareholders.length > 0) {
+      ElMessage.warning($t('customerManage.message.completeShareholders'));
+      return;
+    }
+  }
+  
+  emit('submit', values);
   emit('update:visible', false);
 }
 function handleReset() {

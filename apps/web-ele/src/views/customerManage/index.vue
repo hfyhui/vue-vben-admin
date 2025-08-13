@@ -167,7 +167,6 @@ async function onEdit(row: any) {
     showForm.value = true;
   } catch (error) {
     console.error('获取客户详情失败:', error);
-    ElMessage.error('获取客户详情失败');
   }
 }
 async function onDelete(row: any) {
@@ -180,7 +179,6 @@ async function onDelete(row: any) {
     ElMessage.success('删除成功');
   } catch (error) {
     console.error('删除失败:', error);
-    ElMessage.error('删除失败');
   }
 }
 async function onBatchDelete() {
@@ -196,9 +194,7 @@ async function onBatchDelete() {
     await batchDeleteCustomerApi(ids);
     selectedRows.value = [];
     gridApi.query();
-    ElMessage.success('删除成功');
   } catch {
-    ElMessage.error('批量删除失败');
   }
 }
 async function submit(values: any) {

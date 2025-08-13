@@ -68,7 +68,9 @@
     "selectDelete": "请先选择要删除的客户",
     "deleteSuccess": "删除成功",
     "editSuccess": "编辑成功",
-    "addSuccess": "新增成功"
+    "addSuccess": "新增成功",
+    "addShareholders": "请添加股东信息",
+    "completeShareholders": "请完善股东信息，所有字段都是必填的"
   },
   "types": {
     "company": "公司",
