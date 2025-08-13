@@ -1,117 +1,107 @@
-<script lang="ts" setup>
-import { ref } from 'vue';
+<!--
+ * @Author: 小妹 cuiling.liu@callfanai.com
+ * @Date: 2025-07-31 16:07:34
+ * @LastEditors: 小妹 cuiling.liu@callfanai.com
+ * @LastEditTime: 2025-08-12 10:58:05
+ * @FilePath: \workSpace\vben-web\apps\web-ele\src\views\productList\index.vue
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+-->
+<script setup lang="ts">
+import { onMounted, ref } from 'vue';
 
-import { Page } from '@vben/common-ui';
+import { getProductTreeApi, syncSsoAppApi } from '#/api/core/license';
+import { $t } from '#/locales';
 
-import {
-  ElButton,
-  ElCard,
-  ElMessage,
-  ElNotification,
-  ElSegmented,
-  ElSpace,
-  ElTable,
-} from 'element-plus';
-
-type NotificationType = 'error' | 'info' | 'success' | 'warning';
-
-function info() {
-  ElMessage.info('How many roads must a man walk down');
+declare global {
+  const ElMessage: any;
 }
 
-function error() {
-  ElMessage.error({
-    duration: 2500,
-    message: 'Once upon a time you dressed so fine',
-  });
+interface ProductTreeItem {
+  menuId: string;
+  menuName: string;
+  parentId: string;
+  hierarchy: number;
+  children: ProductTreeItem[];
 }
 
-function warning() {
-  ElMessage.warning('How many roads must a man walk down');
-}
-function success() {
-  ElMessage.success(
-    'Cause you walked hand in hand With another man in my place',
-  );
+const data = ref<ProductTreeItem[]>([]);
+const loading = ref(false);
+const syncLoading = ref(false);
+
+// 获取产品清单树形结构
+async function fetchProductTree() {
+  try {
+    loading.value = true;
+    const productTree = await getProductTreeApi();
+    data.value = productTree;
+  } catch {
+    ElMessage.error('获取产品清单失败');
+  } finally {
+    loading.value = false;
+  }
 }
 
-function notify(type: NotificationType) {
-  ElNotification({
-    duration: 2500,
-    message: '说点啥呢',
-    type,
-  });
+// 同步 SSO 应用
+async function handleSync() {
+  try {
+    syncLoading.value = true;
+    const success = await syncSsoAppApi();
+    if (success) {
+      ElMessage.success('同步 SSO 应用成功');
+      await fetchProductTree();
+    } else {
+      ElMessage.error('同步 SSO 应用失败');
+    }
+  } catch {
+    ElMessage.error('同步失败');
+  } finally {
+    syncLoading.value = false;
+  }
 }
-const tableData = [
-  { prop1: '1', prop2: 'A' },
-  { prop1: '2', prop2: 'B' },
-  { prop1: '3', prop2: 'C' },
-  { prop1: '4', prop2: 'D' },
-  { prop1: '5', prop2: 'E' },
-  { prop1: '6', prop2: 'F' },
-];
 
-const segmentedValue = ref('Mon');
-
-const segmentedOptions = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+// 组件挂载时获取产品清单
+onMounted(() => {
+  fetchProductTree();
+});
 </script>
 
 <template>
-  <Page
-    description="支持多语言，主题功能集成切换等"
-    title="Element Plus组件使用演示"
-  >
-    <div class="flex flex-wrap gap-5">
-      <ElCard class="mb-5 w-auto">
-        <template #header> 按钮 </template>
-        <ElSpace>
-          <ElButton text>Text</ElButton>
-          <ElButton>Default</ElButton>
-          <ElButton type="primary"> Primary </ElButton>
-          <ElButton type="info"> Info </ElButton>
-          <ElButton type="success"> Success </ElButton>
-          <ElButton type="warning"> Warning </ElButton>
-          <ElButton type="danger"> Error </ElButton>
-        </ElSpace>
-      </ElCard>
-      <ElCard class="mb-5 w-80">
-        <template #header> Message </template>
-        <ElSpace>
-          <ElButton type="info" @click="info"> 信息 </ElButton>
-          <ElButton type="danger" @click="error"> 错误 </ElButton>
-          <ElButton type="warning" @click="warning"> 警告 </ElButton>
-          <ElButton type="success" @click="success"> 成功 </ElButton>
-        </ElSpace>
-      </ElCard>
-      <ElCard class="mb-5 w-80">
-        <template #header> Notification </template>
-        <ElSpace>
-          <ElButton type="info" @click="notify('info')"> 信息 </ElButton>
-          <ElButton type="danger" @click="notify('error')"> 错误 </ElButton>
-          <ElButton type="warning" @click="notify('warning')"> 警告 </ElButton>
-          <ElButton type="success" @click="notify('success')"> 成功 </ElButton>
-        </ElSpace>
-      </ElCard>
-      <ElCard class="mb-5 w-auto">
-        <template #header> Segmented </template>
-        <ElSegmented
-          v-model="segmentedValue"
-          :options="segmentedOptions"
-          size="large"
-        />
-      </ElCard>
-      <ElCard class="mb-5 w-80">
-        <template #header> V-Loading </template>
-        <div class="flex size-72 items-center justify-center" v-loading="true">
-          一些演示的内容
-        </div>
-      </ElCard>
-      <ElCard class="mb-5 w-80">
-        <ElTable :data="tableData" stripe>
-          <ElTable.TableColumn label="测试列1" prop="prop1" />
-          <ElTable.TableColumn label="测试列2" prop="prop2" />
-        </ElTable>
-      </ElCard>
-    </div>
-  </Page>
+  <div style="padding: 24px">
+    <el-button
+      type="primary"
+      :loading="syncLoading"
+      @click="handleSync"
+      style="margin-bottom: 16px"
+    >
+      {{ $t('productList.sync') }}
+    </el-button>
+
+    <el-card v-loading="loading">
+      <template #header>
+        <span>产品清单</span>
+      </template>
+
+      <el-tree
+        v-if="data.length > 0"
+        :data="data"
+        node-key="menuId"
+        default-expand-all
+        :expand-on-click-node="false"
+        highlight-current
+        style="width: 100%"
+      >
+        <template #default="{ data: treeData }">
+          <span>{{ treeData.menuName }}</span>
+        </template>
+      </el-tree>
+
+      <el-empty v-else description="暂无产品数据" />
+    </el-card>
+  </div>
 </template>
+
+<style scoped>
+.mt-4 {
+  margin-top: 16px;
+}
+</style>
