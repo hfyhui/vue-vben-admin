@@ -64,19 +64,14 @@ export async function getLicenseListApi(
   params: LicenseQueryParams,
 ): Promise<{ data: PageResponse<LicenseInfo> }> {
   const response = await proxyClient.post('/license/page', params);
-  return response.data;
+  return response.data
 }
 
 export async function createLicenseApi(
   data: LicenseCreateParams,
 ): Promise<LicenseInfo> {
   const response = await proxyClient.post('/license/save', data);
-  if (response.data && response.data.code === 100000) {
-    return response.data.data || response.data;
-  } else {
-    const errorMsg = response.data?.msg || '创建失败';
-    throw new Error(errorMsg);
-  }
+  return response.data 
 }
 
 export async function updateLicenseApi(
@@ -84,12 +79,7 @@ export async function updateLicenseApi(
   data: Partial<LicenseCreateParams>,
 ): Promise<LicenseInfo> {
   const response = await proxyClient.put(`/license/${id}`, data);
-  if (response.data && response.data.code === 100000) {
-    return response.data.data || response.data;
-  } else {
-    const errorMsg = response.data?.msg || '更新失败';
-    throw new Error(errorMsg);
-  }
+  return response.data 
 }
 
 export async function deleteLicenseApi(ids: string | string[]): Promise<void> {
@@ -99,23 +89,12 @@ export async function deleteLicenseApi(ids: string | string[]): Promise<void> {
   } else {
     response = await proxyClient.delete('/license/delete', { data: { ids: [ids] } });
   }
-  if (response.data && response.data.code === 100000) {
-    return;
-  } else {
-    const errorMsg = response.data?.msg || '删除失败';
-    throw new Error(errorMsg);
-  }
+  return response;
 }
 
 export async function getLicenseDetailApi(id: string): Promise<LicenseInfo> {
   const response = await proxyClient.get(`/license/${id}`);
-
-  if (response.data && response.data.code === 100000) {
-    return response.data.data || response.data;
-  } else {
-    const errorMsg = response.data?.msg || '获取详情失败';
-    throw new Error(errorMsg);
-  }
+  return response.data 
 }
 
 export async function importLicenseApi(file: File): Promise<any> {
@@ -127,12 +106,7 @@ export async function importLicenseApi(file: File): Promise<any> {
         'Content-Type': 'multipart/form-data',
       },
     });
-    if (response.data && response.data.code === 100000) {
-      return response.data;
-    } else {
-      const errorMsg = response.data?.msg || '导入失败';
-      throw new Error(errorMsg);
-    }
+    return response;
   } catch (error) {
     if (error instanceof Error) {
       throw error;
@@ -169,9 +143,7 @@ export interface CustomerListQueryParams {
 export async function getCustomerListApi() {
   try {
     const response = await proxyClient.post('/license/customer/list');
-    if (response && response.data.code === 100000) {
-      return response.data;
-    }
+    return response;
   } catch (error) {
     return [];
   }
@@ -211,21 +183,14 @@ export interface KeyListResponse {
 }
 
 // 查询密钥列表接口
-export async function getKeyListApi(
-  params: KeyListQueryParams,
-): Promise<KeyListResponse> {
+export async function getKeyListApi(params: KeyListQueryParams){
   return await proxyClient.post<KeyListResponse>('/license/key/list', params);
 }
 
-export async function getCustomerKeys(
-  customerId: string,
-): Promise<CustomerKey[]> {
+export async function getCustomerKeys(customerId: string){
   try {
-    const response = await getKeyListApi({ customerId });
-    if (response && response.data && response.data.code === 100000) {
-      return response.data.data;
-    }
-    return [];
+    const response = await getKeyListApi({ customerId: customerId });
+    return response.data
   } catch {
     return [];
   }
@@ -246,10 +211,7 @@ export async function createCustomerKey(
     keyRemark: keyData.name || keyData.keyRemark,
   };
   const response = await proxyClient.post('/license/key/generate', params);
-  if (response && response.data && response.data.code === 100000) {
-    return response.data.data;
-  }
-  throw new Error('创建密钥失败');
+  return response.data;
 }
 
 export async function deleteCustomerKey(keyId: string): Promise<boolean> {
@@ -257,10 +219,7 @@ export async function deleteCustomerKey(keyId: string): Promise<boolean> {
     const response = await proxyClient.delete(`/license/key/delete`, {
       data: { keyId },
     });
-    if (response && response.data && response.data.code === 100000) {
-      return true;
-    }
-    return false;
+    return true;
   } catch {
     return false;
   }
@@ -271,10 +230,7 @@ export async function getKeyDetail(
 ): Promise<CustomerKey | undefined> {
   try {
     const response = await proxyClient.get(`/license/key/detail/${keyId}`);
-    if (response && response.data && response.data.code === 100000) {
-      return response.data.data;
-    }
-    return undefined;
+    return response.data;
   } catch {
     return undefined;
   }
@@ -289,10 +245,7 @@ export async function switchCustomerKey(
       customerId,
       keyId,
     });
-    if (response && response.data && response.data.code === 100000) {
-      return true;
-    }
-    return false;
+    return true;
   } catch {
     return false;
   }
@@ -302,10 +255,7 @@ export async function switchCustomerKey(
 export async function getProductTreeApi(): Promise<ProductTreeItem[]> {
   try {
     const response = await proxyClient.get('/license/product/tree');
-    if (response && response.data && response.data.code === 100000) {
-      return response.data.data;
-    }
-    return [];
+    return response.data;
   } catch {
     return [];
   }
@@ -315,10 +265,7 @@ export async function getProductTreeApi(): Promise<ProductTreeItem[]> {
 export async function syncSsoAppApi(): Promise<boolean> {
   try {
     const response = await proxyClient.get('/license/sync/app');
-    if (response && response.data && response.data.code === 100000) {
-      return true;
-    }
-    return false;
+    return true;
   } catch {
     return false;
   }

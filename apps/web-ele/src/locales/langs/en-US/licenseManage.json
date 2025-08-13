@@ -56,7 +56,8 @@
     "deleteSuccess": "Delete succeeded",
     "batchDeleteConfirm": "Are you sure to delete selected licenses?",
     "selectToDelete": "Please select licenses to delete",
-    "getDetailFail": "Failed to get details"
+    "getDetailFail": "Failed to get details",
+    "genKeyTip": "Please generate certificate key first"
   },
   "customer": {
     "a": "Customer A",

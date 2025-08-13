@@ -178,6 +178,38 @@ proxyClient.addRequestInterceptor({
   },
 });
 
+// 为 proxyClient 添加响应拦截器，统一处理错误码
+proxyClient.addResponseInterceptor({
+  fulfilled: (response) => {
+    const { data: responseData, status } = response;
+    console.log('response',response)
+    
+    if (status >= 200 && status < 400) {
+      // 检查响应数据中的code字段
+      if (responseData && typeof responseData === 'object' && 'code' in responseData) {
+        const { code, msg } = responseData;
+        // 100000表示成功
+        if (code === 100000) {
+          return responseData;
+        }
+        ElMessage.error(msg);
+        // 抛出错误，让调用方处理
+        return Promise.reject(responseData);
+      }
+      // 如果没有code字段，直接返回数据
+      return responseData;
+    }
+    
+    return response;
+  },
+  rejected: (error) => {
+    // 处理网络错误等异常情况
+    const errorMessage = error?.response?.data?.msg || '网络请求失败';
+    ElMessage.error(errorMessage);
+    return Promise.reject(error);
+  },
+});
+
 // 保持向后兼容
 export const requestClient = apiClient;
 

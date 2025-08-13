@@ -32,8 +32,8 @@ const searchForm = ref({
 const loadDictData = async () => {
   try {
     const res = await getDictApi();
-    customerTypes.value = res.data.data.LICENSE_CUSTOMER_TYPE?.children || [];
-    idTypeOptions.value = res.data.data.CERTIFICATE_TYPE?.children || [];
+    customerTypes.value = res.data.LICENSE_CUSTOMER_TYPE?.children || [];
+    idTypeOptions.value = res.data.CERTIFICATE_TYPE?.children || [];
     dictLoaded.value = true;
   } catch {}
 };
@@ -107,7 +107,7 @@ const gridOptions: VxeGridProps<any> = {
           customersName: form?.customersName || searchForm.value.customersName,
           customersType: form?.customersType || searchForm.value.customersType,
         });
-        return res.data.data;
+        return res.data
       },
     },
     response: {
@@ -151,7 +151,7 @@ async function onView(row: any) {
   try {
     // 调用详情接口获取完整数据
     const res = await getCustomerDetailApi(row.id);
-    viewData.value = res.data.data;
+    viewData.value = res.data;
     showViewForm.value = true;
   } catch (error) {
     console.error('获取客户详情失败:', error);
@@ -163,7 +163,7 @@ async function onEdit(row: any) {
   try {
     // 调用详情接口获取完整数据
     const res = await getCustomerDetailApi(row.id);
-    editData.value = res.data.data;
+    editData.value = res.data;
     showForm.value = true;
   } catch (error) {
     console.error('获取客户详情失败:', error);

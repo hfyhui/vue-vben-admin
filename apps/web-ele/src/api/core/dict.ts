@@ -7,7 +7,6 @@ export interface DictItem {
   children?: DictItem[];
 }
 
-// 根据实际数据结构定义
 export interface DictDataItem {
   name: string;
   content: string;

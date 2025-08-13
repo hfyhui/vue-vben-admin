@@ -65,7 +65,7 @@ export async function getCustomerListApi(params: CustomerQueryParams): Promise<{
       records: CustomerInfo[];
       size: number;
       total: number;
-    };
+    }
   };
   message: string;
 }> {

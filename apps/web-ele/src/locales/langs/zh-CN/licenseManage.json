@@ -56,7 +56,8 @@
     "deleteSuccess": "删除成功",
     "batchDeleteConfirm": "确定要删除选中的license吗？",
     "selectToDelete": "请先选择要删除的license",
-    "getDetailFail": "获取详情失败"
+    "getDetailFail": "获取详情失败",
+    "genKeyTip": "请先生成证书密钥"
   },
   "customer": {
     "a": "客户A",

@@ -29,6 +29,7 @@ const emit = defineEmits([
   'keyStatusChange',
   'update:keyId',
 ]);
+
 const customers = computed(() => props.customerList);
 const customersLoading = ref(false);
 const selectedCustomer = ref(props.modelValue || ''); // 当前选中客户
@@ -65,7 +66,8 @@ async function fetchKeys(customerId: string) {
     emit('keyStatusChange', false);
     return;
   }
-  const keys = await getCustomerKeys(customerId);
+  const response = await getCustomerKeys(customerId);
+  const keys = Array.isArray(response) ? response : response?.data || [];
   keyList.value = keys;
   hasKey.value = keys.length > 0;
   emit('keyStatusChange', hasKey.value);

@@ -155,7 +155,7 @@ watch(
 );
 
 function handleSubmit(values: any) {
-  if (!customerKeyStatus.value) {
+  if (!selectedKeyId.value) {
     ElMessage.warning(
       $t('licenseManage.message.genKeyTip') || '请先生成证书密钥',
     );

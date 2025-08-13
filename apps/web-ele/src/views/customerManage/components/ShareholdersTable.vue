@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { ref, watch } from 'vue';
-import { Edit, Delete, Check, Close } from '@element-plus/icons-vue';
+import { Delete } from '@element-plus/icons-vue';
 
 import { $t } from '#/locales';
 
@@ -24,7 +24,6 @@ watch(
       newVal && Array.isArray(newVal)
         ? newVal.map((item) => ({
             ...item,
-            isEditing: false,
           }))
         : [];
   },
@@ -37,7 +36,6 @@ const addShareholder = () => {
     shareholderName: '',
     shareholderIdType: '',
     shareholderIdNumber: '',
-    isEditing: true, // 新增时直接进入编辑模式
   };
   shareholders.value.push(newShareholder);
 };
@@ -48,8 +46,11 @@ const removeShareholder = (index: number) => {
   emitChange();
 };
 
+// 更新股东信息时直接触发数据变化
 const updateShareholder = (index: number, field: string, value: any) => {
   shareholders.value[index][field] = value;
+  // 输入时直接传给后端数据
+  emitChange();
 };
 
 // 根据证件类型值获取对应的标签
@@ -58,42 +59,11 @@ const getLabelByValue = (value: string) => {
   return option ? option.label : value;
 };
 
-const editRow = (index: number) => {
-  shareholders.value[index].isEditing = true;
-};
-
-const saveRow = (index: number) => {
-  shareholders.value[index].isEditing = false;
-  // 过滤掉空的股东信息
-  const validShareholders = shareholders.value.filter(
-    (shareholder) =>
-      shareholder.shareholderName &&
-      shareholder.shareholderIdType &&
-      shareholder.shareholderIdNumber,
-  );
-  shareholders.value = validShareholders;
-  emitChange();
-};
-
-const cancelRow = (index: number) => {
-  shareholders.value[index].isEditing = false;
-  // 恢复原始数据
-  shareholders.value[index] =
-    props.modelValue && Array.isArray(props.modelValue)
-      ? {
-          ...props.modelValue[index],
-          isEditing: false,
-        }
-      : {
-          ...shareholders.value[index],
-          isEditing: false,
-        };
-};
-
 // 触发数据变化事件
 const emitChange = () => {
+  // 保留所有股东信息，包括不完整的，让父组件在提交时进行验证
   const cleanShareholders = shareholders.value.map(
-    ({ id: _id, isEditing: _isEditing, ...rest }) => rest,
+    ({ id: _id, ...rest }) => rest,
   );
   emit('update:modelValue', cleanShareholders);
   emit('change', cleanShareholders);
@@ -105,9 +75,6 @@ defineExpose({
   addShareholder,
   removeShareholder,
   updateShareholder,
-  editRow,
-  saveRow,
-  cancelRow,
 });
 </script>
 
@@ -125,19 +92,14 @@ defineExpose({
         width="150"
       >
         <template #default="{ row, $index }">
-          <template v-if="row.isEditing">
-            <el-input
-              v-model="row.shareholderName"
-              :placeholder="$t('customerManage.shareholder.namePlaceholder')"
-              maxlength="20"
-              @input="
-                (value) => updateShareholder($index, 'shareholderName', value)
-              "
-            />
-          </template>
-          <template v-else>
-            <span>{{ row.shareholderName || '-' }}</span>
-          </template>
+          <el-input
+            v-model="row.shareholderName"
+            :placeholder="$t('customerManage.shareholder.namePlaceholder')"
+            maxlength="20"
+            @input="
+              (value) => updateShareholder($index, 'shareholderName', value)
+            "
+          />
         </template>
       </el-table-column>
 
@@ -146,28 +108,23 @@ defineExpose({
         width="150"
       >
         <template #default="{ row, $index }">
-          <template v-if="row.isEditing">
-            <el-select
-              v-model="row.shareholderIdType"
-              :placeholder="$t('customerManage.shareholder.idTypePlaceholder')"
-              style="width: 100%"
-              filterable
-              clearable
-              @change="
-                (value) => updateShareholder($index, 'shareholderIdType', value)
-              "
-            >
-              <el-option
-                v-for="option in idTypeOptions"
-                :key="option.value"
-                :label="option.label"
-                :value="option.value"
-              />
-            </el-select>
-          </template>
-          <template v-else>
-            <span>{{ getLabelByValue(row.shareholderIdType) || '-' }}</span>
-          </template>
+          <el-select
+            v-model="row.shareholderIdType"
+            :placeholder="$t('customerManage.shareholder.idTypePlaceholder')"
+            style="width: 100%"
+            filterable
+            clearable
+            @change="
+              (value) => updateShareholder($index, 'shareholderIdType', value)
+            "
+          >
+            <el-option
+              v-for="option in idTypeOptions"
+              :key="option.value"
+              :label="option.label"
+              :value="option.value"
+            />
+          </el-select>
         </template>
       </el-table-column>
 
@@ -176,20 +133,15 @@ defineExpose({
         width="150"
       >
         <template #default="{ row, $index }">
-          <template v-if="row.isEditing">
-            <el-input
-              v-model="row.shareholderIdNumber"
-              :placeholder="$t('customerManage.shareholder.idNoPlaceholder')"
-              maxlength="20"
-              @input="
-                (value) =>
-                  updateShareholder($index, 'shareholderIdNumber', value)
-              "
-            />
-          </template>
-          <template v-else>
-            <span>{{ row.shareholderIdNumber || '-' }}</span>
-          </template>
+          <el-input
+            v-model="row.shareholderIdNumber"
+            :placeholder="$t('customerManage.shareholder.idNoPlaceholder')"
+            maxlength="20"
+            @input="
+              (value) =>
+                updateShareholder($index, 'shareholderIdNumber', value)
+            "
+          />
         </template>
       </el-table-column>
 
@@ -197,39 +149,14 @@ defineExpose({
         :label="$t('customerManage.shareholder.action')"
         width="100"
       >
-        <template #default="{ row, $index }">
-          <template v-if="row.isEditing">
-            <el-button
-              type="success"
-              size="small"
-              :icon="Check"
-              circle
-              @click="saveRow($index)"
-            />
-            <el-button
-              type="info"
-              size="small"
-              :icon="Close"
-              circle
-              @click="cancelRow($index)"
-            />
-          </template>
-          <template v-else>
-            <el-button
-              type="primary"
-              size="small"
-              :icon="Edit"
-              circle
-              @click="editRow($index)"
-            />
-            <el-button
-              type="danger"
-              size="small"
-              :icon="Delete"
-              circle
-              @click="removeShareholder($index)"
-            />
-          </template>
+        <template #default="{ $index }">
+          <el-button
+            type="danger"
+            size="small"
+            :icon="Delete"
+            circle
+            @click="removeShareholder($index)"
+          />
         </template>
       </el-table-column>
     </el-table>
@@ -237,7 +164,6 @@ defineExpose({
 </template>
 
 <style scoped>
-
 .table-header {
   display: flex;
   align-items: center;

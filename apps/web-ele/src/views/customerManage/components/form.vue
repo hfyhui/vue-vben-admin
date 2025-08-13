@@ -270,8 +270,7 @@ watch(
   },
 );
 
-function handleSubmit(values: any) {
-  emit('submit', values);
+function handleSubmit(values: any) {  emit('submit', values);
   emit('update:visible', false);
 }
 function handleReset() {

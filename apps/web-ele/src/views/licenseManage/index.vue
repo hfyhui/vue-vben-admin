@@ -93,14 +93,14 @@ const gridOptions: VxeGridProps<any> = {
           expirationTimes = searchFormData.value.expirationTimes;
         }
         
-        const res = await getLicenseListApi({
+        const data = await getLicenseListApi({
           page: page.currentPage,
           pageSize: page.pageSize,
           customerName: searchFormData.value?.customerName,
           authorizationType: searchFormData.value?.authorizationType,
           expirationTimes,
         });
-        return res.data;
+        return data;
       },
     },
     response: {
