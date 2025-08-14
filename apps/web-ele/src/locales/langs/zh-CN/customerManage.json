@@ -41,6 +41,7 @@
     "shareholders": "股东信息",
     "personalCode": "个体工商经营者代码",
     "personalCodePlaceholder": "请输入个体工商经营者代码",
+    "individualBusinessLicenseCode": "个体工商营业执照代码",
     "personIdType": "证件类型",
     "personIdTypePlaceholder": "请选择证件类型",
     "personIdNo": "证件号码",

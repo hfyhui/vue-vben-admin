@@ -66,6 +66,7 @@ const schema = [
         width: '340px',
       },
     },
+    rules: 'required',
     dependencies: {
       show(values: any) {
         return values && values.customersType === 'COMPANY';
@@ -121,7 +122,7 @@ const schema = [
     label: $t('customerManage.form.legalIdNo'),
     required: true,
     componentProps: {
-      placeholder: $t('customerManage.form.legalIdNo'),
+      placeholder: $t('customerManage.form.legalIdNoPlaceholder'),
       maxlength: 20,
       style: {
         width: '340px',
