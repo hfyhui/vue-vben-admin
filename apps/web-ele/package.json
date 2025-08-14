@@ -16,11 +16,11 @@
   },
   "type": "module",
   "scripts": {
-    "build": "vite build --mode production",
-    "build:dev": "vite build --mode development",
-    "build:analyze": "vite build --mode analyze",
-    "dev": "vite --mode development",
-    "preview": "vite preview",
+    "build": "pnpm build --mode production",
+    "build:dev": "pnpm build --mode development",
+    "build:analyze": "pnpm build --mode analyze",
+    "dev": "pnpm --mode development",
+    "preview": "pnpm preview",
     "typecheck": "vue-tsc --noEmit --skipLibCheck"
   },
   "imports": {
