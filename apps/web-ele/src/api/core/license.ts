@@ -116,20 +116,23 @@ export async function importLicenseApi(file: File): Promise<any> {
 }
 
 export async function downloadLicenseApi(id: string): Promise<void> {
-  const response = await proxyClient.get(`/license/download/${id}`, {
-    responseType: 'blob',
-  });
-
-  // 创建下载链接
-  const blob = new Blob([response.data], { type: 'application/octet-stream' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `license_${id}.lic`;
-  document.body.append(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
+  try {
+    // 使用 request client 的 download 方法
+    const blob = await proxyClient.download(`/license/download/${id}`);
+    
+    // 创建下载链接
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `license.lic`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('下载失败:', error);
+    throw new Error('下载失败');
+  }
 }
 
 export interface CustomerListQueryParams {
@@ -249,6 +252,29 @@ export async function switchCustomerKey(
   } catch {
     return false;
   }
+}
+
+// 下载密钥文件
+export async function downloadKeyApi(keyId: string): Promise<void> {
+  try {
+    // 使用 request client 的 download 方法
+    const blob = await proxyClient.download(`/license/key/download?keyId=${keyId}`);
+    
+    // 创建下载链接
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `key.pem`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('密钥下载失败:', error);
+    throw new Error('密钥下载失败');
+  }
+
+  
 }
 
 // 获取产品清单树形结构

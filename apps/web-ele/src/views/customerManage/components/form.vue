@@ -141,6 +141,7 @@ const schema = [
     component: 'Input',
     fieldName: 'individualBusinessLicenseCode',
     label: $t('customerManage.form.personalCode'),
+    required: true,
     componentProps: {
       placeholder: $t('customerManage.form.personalCodePlaceholder'),
       maxlength: 20,
@@ -154,6 +155,7 @@ const schema = [
       },
       triggerFields: ['customersType'],
     },
+    rules: 'required',
   },
   {
     component: 'Select',
@@ -218,9 +220,7 @@ const [Form, formApi] = useVbenForm({
   schema,
   wrapperClass: 'grid-cols-1',
   commonConfig: {
-    labelWidth: 126,
-    showMessage: false,
-    showFeedback: false,
+    labelWidth: 150,
   },
   resetButtonOptions: {
     content: $t('customerManage.form.cancel'),
