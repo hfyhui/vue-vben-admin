@@ -2,7 +2,7 @@
  * @Author: 小妹 cuiling.liu@callfanai.com
  * @Date: 2025-07-31 16:07:34
  * @LastEditors: 小妹 cuiling.liu@callfanai.com
- * @LastEditTime: 2025-08-12 10:58:05
+ * @LastEditTime: 2025-08-14 17:07:29
  * @FilePath: \workSpace\vben-web\apps\web-ele\src\views\productList\index.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -11,10 +11,7 @@ import { onMounted, ref } from 'vue';
 
 import { getProductTreeApi, syncSsoAppApi } from '#/api/core/license';
 import { $t } from '#/locales';
-
-declare global {
-  const ElMessage: any;
-}
+import { ElMessage, ElMessageBox } from 'element-plus';
 
 interface ProductTreeItem {
   menuId: string;
@@ -46,6 +43,7 @@ async function handleSync() {
   try {
     syncLoading.value = true;
     const success = await syncSsoAppApi();
+    console.log('success', success);
     if (success) {
       ElMessage.success('同步 SSO 应用成功');
       await fetchProductTree();

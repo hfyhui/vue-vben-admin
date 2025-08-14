@@ -41,6 +41,7 @@
     "shareholders": "Shareholders Info",
     "personalCode": "Individual Business Code",
     "personalCodePlaceholder": "Please enter individual business code",
+    "individualBusinessLicenseCode": "Individual Business License Code",
     "personIdType": "ID Type",
     "personIdTypePlaceholder": "Please select ID type",
     "personIdNo": "ID Number",

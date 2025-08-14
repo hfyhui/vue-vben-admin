@@ -12,6 +12,7 @@ import {
   createCustomerKey,
   deleteCustomerKey,
   getCustomerKeys,
+  downloadKeyApi
 } from '../../../api/core/license';
 
 const props = defineProps({
@@ -132,31 +133,6 @@ async function onDeleteKey(keyId: string) {
     ElMessage.error($t('licenseManage.key.deleteFailed') || '删除失败');
   }
 }
-
-// 下载密钥
-async function onDownloadKey(keyId: string) {
-  try {
-    // 创建下载链接
-    const downloadUrl = `/license/key/download?keyId=${keyId}`;
-    
-    // 创建一个临时的 a 标签来触发下载
-    const link = document.createElement('a');
-    link.href = downloadUrl;
-    link.download = `key_${keyId}.pem`; // 设置下载文件名
-    link.style.display = 'none';
-    
-    // 添加到 DOM 并触发点击
-    document.body.appendChild(link);
-    link.click();
-    
-    // 清理临时元素
-    document.body.removeChild(link);
-    
-    ElMessage.success('下载成功');
-  } catch (error) {
-    ElMessage.error('下载失败');
-  }
-}
 </script>
 
 <template>
@@ -188,7 +164,7 @@ async function onDownloadKey(keyId: string) {
     <el-dialog
       v-model="showDialog"
       :title="$t('licenseManage.key.add')"
-      width="360px"
+      width="420px"
       :close-on-click-modal="false"
       :destroy-on-close="true"
     >
@@ -236,7 +212,7 @@ async function onDownloadKey(keyId: string) {
                 <el-icon 
                   class="download-icon" 
                   :class="{ 'show': hoveredKeyId === key.id }"
-                  @click="onDownloadKey(key.id)"
+                  @click="downloadKeyApi(key.id)"
                   title="下载密钥"
                 >
                   <Download />

@@ -20,6 +20,11 @@ const [SearchForm, formApi] = useVbenForm({
         placeholder:
           $t('customerManage.search.customerName') || '请输入客户名称',
         style: 'width: 180px;',
+        onKeyup: (e: KeyboardEvent) => {
+          if (e.key === 'Enter') {
+            formApi?.submitForm();
+          }
+        },
       },
     },
     {
