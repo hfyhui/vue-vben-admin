@@ -164,7 +164,7 @@ async function onDeleteKey(keyId: string) {
     <el-dialog
       v-model="showDialog"
       :title="$t('licenseManage.key.add')"
-      width="360px"
+      width="420px"
       :close-on-click-modal="false"
       :destroy-on-close="true"
     >

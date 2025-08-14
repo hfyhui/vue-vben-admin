@@ -290,7 +290,7 @@ export async function getProductTreeApi(): Promise<ProductTreeItem[]> {
 // 同步 SSO 应用
 export async function syncSsoAppApi(): Promise<boolean> {
   try {
-    const response = await proxyClient.get('/license/sync/app');
+    await proxyClient.get('/license/sync/app');
     return true;
   } catch {
     return false;
