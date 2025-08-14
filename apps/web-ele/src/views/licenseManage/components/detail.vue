@@ -95,13 +95,10 @@ function handleClose() {
 
       <ElDescriptionsItem :label="$t('licenseManage.status')">
         <ElTag
-          :type="actualData?.licenseStatus === 'VALID' ? 'success' : 'danger'"
           size="small"
         >
           {{
-            actualData?.licenseStatus === 'VALID'
-              ? $t('licenseManage.statusNormal')
-              : $t('licenseManage.statusInvalid')
+            actualData?.authorizationTypeName || '-'
           }}
         </ElTag>
       </ElDescriptionsItem>

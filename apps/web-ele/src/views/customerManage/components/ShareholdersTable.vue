@@ -38,6 +38,8 @@ const addShareholder = () => {
     shareholderIdNumber: '',
   };
   shareholders.value.push(newShareholder);
+  // 新增股东后立即触发数据变化，让父组件知道有股东信息需要校验
+  emitChange();
 };
 
 // 校验股东信息是否完整
@@ -131,9 +133,12 @@ defineExpose({
         width="150"
       >
         <template #header>
-          <span class="required-field">
+          <span class="required-field" v-if="shareholders.length > 0">
             {{ $t('customerManage.shareholder.name') }}
             <span class="required-star">*</span>
+          </span>
+          <span v-else>
+            {{ $t('customerManage.shareholder.name') }}
           </span>
         </template>
         <template #default="{ row, $index }">
@@ -141,7 +146,7 @@ defineExpose({
             v-model="row.shareholderName"
             :placeholder="$t('customerManage.shareholder.namePlaceholder')"
             maxlength="20"
-            :class="{ 'is-error': !row.shareholderName }"
+            :class="{ 'is-error': shareholders.length > 0 && !row.shareholderName }"
             @input="
               (value) => updateShareholder($index, 'shareholderName', value)
             "
@@ -154,9 +159,12 @@ defineExpose({
         width="150"
       >
         <template #header>
-          <span class="required-field">
+          <span class="required-field" v-if="shareholders.length > 0">
             {{ $t('customerManage.shareholder.idType') }}
             <span class="required-star">*</span>
+          </span>
+          <span v-else>
+            {{ $t('customerManage.shareholder.idType') }}
           </span>
         </template>
         <template #default="{ row, $index }">
@@ -166,7 +174,7 @@ defineExpose({
             style="width: 100%"
             filterable
             clearable
-            :class="{ 'is-error': !row.shareholderIdType }"
+            :class="{ 'is-error': shareholders.length > 0 && !row.shareholderIdType }"
             @change="
               (value) => updateShareholder($index, 'shareholderIdType', value)
             "
@@ -186,9 +194,12 @@ defineExpose({
         width="150"
       >
         <template #header>
-          <span class="required-field">
+          <span class="required-field" v-if="shareholders.length > 0">
             {{ $t('customerManage.shareholder.idNo') }}
             <span class="required-star">*</span>
+          </span>
+          <span v-else>
+            {{ $t('customerManage.shareholder.idNo') }}
           </span>
         </template>
         <template #default="{ row, $index }">
@@ -196,7 +207,7 @@ defineExpose({
             v-model="row.shareholderIdNumber"
             :placeholder="$t('customerManage.shareholder.idNoPlaceholder')"
             maxlength="20"
-            :class="{ 'is-error': !row.shareholderIdNumber }"
+            :class="{ 'is-error': shareholders.length > 0 && !row.shareholderIdNumber }"
             @input="
               (value) =>
                 updateShareholder($index, 'shareholderIdNumber', value)

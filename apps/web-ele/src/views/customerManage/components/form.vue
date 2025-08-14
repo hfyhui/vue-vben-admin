@@ -273,25 +273,34 @@ watch(
 );
 
 function handleSubmit(values: any) {
-  // 校验股东信息：如果客户类型为公司，股东信息不能为空
+  console.log('提交的表单数据:', values);
+  console.log('股东信息:', values.shareholderInfos);
+  
+  // 校验股东信息：如果客户类型为公司，且股东信息数组存在且有内容，则校验必填
   if (values.customersType === 'COMPANY') {
     const shareholderInfos = values.shareholderInfos;
-    if (!shareholderInfos || !Array.isArray(shareholderInfos) || shareholderInfos.length === 0) {
-      ElMessage.warning($t('customerManage.message.addShareholders'));
-      return;
-    }
     
-    // 检查每个股东信息的必填字段
-    const incompleteShareholders = shareholderInfos.filter(shareholder => 
-      !shareholder.shareholderName || 
-      !shareholder.shareholderIdType || 
-      !shareholder.shareholderIdNumber
-    );
-    
-    if (incompleteShareholders.length > 0) {
-      ElMessage.warning($t('customerManage.message.completeShareholders'));
-      return;
+    // 只有当股东信息数组存在且有内容时才进行校验
+    if (shareholderInfos && Array.isArray(shareholderInfos) && shareholderInfos.length > 0) {
+      console.log('开始校验股东信息，股东数量:', shareholderInfos.length);
+      
+      // 检查每个股东信息的必填字段
+      const incompleteShareholders = shareholderInfos.filter(shareholder => 
+        !shareholder.shareholderName || 
+        !shareholder.shareholderIdType || 
+        !shareholder.shareholderIdNumber
+      );
+      
+      console.log('不完整的股东信息:', incompleteShareholders);
+      
+      if (incompleteShareholders.length > 0) {
+        ElMessage.warning($t('customerManage.message.completeShareholders'));
+        return;
+      }
+    } else {
+      console.log('没有股东信息，跳过校验');
     }
+    // 如果没有股东信息，则不进行校验，允许提交
   }
   
   emit('submit', values);

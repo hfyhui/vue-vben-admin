@@ -71,7 +71,7 @@
     "editSuccess": "编辑成功",
     "addSuccess": "新增成功",
     "addShareholders": "请添加股东信息",
-    "completeShareholders": "请完善股东信息，所有字段都是必填的"
+    "completeShareholders": "请完善股东信息"
   },
   "types": {
     "company": "公司",
