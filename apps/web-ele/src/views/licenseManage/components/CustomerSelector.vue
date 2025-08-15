@@ -331,9 +331,11 @@ async function onDeleteKey(keyId: string) {
 }
 
 .key-item-active {
-  background: #f0f9ff;
-  border-color: #409eff;
-  box-shadow: 0 2px 8px rgb(64 158 255 / 15%);
+  background: #409eff;
+  /* border: 1px solid #409eff; */
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgb(64 158 255 / 20%);
+  /* color: #1890ff; */
 }
 
 .key-info {
