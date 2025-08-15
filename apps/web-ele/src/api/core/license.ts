@@ -17,6 +17,7 @@ export interface LicenseInfo {
   customerId?: string;
   customerName?: string;
   authorizationType?: 'OFFICIALLY' | 'TRIAL';
+  licenseStatusName: string;
   expirationTimes?: string[];
   features?: object;
   concurrentUsers?: number;
@@ -36,12 +37,14 @@ export interface LicenseQueryParams {
   customerId?: string;
   customerName?: string;
   authorizationType?: 'OFFICIALLY' | 'TRIAL';
+  licenseStatusName: string;
   expirationTimes?: string[];
 }
 
 export interface LicenseCreateParams {
   customerId?: string;
   authorizationType?: 'OFFICIALLY' | 'TRIAL';
+  licenseStatusName: string;
   expirationTimes?: string[];
   features?: object;
   concurrentUsers?: number;
