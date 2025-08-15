@@ -51,6 +51,7 @@ const editData = ref<any>(null);
 const viewData = ref<any>(null);
 
 const gridOptions: VxeGridProps<any> = {
+  minHeight: '50px',
   columns: [
     // 使用通用函数创建跨分页选
     createCrossPageSelectionColumn({ width: 50, align: 'center' }),
@@ -113,9 +114,7 @@ const gridOptions: VxeGridProps<any> = {
           customersName: form?.customersName || searchForm.value.customersName,
           customersType: form?.customersType || searchForm.value.customersType,
         });
-        
-        // 使用自定义选中组件，不需要复杂的状态恢复逻辑
-        
+
         return res.data
       },
     },
@@ -159,7 +158,8 @@ function onSearch(values?: any) {
   if (values) {
     searchForm.value = values;
   }
-  gridApi.query();
+  // 搜索时重置到第一页
+  gridApi.reload();
 }
 function onAdd() {
   editData.value = null;
