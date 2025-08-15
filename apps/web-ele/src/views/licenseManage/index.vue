@@ -418,4 +418,8 @@ function onSearchForm(values: Record<string, any>) {
   padding: 0 8px;
   font-size: 14px;
 }
+
+:deep(.el-overlay) {
+  border-radius: 7px !important;
+}
 </style>
