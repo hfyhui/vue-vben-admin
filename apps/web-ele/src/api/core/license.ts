@@ -63,7 +63,14 @@ export interface PageResponse<T = any> {
 export async function getLicenseListApi(
   params: LicenseQueryParams,
 ): Promise<{ data: PageResponse<LicenseInfo> }> {
-  const response = await proxyClient.post('/license/page', params);
+  // 适配参数
+  const { page, pageSize, ...rest } = params;
+  const reqParams = {
+    current: page,
+    size: pageSize,
+    ...rest,
+  };
+  const response = await proxyClient.post('/license/page', reqParams);
   return response.data
 }
 

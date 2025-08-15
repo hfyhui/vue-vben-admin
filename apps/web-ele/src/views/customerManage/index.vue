@@ -27,6 +27,20 @@ const customerTypes = ref<any[]>([]);
 const idTypeOptions = ref<any[]>([]);
 const dictLoaded = ref(false);
 
+// 加载字典数据
+const loadDictData = async () => {
+  try {
+    const res = await getDictApi(['LICENSE_CUSTOMER_TYPE', 'CERTIFICATE_TYPE']);
+    customerTypes.value = res.data.LICENSE_CUSTOMER_TYPE?.children || [];
+    idTypeOptions.value = res.data.CERTIFICATE_TYPE?.children || [];
+    dictLoaded.value = true;
+  } catch {
+    // 即使加载失败也显示搜索表单
+    dictLoaded.value = true;
+  }
+};
+loadDictData();
+
 const searchForm = ref({
   customersName: '',
   customersType: '',
@@ -38,7 +52,7 @@ const viewData = ref<any>(null);
 
 const gridOptions: VxeGridProps<any> = {
   columns: [
-    // 使用通用函数创建跨分页选择列
+    // 使用通用函数创建跨分页选
     createCrossPageSelectionColumn({ width: 50, align: 'center' }),
     {
       field: 'customersName',

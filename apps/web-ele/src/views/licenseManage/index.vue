@@ -266,6 +266,7 @@ async function onBatchDelete() {
     
     const ids = selectedRowIds.value;
     await deleteLicenseApi(ids);
+    
     // 清空跨分页选中状态
     clearAllSelection();
     gridApi.query();
