@@ -98,7 +98,7 @@ function handleClose() {
           size="small"
         >
           {{
-            actualData?.authorizationTypeName || '-'
+            actualData?.licenseStatusName || '-'
           }}
         </ElTag>
       </ElDescriptionsItem>
