@@ -23,10 +23,11 @@ import {
 import LicenseDetail from './components/detail.vue';
 import LicenseForm from './components/form.vue';
 import SearchForm from './components/searchForm.vue';
+import { useCrossPageSelection, createCrossPageSelectionColumn } from '../../composables/useCrossPageSelection';
+import CrossPageCheckbox from '../../components/CrossPageSelection/CrossPageCheckbox.vue';
 
 const searchFormData = ref<any>({});
 
-const selectedRows = ref<any[]>([]);
 const editData = ref<any>(null);
 const detailData = ref<any>(null);
 const formApiRef = ref<any>(null);
@@ -39,7 +40,8 @@ const customerListLoading = ref(false);
 
 const gridOptions: VxeGridProps<any> = {
   columns: [
-    { type: 'checkbox', width: 50, align: 'center' },
+    // 使用通用函数创建跨分页选择列
+    createCrossPageSelectionColumn({ width: 50, align: 'center' }),
     {
       field: 'customerName',
       title: $t('licenseManage.search.customerName'),
@@ -110,15 +112,24 @@ const gridOptions: VxeGridProps<any> = {
   },
 };
 
-const gridEvents: VxeGridListeners<any> = {
-  'checkbox-all': ({ records }) => (selectedRows.value = records),
-  'checkbox-change': ({ records }) => (selectedRows.value = records),
-};
+const gridEvents: VxeGridListeners<any> = {};
 
 const [Grid, gridApi] = useVbenVxeGrid({
   gridOptions,
   gridEvents,
 });
+
+// 使用通用跨分页选择功能
+const {
+  selectedRowIds,
+  checkboxKey,
+  isRowSelected,
+  toggleRowSelection,
+  toggleAllCurrentPage,
+  isAllCurrentPageSelected,
+  isCurrentPageIndeterminate,
+  clearAllSelection,
+} = useCrossPageSelection(ref(gridApi));
 
 // 获取客户
 async function fetchCustomerList() {
@@ -239,24 +250,26 @@ async function onDelete(row: any) {
   }
 }
 async function onBatchDelete() {
-  if (selectedRows.value.length === 0) {
+  if (selectedRowIds.value.length === 0) {
     ElMessage.warning($t('licenseManage.message.selectToDelete'));
     return;
   }
 
   try {
     await ElMessageBox.confirm(
-      $t('licenseManage.message.batchDeleteConfirm'),
+      `${$t('licenseManage.message.batchDeleteConfirm')}（已选中 ${selectedRowIds.value.length} 项）`,
       $t('licenseManage.title'),
       {
         type: 'warning',
       },
     );
-    const ids = selectedRows.value.map((row) => row.id);
+    
+    const ids = selectedRowIds.value;
     await deleteLicenseApi(ids);
-    selectedRows.value = [];
+    // 清空跨分页选中状态
+    clearAllSelection();
     gridApi.query();
-    ElMessage.success($t('licenseManage.message.deleteSuccess'));
+    ElMessage.success(`${$t('licenseManage.message.deleteSuccess')}（删除了 ${ids.length} 项）`);
   } catch (error) {
     if (error !== 'cancel') {
       ElMessage.error(error instanceof Error ? error.message : '批量删除失败');
@@ -299,6 +312,31 @@ function onSearchForm(values: Record<string, any>) {
       </ElButton>
     </div>
     <Grid>
+      <!-- 跨分页选择框 - 行级 -->
+      <template #crossPageCheckbox="{ row }">
+        <CrossPageCheckbox
+          :row="row"
+          :is-row-selected="isRowSelected"
+          :toggle-row-selection="toggleRowSelection"
+          :toggle-all-current-page="toggleAllCurrentPage"
+          :is-all-current-page-selected="isAllCurrentPageSelected"
+          :is-current-page-indeterminate="isCurrentPageIndeterminate"
+          :checkbox-key="checkboxKey"
+        />
+      </template>
+      
+      <!-- 跨分页选择框 - 表头 -->
+      <template #crossPageCheckboxHeader>
+        <CrossPageCheckbox
+          :is-row-selected="isRowSelected"
+          :toggle-row-selection="toggleRowSelection"
+          :toggle-all-current-page="toggleAllCurrentPage"
+          :is-all-current-page-selected="isAllCurrentPageSelected"
+          :is-current-page-indeterminate="isCurrentPageIndeterminate"
+          :checkbox-key="checkboxKey"
+        />
+      </template>
+      
       <template #action="{ row }">
         <ElButton type="text" @click="onDownload(row)">
           {{ $t('licenseManage.action.download') }}

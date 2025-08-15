@@ -20,6 +20,8 @@ import { getDictApi } from '../../api/core/dict';
 import CustomerForm from './components/form.vue';
 import SearchForm from './components/searchForm.vue';
 import CustomerViewForm from './components/viewForm.vue';
+import { useCrossPageSelection, createCrossPageSelectionColumn } from '../../composables/useCrossPageSelection';
+import CrossPageCheckbox from '../../components/CrossPageSelection/CrossPageCheckbox.vue';
 
 const customerTypes = ref<any[]>([]);
 const idTypeOptions = ref<any[]>([]);
@@ -29,17 +31,6 @@ const searchForm = ref({
   customersName: '',
   customersType: '',
 });
-const loadDictData = async () => {
-  try {
-    const res = await getDictApi();
-    customerTypes.value = res.data.LICENSE_CUSTOMER_TYPE?.children || [];
-    idTypeOptions.value = res.data.CERTIFICATE_TYPE?.children || [];
-    dictLoaded.value = true;
-  } catch {}
-};
-loadDictData();
-const selectedRows = ref<any[]>([]);
-
 const showForm = ref(false);
 const showViewForm = ref(false);
 const editData = ref<any>(null);
@@ -47,7 +38,8 @@ const viewData = ref<any>(null);
 
 const gridOptions: VxeGridProps<any> = {
   columns: [
-    { type: 'checkbox', width: 50, align: 'center' },
+    // 使用通用函数创建跨分页选择列
+    createCrossPageSelectionColumn({ width: 50, align: 'center' }),
     {
       field: 'customersName',
       title: $t('customerManage.table.customerName'),
@@ -107,6 +99,9 @@ const gridOptions: VxeGridProps<any> = {
           customersName: form?.customersName || searchForm.value.customersName,
           customersType: form?.customersType || searchForm.value.customersType,
         });
+        
+        // 使用自定义选中组件，不需要复杂的状态恢复逻辑
+        
         return res.data
       },
     },
@@ -117,15 +112,34 @@ const gridOptions: VxeGridProps<any> = {
   },
 };
 
-const gridEvents: VxeGridListeners<any> = {
-  'checkbox-all': ({ records }) => (selectedRows.value = records),
-  'checkbox-change': ({ records }) => (selectedRows.value = records),
-};
+
+
+
+
+const gridEvents: VxeGridListeners<any> = {};
+
+
+
+
 
 const [Grid, gridApi] = useVbenVxeGrid({
   gridOptions,
   gridEvents,
 });
+
+// 使用通用跨分页选择功能
+const {
+  selectedRowIds,
+  checkboxKey,
+  selectedCount,
+  hasSelection,
+  isRowSelected,
+  toggleRowSelection,
+  toggleAllCurrentPage,
+  isAllCurrentPageSelected,
+  isCurrentPageIndeterminate,
+  clearAllSelection,
+} = useCrossPageSelection(ref(gridApi));
 
 function onSearch(values?: any) {
   if (values) {
@@ -182,19 +196,29 @@ async function onDelete(row: any) {
   }
 }
 async function onBatchDelete() {
-  if (selectedRows.value.length === 0) {
+  if (selectedRowIds.value.length === 0) {
     ElMessage.warning('请先选择要删除的客户');
     return;
   }
   try {
-    await ElMessageBox.confirm('确定要删除选中的客户吗？', '提示', {
-      type: 'warning',
-    });
-    const ids = selectedRows.value.map((row) => row.id);
+    await ElMessageBox.confirm(
+      `确定要删除选中的 ${selectedRowIds.value.length} 个客户吗？`, 
+      '批量删除确认', 
+      {
+        type: 'warning',
+      }
+    );
+    
+    const ids = selectedRowIds.value;
     await batchDeleteCustomerApi(ids);
-    selectedRows.value = [];
+    
+    // 清空跨分页选中状态
+    clearAllSelection();
+    
     gridApi.query();
+    ElMessage.success(`成功删除 ${ids.length} 个客户`);
   } catch {
+    // 用户取消或删除失败
   }
 }
 async function submit(values: any) {
@@ -229,6 +253,31 @@ async function submit(values: any) {
       </ElButton>
     </div>
     <Grid>
+      <!-- 跨分页选择框 - 行级 -->
+      <template #crossPageCheckbox="{ row }">
+        <CrossPageCheckbox
+          :row="row"
+          :is-row-selected="isRowSelected"
+          :toggle-row-selection="toggleRowSelection"
+          :toggle-all-current-page="toggleAllCurrentPage"
+          :is-all-current-page-selected="isAllCurrentPageSelected"
+          :is-current-page-indeterminate="isCurrentPageIndeterminate"
+          :checkbox-key="checkboxKey"
+        />
+      </template>
+      
+      <!-- 跨分页选择框 - 表头 -->
+      <template #crossPageCheckboxHeader>
+        <CrossPageCheckbox
+          :is-row-selected="isRowSelected"
+          :toggle-row-selection="toggleRowSelection"
+          :toggle-all-current-page="toggleAllCurrentPage"
+          :is-all-current-page-selected="isAllCurrentPageSelected"
+          :is-current-page-indeterminate="isCurrentPageIndeterminate"
+          :checkbox-key="checkboxKey"
+        />
+      </template>
+      
       <template #certificateCode="{ row }">
         <span>
           {{ row.certificateCode }}
@@ -309,4 +358,6 @@ async function submit(values: any) {
   padding: 0 8px;
   font-size: 14px;
 }
+
+
 </style>
