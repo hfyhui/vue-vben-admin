@@ -184,30 +184,9 @@ async function onBatchDelete() {
 | isAllCurrentPageSelected | Function | 是 | 检查当前页全选状态的函数 |
 | isCurrentPageIndeterminate | Function | 是 | 检查当前页部分选中状态的函数 |
 | checkboxKey | number | 是 | 强制刷新的key |
-
-## 特性
-
-✅ **跨分页状态保持** - 切换页面时选中状态完美保持  
-✅ **全选功能** - 支持当前页全选/取消全选  
-✅ **无动画闪烁** - 禁用了checkbox动画效果  
-✅ **响应式更新** - 状态变化时UI自动更新  
-✅ **类型安全** - 完整的TypeScript支持  
-✅ **易于集成** - 最少3行代码即可集成  
-
 ## 注意事项
 
 1. **ID字段**: 确保你的数据有唯一的`id`字段
 2. **Grid API**: 必须传入正确的gridApi引用
 3. **模板名称**: 使用固定的模板名称 `crossPageCheckbox` 和 `crossPageCheckboxHeader`
 4. **清理状态**: 在适当的时机调用 `clearAllSelection()` 清理选中状态
-
-## 迁移现有页面
-
-如果你已有使用自定义跨分页选择的页面，可以按以下步骤迁移：
-
-1. 引入通用组合函数和组件
-2. 替换现有的状态管理逻辑
-3. 更新模板使用通用组件
-4. 移除旧的自定义代码
-
-这样可以大大减少代码重复，提高维护效率！

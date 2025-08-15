@@ -27,6 +27,20 @@ const customerTypes = ref<any[]>([]);
 const idTypeOptions = ref<any[]>([]);
 const dictLoaded = ref(false);
 
+// 加载字典数据
+const loadDictData = async () => {
+  try {
+    const res = await getDictApi(['LICENSE_CUSTOMER_TYPE', 'CERTIFICATE_TYPE']);
+    customerTypes.value = res.data.LICENSE_CUSTOMER_TYPE?.children || [];
+    idTypeOptions.value = res.data.CERTIFICATE_TYPE?.children || [];
+    dictLoaded.value = true;
+  } catch {
+    // 即使加载失败也显示搜索表单
+    dictLoaded.value = true;
+  }
+};
+loadDictData();
+
 const searchForm = ref({
   customersName: '',
   customersType: '',
@@ -37,8 +51,9 @@ const editData = ref<any>(null);
 const viewData = ref<any>(null);
 
 const gridOptions: VxeGridProps<any> = {
+  minHeight: '50px',
   columns: [
-    // 使用通用函数创建跨分页选择列
+    // 使用通用函数创建跨分页选
     createCrossPageSelectionColumn({ width: 50, align: 'center' }),
     {
       field: 'customersName',
@@ -99,9 +114,7 @@ const gridOptions: VxeGridProps<any> = {
           customersName: form?.customersName || searchForm.value.customersName,
           customersType: form?.customersType || searchForm.value.customersType,
         });
-        
-        // 使用自定义选中组件，不需要复杂的状态恢复逻辑
-        
+
         return res.data
       },
     },
@@ -145,7 +158,8 @@ function onSearch(values?: any) {
   if (values) {
     searchForm.value = values;
   }
-  gridApi.query();
+  // 搜索时重置到第一页
+  gridApi.reload();
 }
 function onAdd() {
   editData.value = null;

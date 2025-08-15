@@ -27,7 +27,6 @@ import { useCrossPageSelection, createCrossPageSelectionColumn } from '../../com
 import CrossPageCheckbox from '../../components/CrossPageSelection/CrossPageCheckbox.vue';
 
 const searchFormData = ref<any>({});
-
 const editData = ref<any>(null);
 const detailData = ref<any>(null);
 const formApiRef = ref<any>(null);
@@ -39,6 +38,7 @@ const customerList = ref<{ label: string; value: string }[]>([]);
 const customerListLoading = ref(false);
 
 const gridOptions: VxeGridProps<any> = {
+  minHeight: '50px',
   columns: [
     // 使用通用函数创建跨分页选择列
     createCrossPageSelectionColumn({ width: 50, align: 'center' }),
@@ -266,6 +266,7 @@ async function onBatchDelete() {
     
     const ids = selectedRowIds.value;
     await deleteLicenseApi(ids);
+    
     // 清空跨分页选中状态
     clearAllSelection();
     gridApi.query();
@@ -283,7 +284,8 @@ onMounted(() => {
 });
 function onSearchForm(values: Record<string, any>) {
   searchFormData.value = values;
-  gridApi.query();
+  // 搜索时重置到第一页
+  gridApi.reload();
 }
 </script>
 
