@@ -43,6 +43,7 @@ const addKeySuccess = ref(false); // 新增密钥成功提示
 const keyInputRef = ref(); // 输入框ref
 const hoveredKeyId = ref<null | string>(null); // 鼠标悬停的密钥ID
 const selectedKeyId = ref<null | string>(null); // 当前选中的密钥ID
+const selectedKeyMap = ref<Record<string, string>>({}); // 记录每个客户选中的密钥ID
 // 监听外部modelValue变化
 watch(
   () => props.modelValue,
@@ -57,6 +58,9 @@ function onCustomerChange(val: string) {
   selectedKeyId.value = null;
   emit('update:keyId', null);
   showDialog.value = false;
+  if (val) {
+    fetchKeys(val);
+  }
 }
 
 // 拉取客户密钥
@@ -72,6 +76,19 @@ async function fetchKeys(customerId: string) {
   keyList.value = keys;
   hasKey.value = keys.length > 0;
   emit('keyStatusChange', hasKey.value);
+  
+  // 保证 key.id 和 selectedKeyId 都是字符串，并恢复上次选中的密钥ID
+  const allKeyIds = keys.map(k => String(k.id));
+  if (selectedKeyMap.value[customerId]) {
+    const savedKeyId = String(selectedKeyMap.value[customerId]);
+    const keyExists = allKeyIds.includes(savedKeyId);
+    if (keyExists) {
+      selectedKeyId.value = savedKeyId;
+      emit('update:keyId', savedKeyId);
+    } else {
+      delete selectedKeyMap.value[customerId];
+    }
+  }
 }
 
 function onLogoClick() {
@@ -108,8 +125,12 @@ async function onAddKey() {
 }
 
 function onSwitchKey(key: any) {
-  selectedKeyId.value = key.id;
-  emit('update:keyId', key.id);
+  selectedKeyId.value = String(key.id);
+  // 保存当前客户选中的密钥ID到map中
+  if (selectedCustomer.value) {
+    selectedKeyMap.value[selectedCustomer.value] = String(key.id);
+  }
+  emit('update:keyId', String(key.id));
   ElMessage.success(
     $t('licenseManage.key.switchSuccess') + (key.keyRemark || key.name),
   );
@@ -122,10 +143,15 @@ async function onDeleteKey(keyId: string) {
     const success = await deleteCustomerKey(keyId);
     if (success) {
       ElMessage.success($t('licenseManage.key.deleteSuccess') || '删除成功');
-      fetchKeys(selectedCustomer.value);
+      // 如果删除的是当前选中的密钥，清除选中状态和map记录
       if (selectedKeyId.value === keyId) {
         selectedKeyId.value = null;
+        if (selectedCustomer.value) {
+          delete selectedKeyMap.value[selectedCustomer.value];
+        }
+        emit('update:keyId', null);
       }
+      fetchKeys(selectedCustomer.value);
     } else {
       ElMessage.error($t('licenseManage.key.deleteFailed') || '删除失败');
     }
@@ -195,7 +221,7 @@ async function onDeleteKey(keyId: string) {
               v-for="(key, index) in keyList"
               :key="key.id || index"
               class="key-item"
-              :class="{ 'key-item-active': selectedKeyId === key.id }"
+              :class="{ 'key-item-active': String(selectedKeyId) === String(key.id) }"
               @dblclick="onSwitchKey(key)"
               @mouseenter="hoveredKeyId = key.id"
               @mouseleave="hoveredKeyId = null"
@@ -331,9 +357,10 @@ async function onDeleteKey(keyId: string) {
 }
 
 .key-item-active {
-  background: #f0f9ff;
-  border-color: #409eff;
-  box-shadow: 0 2px 8px rgb(64 158 255 / 15%);
+  background: #409eff !important;
+  color: #ffffff !important;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgb(64 158 255 / 20%);
 }
 
 .key-info {

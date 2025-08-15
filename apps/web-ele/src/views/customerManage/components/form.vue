@@ -272,6 +272,43 @@ watch(
   },
 );
 
+// 字段归类
+const companyFields = ['customersName', 'customersType', 'unifiedSocialCreditCode', 'legalPerson', 'legalPersonIdType', 'legalPersonIdNumber', 'shareholderInfos'];
+const orgFields = ['customersName', 'customersType', 'individualBusinessLicenseCode'];
+const personFields = ['customersName', 'customersType', 'personalIdType', 'personalIdNumber'];
+
+// 监听客户类型切换，切换时只保留当前类型字段，其它字段直接删除
+watch(
+  () => props.modelValue?.customersType,
+  (newType) => {
+    if (!newType) return;
+    const keepFields =
+      newType === 'COMPANY'
+        ? companyFields
+        : newType === 'ORGANIZATION'
+        ? orgFields
+        : personFields;
+    Object.keys(props.modelValue).forEach((key) => {
+      if (!keepFields.includes(key)) {
+        formApi.setFieldValue && formApi.setFieldValue(key, undefined);
+      }
+    });
+  }
+);
+
+// 提交时只组装当前类型字段
+defineExpose({ getSubmitData });
+function getSubmitData(values: any) {
+  if (values.customersType === 'COMPANY') {
+    return Object.fromEntries(companyFields.map(f => [f, values[f]]));
+  } else if (values.customersType === 'ORGANIZATION') {
+    return Object.fromEntries(orgFields.map(f => [f, values[f]]));
+  } else if (values.customersType === 'PERSONAL') {
+    return Object.fromEntries(personFields.map(f => [f, values[f]]));
+  }
+  return {};
+}
+
 function handleSubmit(values: any) {
   console.log('提交的表单数据:', values);
   console.log('股东信息:', values.shareholderInfos);
@@ -303,7 +340,7 @@ function handleSubmit(values: any) {
     // 如果没有股东信息，则不进行校验，允许提交
   }
   
-  emit('submit', values);
+  emit('submit', getSubmitData(values));
   emit('update:visible', false);
 }
 function handleReset() {
