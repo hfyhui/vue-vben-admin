@@ -32,8 +32,14 @@ const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).ge
 const getDefaultTrialExpiration = () => {
   const date = new Date();
   date.setDate(date.getDate() + 30);
-  // 格式化为YYYY-MM-DD HH:mm:ss字符串
-  return date.toISOString().slice(0, 19).replace('T', ' ');
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  const year = date.getFullYear();
+  const month = pad(date.getMonth() + 1);
+  const day = pad(date.getDate());
+  const hour = pad(date.getHours());
+  const minute = pad(date.getMinutes());
+  const second = pad(date.getSeconds());
+  return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
 };
 
 const schema = [
