@@ -24,6 +24,7 @@
     "apps": "Authorized Apps",
     "licenseType": "License Type",
     "expireTime": "Expiration Date",
+    "expireTimeRequired": "Expiration time is required",
     "maxUsers": "Max Concurrent Users",
     "fingerprint": "Fingerprint",
     "remark": "Remark",

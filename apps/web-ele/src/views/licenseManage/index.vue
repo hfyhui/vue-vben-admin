@@ -198,8 +198,16 @@ async function submit(values: any) {
     showForm.value = false;
     formModalApi.close();
     gridApi.query();
+    
+    // 重置表单提交状态
+    if (formApiRef.value?.resetSubmitting) {
+      formApiRef.value.resetSubmitting();
+    }
   } catch (error) {
-    // 接口调用失败时，不关闭弹框，让用户手动关闭
+    // 接口调用失败时，重置提交状态，但不关闭弹框
+    if (formApiRef.value?.resetSubmitting) {
+      formApiRef.value.resetSubmitting();
+    }
     console.error('保存失败:', error);
     ElMessage.error(error instanceof Error ? error.message : '操作失败');
   }
@@ -376,7 +384,7 @@ function onSearchForm(values: Record<string, any>) {
       />
     </FormModal>
 
-    <DetailModal>
+    <DetailModal class="w-[700px]">
       <LicenseDetail
         :visible="showDetail"
         :data="detailData"
