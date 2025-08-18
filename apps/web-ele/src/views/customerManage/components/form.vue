@@ -341,7 +341,7 @@ function handleSubmit(values: any) {
   }
   
   emit('submit', getSubmitData(values));
-  emit('update:visible', false);
+  // 不在这里关闭弹框，让父组件根据接口调用结果决定是否关闭
 }
 function handleReset() {
   if (formApi.resetForm) {

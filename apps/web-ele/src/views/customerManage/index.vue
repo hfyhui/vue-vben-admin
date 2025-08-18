@@ -75,16 +75,19 @@ const gridOptions: VxeGridProps<any> = {
       field: 'legalPerson',
       title: $t('customerManage.table.legalName'),
       minWidth: 120,
+      slots: { default: 'legalPerson' },
     },
     {
       field: 'legalPersonIdTypeName',
       title: $t('customerManage.table.legalIdType'),
       minWidth: 120,
+      slots: { default: 'legalPersonIdType' },
     },
     {
       field: 'legalPersonIdNumber',
       title: $t('customerManage.table.legalIdNo'),
       minWidth: 180,
+      slots: { default: 'legalPersonIdNumber' },
     },
     {
       field: 'action',
@@ -236,16 +239,21 @@ async function onBatchDelete() {
   }
 }
 async function submit(values: any) {
-  if (editData.value && editData.value.id) {
-    await updateCustomerApi(editData.value.id, values);
-    ElMessage.success('编辑成功');
-  } else {
-    await createCustomerApi(values);
-    ElMessage.success('新增成功');
+  try {
+    if (editData.value && editData.value.id) {
+      await updateCustomerApi(editData.value.id, values);
+      ElMessage.success('编辑成功');
+    } else {
+      await createCustomerApi(values);
+      ElMessage.success('新增成功');
+    }
+    // 只有接口调用成功才关闭弹框和刷新列表
+    editData.value = null;
+    showForm.value = false;
+    gridApi.query();
+  } catch (error) {
+    
   }
-  editData.value = null;
-  showForm.value = false;
-  gridApi.query();
 }
 </script>
 
@@ -295,6 +303,21 @@ async function submit(values: any) {
       <template #certificateCode="{ row }">
         <span>
           {{ row.certificateCode }}
+        </span>
+      </template>
+      <template #legalPerson="{ row }">
+        <span v-if="row.customersType === 'COMPANY'">
+          {{ row.legalPerson }}
+        </span>
+      </template>
+        <template #legalPersonIdType="{ row }">
+          <span v-if="row.customersType === 'COMPANY'">
+            {{ row.legalPersonIdTypeName }}
+          </span>
+        </template>
+      <template #legalPersonIdNumber="{ row }">
+        <span v-if="row.customersType === 'COMPANY'">
+          {{ row.legalPersonIdNumber }}
         </span>
       </template>
       <template #action="{ row }">

@@ -167,7 +167,7 @@ function handleSubmit(values: any) {
     keyId: selectedKeyId.value,
   };
   emit('submit', submitData);
-  emit('update:visible', false);
+  // 不在这里关闭弹框，让父组件根据接口调用结果决定是否关闭
 }
 function handleReset() {
   if (formApi.resetForm) formApi.resetForm();
