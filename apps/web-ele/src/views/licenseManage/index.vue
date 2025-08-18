@@ -189,10 +189,13 @@ async function submit(values: any) {
       await createLicenseApi(values);
       ElMessage.success($t('licenseManage.message.addSuccess'));
     }
+    // 只有接口调用成功才关闭弹框和刷新列表
     showForm.value = false;
     formModalApi.close();
     gridApi.query();
   } catch (error) {
+    // 接口调用失败时，不关闭弹框，让用户手动关闭
+    console.error('保存失败:', error);
     ElMessage.error(error instanceof Error ? error.message : '操作失败');
   }
 }
