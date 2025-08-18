@@ -274,7 +274,7 @@ export async function downloadKeyApi(keyId: string): Promise<void> {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `key.pem`;
+    a.download = `public_key.pem`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

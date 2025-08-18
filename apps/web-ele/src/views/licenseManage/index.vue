@@ -45,6 +45,11 @@ const gridOptions: VxeGridProps<any> = {
     {
       field: 'customerName',
       title: $t('licenseManage.search.customerName'),
+      minWidth: 100,
+    },
+    {
+      field: 'remark',
+      title: $t('licenseManage.form.remark'),
       minWidth: 150,
     },
     {
@@ -55,7 +60,7 @@ const gridOptions: VxeGridProps<any> = {
     {
       field: 'expirationTime',
       title: $t('licenseManage.form.expireTime'),
-      minWidth: 150,
+      minWidth: 100,
     },
     {
       field: 'concurrentUsers',
