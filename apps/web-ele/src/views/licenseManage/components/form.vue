@@ -308,7 +308,8 @@ function handleReset() {
   emit('update:visible', false);
 }
 
-defineExpose({ validateAndSubmitForm: formApi.validateAndSubmitForm });
+// 暴露isSubmitting给父组件用于控制按钮loading
+defineExpose({ validateAndSubmitForm: formApi.validateAndSubmitForm, isSubmitting });
 </script>
 
 <template>
