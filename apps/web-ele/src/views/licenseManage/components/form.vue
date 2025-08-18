@@ -19,8 +19,8 @@ const emit = defineEmits(['update:visible', 'submit']);
 
 const customerKeyStatus = ref(false);
 const selectedKeyId = ref<null | string>(null);
-// 跟踪授权类型
-const authorizationType = ref('TRIAL');
+// 授权类型默认值
+const authorizationType = ref('OFFICIALLY');
 const isSubmitting = ref(false);
 
 // 获取当前时间（精确到秒）
@@ -81,7 +81,7 @@ const schema = [
     fieldName: 'authorizationType',
     label: $t('licenseManage.form.licenseType'),
     required: true,
-    defaultValue: 'TRIAL',
+    defaultValue: 'OFFICIALLY',
     componentProps: {
       options: [
         { label: $t('licenseManage.form.trial'), value: 'TRIAL' },
@@ -112,6 +112,7 @@ const schema = [
     fieldName: 'expirationTime',
     label: $t('licenseManage.form.expireTime'),
     required: true,
+    defaultValue: '',
     componentProps: () => {
       return {
         type: 'datetime',
@@ -122,8 +123,8 @@ const schema = [
         disabledDate: (time: Date) => {
           return time.getTime() < todayStart;
         },
-        // 根据授权类型设置是否禁用
-        disabled: authorizationType.value === 'TRIAL'
+        // 只有试用时禁用
+        disabled: authorizationType.value === 'TRIAL',
       };
     },
     // 明确必填规则，确保始终生效
@@ -200,12 +201,10 @@ watch(
           expirationTime: getDefaultTrialExpiration()
         });
       } else {
-        // 正式授权时清空值
         await formApi.setValues({
           expirationTime: ''
         });
       }
-      // 触发验证
       formApi.validateField('expirationTime');
     }
   }
@@ -218,7 +217,7 @@ watch(
       if (formApi.setValues) {
         await formApi.setValues(val);
         // 同步授权类型
-        authorizationType.value = val.authorizationType || 'TRIAL';
+        authorizationType.value = val.authorizationType || 'OFFICIALLY';
         // 触发验证
         formApi.validateField('expirationTime');
       }
@@ -226,9 +225,9 @@ watch(
       if (formApi.resetForm) {
         formApi.resetForm();
         // 重置时默认试用类型并设置默认值
-        authorizationType.value = 'TRIAL';
+        authorizationType.value = 'OFFICIALLY';
         await formApi.setValues({
-          expirationTime: getDefaultTrialExpiration()
+          expirationTime: ''
         });
       }
     }
@@ -240,9 +239,9 @@ watch(
 watch(
   () => props.visible,
   async (isVisible) => {
-    if (isVisible && authorizationType.value === 'TRIAL') {
+    if (isVisible && authorizationType.value === 'OFFICIALLY') {
       await formApi.setValues({
-        expirationTime: getDefaultTrialExpiration()
+        expirationTime: ''
       });
       // 触发验证
       formApi.validateField('expirationTime');
@@ -300,10 +299,10 @@ function handleSubmit(values: any) {
 function handleReset() {
   if (formApi.resetForm) {
     formApi.resetForm();
-    // 重置后默认试用类型并设置默认值
-    authorizationType.value = 'TRIAL';
+    // 重置后默认正式类型且过期时间为空
+    authorizationType.value = 'OFFICIALLY';
     formApi.setValues({
-      expirationTime: getDefaultTrialExpiration()
+      expirationTime: ''
     });
   }
   emit('update:visible', false);
