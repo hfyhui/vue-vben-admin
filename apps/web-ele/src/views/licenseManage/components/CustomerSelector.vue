@@ -378,7 +378,7 @@ async function onDeleteKey(keyId: string) {
 }
 
 .key-item-active {
-  background: #409eff !important;
+  background: rgb(64 158 255 / 10%) !important;
   color: #ffffff !important;
   border-radius: 4px;
   box-shadow: 0 2px 8px rgb(64 158 255 / 20%);
