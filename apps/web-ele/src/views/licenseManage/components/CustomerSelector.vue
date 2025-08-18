@@ -53,6 +53,21 @@ watch(
   },
   { immediate: true },
 );
+// 监听 keyList 变化，若有数据则默认选中第一条
+watch(
+  keyList,
+  (list) => {
+    if (list && list.length > 0) {
+      // 只有未手动选中过密钥时才自动选中第一条
+      if (!selectedKeyId.value) {
+        const firstKeyId = String(list[0].id);
+        selectedKeyId.value = firstKeyId;
+        emit('update:keyId', firstKeyId);
+      }
+    }
+  },
+  { immediate: true }
+);
 function onCustomerChange(val: string) {
   emit('update:modelValue', val);
   selectedKeyId.value = null;
