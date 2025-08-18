@@ -24,6 +24,7 @@
     "apps": "授权应用",
     "licenseType": "授权类型",
     "expireTime": "过期时间",
+    "expireTimeRequired": "过期时间不能为空",
     "maxUsers": "最大并发用户",
     "fingerprint": "指纹特征",
     "remark": "备注",

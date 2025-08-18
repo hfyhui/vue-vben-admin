@@ -19,11 +19,22 @@ const emit = defineEmits(['update:visible', 'submit']);
 
 const customerKeyStatus = ref(false);
 const selectedKeyId = ref<null | string>(null);
+// 跟踪授权类型
+const authorizationType = ref('TRIAL');
+const isSubmitting = ref(false);
 
 // 获取当前时间（精确到秒）
 const now = new Date();
 // 计算当天0点的时间戳（用于日期判断）
 const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
+// 计算30天后的日期
+const getDefaultTrialExpiration = () => {
+  const date = new Date();
+  date.setDate(date.getDate() + 30);
+  // 格式化为YYYY-MM-DD HH:mm:ss字符串
+  return date.toISOString().slice(0, 19).replace('T', ' ');
+};
 
 const schema = [
   {
@@ -70,6 +81,23 @@ const schema = [
         { label: $t('licenseManage.form.trial'), value: 'TRIAL' },
         { label: $t('licenseManage.form.official'), value: 'OFFICIALLY' },
       ],
+      // 监听授权类型变化，立即处理过期时间
+      onChange: async (val: string) => {
+        if (val === 'TRIAL') {
+          // 切换到试用：设置30天默认值并禁用
+          await formApi.setValues({
+            expirationTime: getDefaultTrialExpiration()
+          });
+        } else {
+          // 切换到正式：清空值并启用
+          await formApi.setValues({
+            expirationTime: ''
+          });
+        }
+        authorizationType.value = val;
+        // 触发表单验证，确保必填规则生效
+        formApi.validateField('expirationTime');
+      }
     },
     rules: 'selectRequired',
   },
@@ -88,10 +116,14 @@ const schema = [
         disabledDate: (time: Date) => {
           return time.getTime() < todayStart;
         },
-
+        // 根据授权类型设置是否禁用
+        disabled: authorizationType.value === 'TRIAL'
       };
     },
-    rules: 'selectRequired',
+    // 明确必填规则，确保始终生效
+    rules: z.string().refine(val => !!val, {
+      message: $t('licenseManage.form.expireTimeRequired') || '过期时间不能为空',
+    }),
   },
   {
     component: 'InputNumber',
@@ -151,54 +183,123 @@ const [Form, formApi] = useVbenForm({
   handleReset,
 });
 
+// 监听授权类型变化，确保值正确并验证
+watch(
+  () => authorizationType.value,
+  async (newVal, oldVal) => {
+    // 只有当从其他类型切换过来时才处理
+    if (newVal !== oldVal) {
+      if (newVal === 'TRIAL') {
+        await formApi.setValues({
+          expirationTime: getDefaultTrialExpiration()
+        });
+      } else {
+        // 正式授权时清空值
+        await formApi.setValues({
+          expirationTime: ''
+        });
+      }
+      // 触发验证
+      formApi.validateField('expirationTime');
+    }
+  }
+);
+
 watch(
   () => props.modelValue,
-  (val) => {
+  async (val) => {
     if (val) {
-      if (formApi.setValues) formApi.setValues(val);
+      if (formApi.setValues) {
+        await formApi.setValues(val);
+        // 同步授权类型
+        authorizationType.value = val.authorizationType || 'TRIAL';
+        // 触发验证
+        formApi.validateField('expirationTime');
+      }
     } else {
-      if (formApi.resetForm) formApi.resetForm();
+      if (formApi.resetForm) {
+        formApi.resetForm();
+        // 重置时默认试用类型并设置默认值
+        authorizationType.value = 'TRIAL';
+        await formApi.setValues({
+          expirationTime: getDefaultTrialExpiration()
+        });
+      }
     }
   },
   { immediate: true },
 );
 
+// 初始化时设置试用版的过期时间
+watch(
+  () => props.visible,
+  async (isVisible) => {
+    if (isVisible && authorizationType.value === 'TRIAL') {
+      await formApi.setValues({
+        expirationTime: getDefaultTrialExpiration()
+      });
+      // 触发验证
+      formApi.validateField('expirationTime');
+    }
+  },
+  { immediate: true }
+);
+
 function handleSubmit(values: any) {
-  if (!selectedKeyId.value) {
-    ElMessage.warning(
-      $t('licenseManage.message.genKeyTip') || '请先生成证书密钥',
-    );
-    return;
-  }
-
-  // 检查正式授权时是否填写了指纹特征
-  if (values.authorizationType === 'OFFICIALLY' && (!values.fingerprintFeature || values.fingerprintFeature.trim() === '')) {
-    ElMessage.warning('请填写指纹特征');
-    return;
-  }
-
-  // 检查过期时间是否为过去时间（精确到秒）
-  if (values.expirationTime) {
-    const expirationDate = new Date(values.expirationTime);
-    const currentTime = new Date();
-    
-    if (expirationDate.getTime() <= currentTime.getTime()) {
-      const timeDiff = currentTime.getTime() - expirationDate.getTime();
-      const secondsDiff = Math.ceil(timeDiff / 1000);
-      ElMessage.warning(`过期时间不能早于当前时间，当前选择的时间比现在早了 ${secondsDiff} 秒`);
+  if (isSubmitting.value) return; // 防止重复提交
+  isSubmitting.value = true;
+  try {
+    // 手动验证过期时间
+    if (!values.expirationTime) {
+      ElMessage.warning($t('licenseManage.form.expireTimeRequired') || '过期时间不能为空');
       return;
     }
-  }
 
-  const submitData = {
-    ...values,
-    keyId: selectedKeyId.value,
-  };
-  emit('submit', submitData);
-  // 不在这里关闭弹框，让父组件根据接口调用结果决定是否关闭
+    if (!selectedKeyId.value) {
+      ElMessage.warning(
+        $t('licenseManage.message.genKeyTip') || '请先生成证书密钥',
+      );
+      return;
+    }
+
+    // 检查正式授权时是否填写了指纹特征
+    if (values.authorizationType === 'OFFICIALLY' && (!values.fingerprintFeature || values.fingerprintFeature.trim() === '')) {
+      ElMessage.warning('请填写指纹特征');
+      return;
+    }
+
+    // 检查过期时间是否为过去时间（精确到秒）
+    if (values.expirationTime) {
+      const expirationDate = new Date(values.expirationTime);
+      const currentTime = new Date();
+      
+      if (expirationDate.getTime() <= currentTime.getTime()) {
+        const timeDiff = currentTime.getTime() - expirationDate.getTime();
+        const secondsDiff = Math.ceil(timeDiff / 1000);
+        ElMessage.warning(`过期时间不能早于当前时间，当前选择的时间比现在早了 ${secondsDiff} 秒`);
+        return;
+      }
+    }
+
+    const submitData = {
+      ...values,
+      keyId: selectedKeyId.value,
+    };
+    emit('submit', submitData);
+    // 不在这里关闭弹框，让父组件根据接口调用结果决定是否关闭
+  } finally {
+    isSubmitting.value = false;
+  }
 }
 function handleReset() {
-  if (formApi.resetForm) formApi.resetForm();
+  if (formApi.resetForm) {
+    formApi.resetForm();
+    // 重置后默认试用类型并设置默认值
+    authorizationType.value = 'TRIAL';
+    formApi.setValues({
+      expirationTime: getDefaultTrialExpiration()
+    });
+  }
   emit('update:visible', false);
 }
 
@@ -233,5 +334,8 @@ defineExpose({ validateAndSubmitForm: formApi.validateAndSubmitForm });
 :deep(.pb-6) {
   padding-bottom:18px !important;
 }
+/* 确保错误提示可见 */
+:deep(.el-form-item__error) {
+  display: block !important;
+}
 </style>
-    
