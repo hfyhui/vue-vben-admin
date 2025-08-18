@@ -20,6 +20,11 @@ const emit = defineEmits(['update:visible', 'submit']);
 const customerKeyStatus = ref(false);
 const selectedKeyId = ref<null | string>(null);
 
+// 获取当前时间（精确到秒）
+const now = new Date();
+// 计算当天0点的时间戳（用于日期判断）
+const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
 const schema = [
   {
     component: h(CustomerSelector, {
@@ -73,12 +78,18 @@ const schema = [
     fieldName: 'expirationTime',
     label: $t('licenseManage.form.expireTime'),
     required: true,
-    componentProps: {
-      type: 'datetime',
-      placeholder: $t('licenseManage.form.expireTime'),
-      format: 'YYYY-MM-DD HH:mm:ss',
-      valueFormat: 'YYYY-MM-DD HH:mm:ss',
-      style: 'width: 340px;',
+    componentProps: () => {
+      return {
+        type: 'datetime',
+        placeholder: $t('licenseManage.form.expireTime'),
+        format: 'YYYY-MM-DD HH:mm:ss',
+        valueFormat: 'YYYY-MM-DD HH:mm:ss',
+        style: 'width: 340px;',
+        disabledDate: (time: Date) => {
+          return time.getTime() < todayStart;
+        },
+
+      };
     },
     rules: 'selectRequired',
   },
@@ -100,7 +111,6 @@ const schema = [
     component: 'Input',
     fieldName: 'fingerprintFeature',
     label: $t('licenseManage.form.fingerprint'),
-    required: true,
     componentProps: {
       placeholder: $t('licenseManage.form.fingerprint'),
       style: 'width: 340px;',
@@ -108,8 +118,7 @@ const schema = [
       showWordLimit: true,
       type: 'textarea',
       rows: 3,
-    },
-    rules: 'required',
+    }
   },
   {
     component: 'Input',
@@ -162,6 +171,25 @@ function handleSubmit(values: any) {
     return;
   }
 
+  // 检查正式授权时是否填写了指纹特征
+  if (values.authorizationType === 'OFFICIALLY' && (!values.fingerprintFeature || values.fingerprintFeature.trim() === '')) {
+    ElMessage.warning('请填写指纹特征');
+    return;
+  }
+
+  // 检查过期时间是否为过去时间（精确到秒）
+  if (values.expirationTime) {
+    const expirationDate = new Date(values.expirationTime);
+    const currentTime = new Date();
+    
+    if (expirationDate.getTime() <= currentTime.getTime()) {
+      const timeDiff = currentTime.getTime() - expirationDate.getTime();
+      const secondsDiff = Math.ceil(timeDiff / 1000);
+      ElMessage.warning(`过期时间不能早于当前时间，当前选择的时间比现在早了 ${secondsDiff} 秒`);
+      return;
+    }
+  }
+
   const submitData = {
     ...values,
     keyId: selectedKeyId.value,
@@ -206,3 +234,4 @@ defineExpose({ validateAndSubmitForm: formApi.validateAndSubmitForm });
   padding-bottom:18px !important;
 }
 </style>
+    

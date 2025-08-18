@@ -3,7 +3,7 @@ import type { PropType } from 'vue';
 
 import { computed, nextTick, ref, watch } from 'vue';
 
-import { ElMessage, ElIcon } from 'element-plus';
+import { ElMessage, ElIcon, ElTooltip } from 'element-plus';
 import { Delete, Download } from '@element-plus/icons-vue';
 
 import { $t } from '#/locales';
@@ -227,11 +227,17 @@ async function onDeleteKey(keyId: string) {
               @mouseleave="hoveredKeyId = null"
             >
               <div class="key-info">
-                <span class="key-name">{{
-                  key.keyRemark || key.name || '未命名密钥'
-                }}</span>
+                <el-tooltip 
+                  placement="bottom-start" 
+                  :content="key.keyRemark"
+                  :disabled="!(key.keyRemark) || (key.keyRemark).length <= 8"
+                >
+                  <span class="key-name">{{
+                    key.keyRemark
+                  }}</span>
+                </el-tooltip>
                 <span class="key-date">{{
-                  key.keyDate || key.createdAt || '未知时间'
+                  key.keyDate
                 }}</span>
               </div>
               <div class="key-actions">
@@ -372,10 +378,14 @@ async function onDeleteKey(keyId: string) {
 }
 
 .key-name {
+  display: inline-block;
   font-size: 14px;
   font-weight: normal;
   line-height: 1.4;
   white-space: nowrap;
+  width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .key-date {
