@@ -1,14 +1,12 @@
 <script lang="ts" setup>
-import { computed, markRaw, nextTick, watch, reactive } from 'vue';
+import { computed, markRaw, nextTick, watch, reactive, ref } from 'vue';
 
 import { useVbenForm } from '#/adapter/form';
 import { $t } from '#/locales';
 import { ElMessage } from 'element-plus';
 
 import ShareholdersTable from './ShareholdersTable.vue';
-const state = reactive({
-  isSubmitting: false
-})
+const isSubmitting = ref(false)
 const props = defineProps<{
   customerTypes?: any[];
   idTypeOptions?: any[];
@@ -217,7 +215,7 @@ const schema = [
     },
   },
 ];
-
+console.log('isSubmitting.value', isSubmitting)
 const [Form, formApi] = useVbenForm({
   schema,
   wrapperClass: 'grid-cols-1',
@@ -227,8 +225,10 @@ const [Form, formApi] = useVbenForm({
   resetButtonOptions: {
     content: $t('customerManage.form.cancel'),
   },
+  
   submitButtonOptions: {
     content: $t('customerManage.form.save'),
+    loading: isSubmitting,
   },
   handleSubmit,
   handleReset,
@@ -300,7 +300,7 @@ watch(
 
 // 提交时只组装当前类型字段
 defineExpose({ getSubmitData, resetSubmitting: () => {
-  state.isSubmitting = false;
+  isSubmitting.value = false;
 } });
 function getSubmitData(values: any) {
   if (values.customersType === 'COMPANY') {
@@ -340,8 +340,8 @@ function handleSubmit(values: any) {
     }
     // 如果没有股东信息，则不进行校验，允许提交
   }
-  if(state.isSubmitting) return
-  state.isSubmitting = true
+  if(isSubmitting.value) return
+  isSubmitting.value = true
   emit('submit', getSubmitData(values));
   // 不在这里关闭弹框，让父组件根据接口调用结果决定是否关闭
 }
