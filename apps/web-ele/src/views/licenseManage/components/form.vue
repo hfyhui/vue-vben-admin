@@ -128,7 +128,7 @@ const schema = [
       };
     },
     // 明确必填规则，确保始终生效
-    rules: z.string().refine(val => !!val, {
+    rules: z.string().nullable().refine(val => val !== null && val !== '', {
       message: $t('licenseManage.form.expireTimeRequired') || '过期时间不能为空',
     }),
   },
@@ -269,7 +269,7 @@ function handleSubmit(values: any) {
 
     // 检查正式授权时是否填写了指纹特征
     if (values.authorizationType === 'OFFICIALLY' && (!values.fingerprintFeature || values.fingerprintFeature.trim() === '')) {
-      ElMessage.warning('请填写指纹特征');
+      ElMessage.warning('指纹特征不能为空');
       return;
     }
 
