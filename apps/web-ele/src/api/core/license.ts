@@ -88,7 +88,7 @@ export async function updateLicenseApi(
   return response.data 
 }
 
-export async function deleteLicenseApi(ids: string | string[]): Promise<void> {
+export async function deleteLicenseApi(ids: string | string[]){
   let response;
   if (Array.isArray(ids)) {
     response = await proxyClient.delete('/license/delete', { data: { ids } });

@@ -205,9 +205,11 @@ async function onDelete(row: any) {
     await ElMessageBox.confirm('确定要删除该客户吗？', '提示', {
       type: 'warning',
     });
-    await deleteCustomerApi(row.id);
-    gridApi.query();
-    ElMessage.success('删除成功');
+    let res = await deleteCustomerApi(row.id);
+    if(res.code === 100000){
+      ElMessage.success('删除成功');
+      gridApi.query();
+    }
   } catch (error) {
     console.error('删除失败:', error);
   }
@@ -227,13 +229,13 @@ async function onBatchDelete() {
     );
     
     const ids = selectedRowIds.value;
-    await batchDeleteCustomerApi(ids);
-    
+    let res = await batchDeleteCustomerApi(ids);
+    if(res.code === 100000){
+      ElMessage.success(`成功删除 ${ids.length} 个客户`);
+      gridApi.query();
+    }
     // 清空跨分页选中状态
     clearAllSelection();
-    
-    gridApi.query();
-    ElMessage.success(`成功删除 ${ids.length} 个客户`);
   } catch {
     // 用户取消或删除失败
   }
