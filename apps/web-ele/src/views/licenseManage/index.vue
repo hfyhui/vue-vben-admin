@@ -248,9 +248,11 @@ async function onDelete(row: any) {
         type: 'warning',
       },
     );
-    await deleteLicenseApi(row.id);
-    gridApi.query();
-    ElMessage.success($t('licenseManage.message.deleteSuccess'));
+    let res = await deleteLicenseApi(row.id);
+    if(res.code === 100000){
+      ElMessage.success($t('licenseManage.message.deleteSuccess'));
+      gridApi.query();
+    }
   } catch (error) {
     if (error !== 'cancel') {
       ElMessage.error(error instanceof Error ? error.message : '删除失败');
@@ -273,12 +275,13 @@ async function onBatchDelete() {
     );
     
     const ids = selectedRowIds.value;
-    await deleteLicenseApi(ids);
-    
+    let res = await deleteLicenseApi(ids);
+    if(res.code === 100000){
+      ElMessage.success(`${$t('licenseManage.message.deleteSuccess')}（删除了 ${ids.length} 项）`);
+      gridApi.query();
+    }
     // 清空跨分页选中状态
     clearAllSelection();
-    gridApi.query();
-    ElMessage.success(`${$t('licenseManage.message.deleteSuccess')}（删除了 ${ids.length} 项）`);
   } catch (error) {
     if (error !== 'cancel') {
       ElMessage.error(error instanceof Error ? error.message : '批量删除失败');
