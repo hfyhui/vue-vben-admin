@@ -182,19 +182,17 @@ proxyClient.addRequestInterceptor({
 proxyClient.addResponseInterceptor({
   fulfilled: (response) => {
     const { data: responseData, status } = response;
-    console.log('response',response)
-    
     if (status >= 200 && status < 400) {
       // 检查响应数据中的code字段
       if (responseData && typeof responseData === 'object' && 'code' in responseData) {
         const { code, msg } = responseData;
-        // 100000表示成功
         if (code === 100000) {
           return responseData;
-        }
-        ElMessage.error(msg);
+        }else{
+          ElMessage.error(msg);
+        }       
         // 抛出错误，让调用方处理
-        return Promise.reject(responseData);
+        return responseData
       }
       // 如果没有code字段，直接返回数据
       return responseData;

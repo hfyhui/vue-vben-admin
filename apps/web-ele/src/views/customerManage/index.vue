@@ -26,7 +26,7 @@ import CrossPageCheckbox from '../../components/CrossPageSelection/CrossPageChec
 const customerTypes = ref<any[]>([]);
 const idTypeOptions = ref<any[]>([]);
 const dictLoaded = ref(false);
-
+const customerFormRef = ref<InstanceType<typeof CustomerForm>>();
 // 加载字典数据
 const loadDictData = async () => {
   try {
@@ -241,16 +241,28 @@ async function onBatchDelete() {
 async function submit(values: any) {
   try {
     if (editData.value && editData.value.id) {
-      await updateCustomerApi(editData.value.id, values);
-      ElMessage.success('编辑成功');
+      const res = await updateCustomerApi(editData.value.id, values)
+      if(res.code === 100000){
+        ElMessage.success('编辑成功');
+        // 只有接口调用成功才关闭弹框和刷新列表
+        editData.value = null;
+        showForm.value = false;
+        gridApi.query();
+      }else {
+        customerFormRef.value?.resetSubmitting?.();
+      }
     } else {
-      await createCustomerApi(values);
-      ElMessage.success('新增成功');
+      const res = await createCustomerApi(values);
+      if(res.code === 200){
+        ElMessage.success('新增成功');
+        // 只有接口调用成功才关闭弹框和刷新列表
+        editData.value = null;
+        showForm.value = false;
+        gridApi.query();
+      }else {
+        customerFormRef.value?.resetSubmitting?.();
+      }
     }
-    // 只有接口调用成功才关闭弹框和刷新列表
-    editData.value = null;
-    showForm.value = false;
-    gridApi.query();
   } catch (error) {
     
   }
@@ -344,6 +356,7 @@ async function submit(values: any) {
       @close="onFormDialogClose"
     >
       <CustomerForm
+        ref="customerFormRef"
         :visible="showForm"
         :model-value="editData"
         :customer-types="customerTypes"

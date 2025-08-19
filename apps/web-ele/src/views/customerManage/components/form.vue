@@ -1,12 +1,14 @@
 <script lang="ts" setup>
-import { computed, markRaw, nextTick, watch } from 'vue';
+import { computed, markRaw, nextTick, watch, reactive } from 'vue';
 
 import { useVbenForm } from '#/adapter/form';
 import { $t } from '#/locales';
 import { ElMessage } from 'element-plus';
 
 import ShareholdersTable from './ShareholdersTable.vue';
-
+const state = reactive({
+  isSubmitting: false
+})
 const props = defineProps<{
   customerTypes?: any[];
   idTypeOptions?: any[];
@@ -297,7 +299,9 @@ watch(
 );
 
 // 提交时只组装当前类型字段
-defineExpose({ getSubmitData });
+defineExpose({ getSubmitData, resetSubmitting: () => {
+  state.isSubmitting = false;
+} });
 function getSubmitData(values: any) {
   if (values.customersType === 'COMPANY') {
     return Object.fromEntries(companyFields.map(f => [f, values[f]]));
@@ -310,9 +314,6 @@ function getSubmitData(values: any) {
 }
 
 function handleSubmit(values: any) {
-  console.log('提交的表单数据:', values);
-  console.log('股东信息:', values.shareholderInfos);
-  
   // 校验股东信息：如果客户类型为公司，且股东信息数组存在且有内容，则校验必填
   if (values.customersType === 'COMPANY') {
     const shareholderInfos = values.shareholderInfos;
@@ -339,7 +340,8 @@ function handleSubmit(values: any) {
     }
     // 如果没有股东信息，则不进行校验，允许提交
   }
-  
+  if(state.isSubmitting) return
+  state.isSubmitting = true
   emit('submit', getSubmitData(values));
   // 不在这里关闭弹框，让父组件根据接口调用结果决定是否关闭
 }

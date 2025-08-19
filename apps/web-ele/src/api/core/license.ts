@@ -37,7 +37,7 @@ export interface LicenseQueryParams {
   customerId?: string;
   customerName?: string;
   authorizationType?: 'OFFICIALLY' | 'TRIAL';
-  licenseStatusName: string;
+  licenseStatusName?: string;
   expirationTimes?: string[];
 }
 
@@ -63,9 +63,7 @@ export interface PageResponse<T = any> {
   total: number;
 }
 
-export async function getLicenseListApi(
-  params: LicenseQueryParams,
-): Promise<{ data: PageResponse<LicenseInfo> }> {
+export async function getLicenseListApi(params: LicenseQueryParams) {
   // 适配参数
   const { page, pageSize, ...rest } = params;
   const reqParams = {
@@ -77,11 +75,9 @@ export async function getLicenseListApi(
   return response.data
 }
 
-export async function createLicenseApi(
-  data: LicenseCreateParams,
-): Promise<LicenseInfo> {
+export async function createLicenseApi(data: any)   {
   const response = await proxyClient.post('/license/save', data);
-  return response.data 
+  return response 
 }
 
 export async function updateLicenseApi(
