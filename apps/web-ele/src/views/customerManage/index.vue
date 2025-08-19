@@ -247,6 +247,7 @@ async function submit(values: any) {
         // 只有接口调用成功才关闭弹框和刷新列表
         editData.value = null;
         showForm.value = false;
+        customerFormRef.value?.resetSubmitting?.();
         gridApi.query();
       }else {
         customerFormRef.value?.resetSubmitting?.();
@@ -258,6 +259,7 @@ async function submit(values: any) {
         // 只有接口调用成功才关闭弹框和刷新列表
         editData.value = null;
         showForm.value = false;
+        customerFormRef.value?.resetSubmitting?.();
         gridApi.query();
       }else {
         customerFormRef.value?.resetSubmitting?.();
