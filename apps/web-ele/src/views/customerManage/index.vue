@@ -253,7 +253,7 @@ async function submit(values: any) {
       }
     } else {
       const res = await createCustomerApi(values);
-      if(res.code === 200){
+      if(res.code === 100000){
         ElMessage.success('新增成功');
         // 只有接口调用成功才关闭弹框和刷新列表
         editData.value = null;
