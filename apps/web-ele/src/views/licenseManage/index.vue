@@ -25,7 +25,7 @@ import LicenseForm from './components/form.vue';
 import SearchForm from './components/searchForm.vue';
 import { useCrossPageSelection, createCrossPageSelectionColumn } from '../../composables/useCrossPageSelection';
 import CrossPageCheckbox from '../../components/CrossPageSelection/CrossPageCheckbox.vue';
-
+const licenseFormRef = ref<InstanceType<typeof LicenseForm>>();
 const searchFormData = ref<any>({});
 const editData = ref<any>(null);
 const detailData = ref<any>(null);
@@ -99,7 +99,6 @@ const gridOptions: VxeGridProps<any> = {
         if (searchFormData.value?.expirationTimes && Array.isArray(searchFormData.value.expirationTimes)) {
           expirationTimes = searchFormData.value.expirationTimes;
         }
-        
         const data = await getLicenseListApi({
           page: page.currentPage,
           pageSize: page.pageSize,
@@ -187,40 +186,32 @@ function onEdit(row: any) {
 }
 async function submit(values: any) {
   try {
-    if (editData.value && editData.value.id) {
-      await updateLicenseApi(editData.value.id, values);
-      ElMessage.success($t('licenseManage.message.editSuccess'));
-    } else {
-      await createLicenseApi(values);
-      ElMessage.success($t('licenseManage.message.addSuccess'));
-    }
-    // 只有接口调用成功才关闭弹框和刷新列表
-    showForm.value = false;
-    formModalApi.close();
-    gridApi.query();
-    
-    // 重置表单提交状态
-    if (formApiRef.value?.resetSubmitting) {
-      formApiRef.value.resetSubmitting();
+    let res = await createLicenseApi(values);
+    if(res.code === 100000){
+      ElMessage.success('新增成功');
+      // 只有接口调用成功才关闭弹框和刷新列表
+      editData.value = null;
+      showForm.value = false;
+      formModalApi.close();
+      gridApi.query();
+    }else {
+      licenseFormRef.value?.resetSubmitting?.();
     }
   } catch (error) {
-    // 接口调用失败时，重置提交状态，但不关闭弹框
-    if (formApiRef.value?.resetSubmitting) {
-      formApiRef.value.resetSubmitting();
-    }
-    console.error('保存失败:', error);
-    ElMessage.error(error instanceof Error ? error.message : '操作失败');
+
   }
 }
 async function onImportLicense(file: File) {
+  // 1. 检查文件类型
+  if (!file.name.endsWith('.lic')) {
+    ElMessage.error('只能导入.lic格式的文件');
+    return false; // 阻止上传
+  }
   try {
     const result = await importLicenseApi(file);
-    if (result && result.code === 100_000) {
+    if (result && result.code === 100000) {
       ElMessage.success($t('licenseManage.message.importSuccess'));
       gridApi.query();
-    } else {
-      const errorMsg = result?.msg || $t('licenseManage.message.importFail');
-      ElMessage.error(errorMsg);
     }
   } catch (error) {
     const errorMsg =

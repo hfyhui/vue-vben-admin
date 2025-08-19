@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { h, ref, watch } from 'vue';
+import { h, ref, watch, reactive } from 'vue';
 
 import { ElMessage } from 'element-plus';
 import { z } from '#/adapter/form';
@@ -16,13 +16,13 @@ const props = defineProps<{
   visible: boolean;
 }>();
 const emit = defineEmits(['update:visible', 'submit']);
-
+const state = reactive({
+  isSubmitting: false
+})
 const customerKeyStatus = ref(false);
 const selectedKeyId = ref<null | string>(null);
 // 授权类型默认值
 const authorizationType = ref('OFFICIALLY');
-const isSubmitting = ref(false);
-
 // 获取当前时间（精确到秒）
 const now = new Date();
 // 计算当天0点的时间戳（用于日期判断）
@@ -265,50 +265,45 @@ watch(
 );
 
 function handleSubmit(values: any) {
-  if (isSubmitting.value) return; // 防止重复提交
-  isSubmitting.value = true;
-  try {
-    // 手动验证过期时间
-    if (!values.expirationTime) {
-      ElMessage.warning($t('licenseManage.form.expireTimeRequired') || '过期时间不能为空');
-      return;
-    }
-
-    if (!selectedKeyId.value) {
-      ElMessage.warning(
-        $t('licenseManage.message.genKeyTip') || '请先生成证书密钥',
-      );
-      return;
-    }
-
-    // 检查正式授权时是否填写了指纹特征
-    // if (values.authorizationType === 'OFFICIALLY' && (!values.fingerprintFeature || values.fingerprintFeature.trim() === '')) {
-    //   ElMessage.warning('指纹特征不能为空');
-    //   return;
-    // }
-
-    // 检查过期时间是否为过去时间（精确到秒）
-    if (values.expirationTime) {
-      const expirationDate = new Date(values.expirationTime);
-      const currentTime = new Date();
-      
-      if (expirationDate.getTime() <= currentTime.getTime()) {
-        const timeDiff = currentTime.getTime() - expirationDate.getTime();
-        const secondsDiff = Math.ceil(timeDiff / 1000);
-        ElMessage.warning(`过期时间不能早于当前时间，当前选择的时间比现在早了 ${secondsDiff} 秒`);
-        return;
-      }
-    }
-
-    const submitData = {
-      ...values,
-      keyId: selectedKeyId.value,
-    };
-    emit('submit', submitData);
-    // 不在这里关闭弹框，让父组件根据接口调用结果决定是否关闭
-  } finally {
-    isSubmitting.value = false;
+  // 手动验证过期时间
+  if (!values.expirationTime) {
+    ElMessage.warning($t('licenseManage.form.expireTimeRequired') || '过期时间不能为空');
+    return;
   }
+
+  if (!selectedKeyId.value) {
+    ElMessage.warning(
+      $t('licenseManage.message.genKeyTip') || '请先生成证书密钥',
+    );
+    return;
+  }
+
+  // 检查正式授权时是否填写了指纹特征
+  // if (values.authorizationType === 'OFFICIALLY' && (!values.fingerprintFeature || values.fingerprintFeature.trim() === '')) {
+  //   ElMessage.warning('指纹特征不能为空');
+  //   return;
+  // }
+
+  // 检查过期时间是否为过去时间（精确到秒）
+  if (values.expirationTime) {
+    const expirationDate = new Date(values.expirationTime);
+    const currentTime = new Date();
+    
+    if (expirationDate.getTime() <= currentTime.getTime()) {
+      const timeDiff = currentTime.getTime() - expirationDate.getTime();
+      const secondsDiff = Math.ceil(timeDiff / 1000);
+      ElMessage.warning(`过期时间不能早于当前时间，当前选择的时间比现在早了 ${secondsDiff} 秒`);
+      return;
+    }
+  }
+
+  const submitData = {
+    ...values,
+    keyId: selectedKeyId.value,
+  };
+  if(state.isSubmitting) return
+  state.isSubmitting = true
+  emit('submit', submitData);
 }
 function handleReset() {
   if (formApi.resetForm) {
@@ -323,7 +318,9 @@ function handleReset() {
 }
 
 // 暴露isSubmitting给父组件用于控制按钮loading
-defineExpose({ validateAndSubmitForm: formApi.validateAndSubmitForm, isSubmitting });
+defineExpose({ validateAndSubmitForm: formApi.validateAndSubmitForm, resetSubmitting: () => {
+  state.isSubmitting = false;
+} });
 </script>
 
 <template>

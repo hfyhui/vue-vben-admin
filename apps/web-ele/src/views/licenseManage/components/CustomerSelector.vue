@@ -373,15 +373,15 @@ async function onDeleteKey(keyId: string) {
 }
 
 .key-item:hover {
-  background: rgb(64 158 255 / 10%);
-  box-shadow: 0 2px 8px rgb(64 158 255 / 10%);
+  /* background: rgb(64 158 255 / 10%); */
+  /* box-shadow: 0 2px 8px rgb(64 158 255 / 10%); */
 }
 
 .key-item-active {
-  background: rgb(64 158 255 / 10%) !important;
-  color: #ffffff !important;
+  background: rgba(116, 239, 82, 0.1) !important;
+  /* color: #ffffff !important; */
   border-radius: 4px;
-  box-shadow: 0 2px 8px rgb(64 158 255 / 20%);
+  /* box-shadow: 0 2px 8px rgb(64 158 255 / 20%); */
 }
 
 .key-info {
@@ -418,6 +418,7 @@ async function onDeleteKey(keyId: string) {
 .delete-icon {
   font-size: 22px;
   color: #f56c6c;
+  font-weight: bold;
   cursor: pointer;
   opacity: 0;
   transition: all 0.2s ease;
@@ -436,6 +437,7 @@ async function onDeleteKey(keyId: string) {
 }
 
 .download-icon {
+  font-weight: bold;
   font-size: 22px;
   color: #409eff;
   cursor: pointer;
