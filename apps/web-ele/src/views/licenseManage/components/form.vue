@@ -111,7 +111,6 @@ const schema = [
     component: 'DatePicker',
     fieldName: 'expirationTime',
     label: $t('licenseManage.form.expireTime'),
-    required: true,
     defaultValue: '',
     componentProps: () => {
       return {
@@ -127,10 +126,11 @@ const schema = [
         disabled: authorizationType.value === 'TRIAL',
       };
     },
+    rules: 'required',
     // 明确必填规则，确保始终生效
-    rules: z.string().nullable().refine(val => val !== null && val !== '', {
-      message: $t('licenseManage.form.expireTimeRequired') || '过期时间不能为空',
-    }),
+    // rules: z.string().nullable().refine(val => val !== null && val !== '', {
+    //   message: $t('licenseManage.form.expireTimeRequired') || '过期时间不能为空',
+    // }),
   },
   {
     component: 'InputNumber',
@@ -157,7 +157,8 @@ const schema = [
       showWordLimit: true,
       type: 'textarea',
       rows: 3,
-    }
+    },
+    rules: 'required', // 初始为必填
   },
   {
     component: 'Input',
@@ -205,8 +206,21 @@ watch(
           expirationTime: ''
         });
       }
-      formApi.validateField('expirationTime');
+      // formApi.validateField('expirationTime');
     }
+  }
+);
+
+// 监听授权类型变化，动态切换指纹特征字段的必填规则
+watch(
+  () => authorizationType.value,
+  (newVal) => {
+    formApi.updateSchema([
+      {
+        fieldName: 'fingerprintFeature',
+        rules: newVal === 'OFFICIALLY' ? 'required' : '',
+      },
+    ]);
   }
 );
 
@@ -219,7 +233,7 @@ watch(
         // 同步授权类型
         authorizationType.value = val.authorizationType || 'OFFICIALLY';
         // 触发验证
-        formApi.validateField('expirationTime');
+        // formApi.validateField('expirationTime');
       }
     } else {
       if (formApi.resetForm) {
@@ -244,7 +258,7 @@ watch(
         expirationTime: ''
       });
       // 触发验证
-      formApi.validateField('expirationTime');
+      // formApi.validateField('expirationTime');
     }
   },
   { immediate: true }
@@ -268,10 +282,10 @@ function handleSubmit(values: any) {
     }
 
     // 检查正式授权时是否填写了指纹特征
-    if (values.authorizationType === 'OFFICIALLY' && (!values.fingerprintFeature || values.fingerprintFeature.trim() === '')) {
-      ElMessage.warning('指纹特征不能为空');
-      return;
-    }
+    // if (values.authorizationType === 'OFFICIALLY' && (!values.fingerprintFeature || values.fingerprintFeature.trim() === '')) {
+    //   ElMessage.warning('指纹特征不能为空');
+    //   return;
+    // }
 
     // 检查过期时间是否为过去时间（精确到秒）
     if (values.expirationTime) {
