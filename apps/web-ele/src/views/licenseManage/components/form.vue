@@ -16,9 +16,7 @@ const props = defineProps<{
   visible: boolean;
 }>();
 const emit = defineEmits(['update:visible', 'submit']);
-const state = reactive({
-  isSubmitting: false
-})
+const isSubmitting = ref(false)
 const customerKeyStatus = ref(false);
 const selectedKeyId = ref<null | string>(null);
 // 授权类型默认值
@@ -185,8 +183,13 @@ const [Form, formApi] = useVbenForm({
   schema,
   wrapperClass: 'grid grid-cols-1 gap-4',
   commonConfig: { labelWidth: 140 },
-  submitButtonOptions: { show: false }, // 不显示表单自带的保存按钮
-  resetButtonOptions: { show: false }, // 不显示表单自带的取消按钮
+  submitButtonOptions: { 
+    content: $t('customerManage.form.save'),
+    loading: isSubmitting
+  }, // 不显示表单自带的保存按钮
+  resetButtonOptions: { 
+    content: $t('customerManage.form.cancel'),
+   }, // 不显示表单自带的取消按钮
   handleSubmit,
   handleReset,
 });
@@ -301,8 +304,8 @@ function handleSubmit(values: any) {
     ...values,
     keyId: selectedKeyId.value,
   };
-  if(state.isSubmitting) return
-  state.isSubmitting = true
+  if(isSubmitting.value) return
+  isSubmitting.value = true
   emit('submit', submitData);
 }
 function handleReset() {
@@ -319,7 +322,7 @@ function handleReset() {
 
 // 暴露isSubmitting给父组件用于控制按钮loading
 defineExpose({ validateAndSubmitForm: formApi.validateAndSubmitForm, resetSubmitting: () => {
-  state.isSubmitting = false;
+  isSubmitting.value = false;
 } });
 </script>
 
