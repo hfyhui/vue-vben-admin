@@ -193,6 +193,7 @@ async function submit(values: any) {
       editData.value = null;
       showForm.value = false;
       formModalApi.close();
+      licenseFormRef.value?.resetSubmitting?.();
       gridApi.query();
     }else {
       licenseFormRef.value?.resetSubmitting?.();
