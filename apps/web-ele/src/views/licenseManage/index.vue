@@ -433,4 +433,9 @@ function onSearchForm(values: Record<string, any>) {
 :deep(.el-overlay) {
   border-radius: 7px !important;
 }
+
+
+:deep(.vxe-table--empty-content)  {
+  padding: 40px 0 !important;
+}
 </style>
