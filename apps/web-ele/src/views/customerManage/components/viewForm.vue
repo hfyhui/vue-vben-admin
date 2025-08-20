@@ -203,4 +203,8 @@ function handleClose() {
 :deep(.el-descriptions__content) {
   color: #333;
 }
+
+:deep(.vxe-table--empty-content) {
+  padding: 40px 0 !important;
+}
 </style>
