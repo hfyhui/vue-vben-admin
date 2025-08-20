@@ -1,11 +1,3 @@
-<!--
- * @Author: 小妹 cuiling.liu@callfanai.com
- * @Date: 2025-07-31 16:07:34
- * @LastEditors: 小妹 cuiling.liu@callfanai.com
- * @LastEditTime: 2025-08-15 10:31:54
- * @FilePath: \workSpace\vben-web\apps\web-ele\src\views\licenseManage\components\searchForm.vue
- * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
--->
 <script setup lang="ts">
 import { useVbenForm } from '#/adapter/form';
 import { $t } from '#/locales';
@@ -24,6 +16,7 @@ const [SearchForm, formApi] = useVbenForm({
         placeholder:
           $t('licenseManage.search.customerName') || '请输入客户名称',
         style: 'width: 180px;',
+        clearable: true,
         onKeyup: (e: KeyboardEvent) => {
           if (e.key === 'Enter') {
             formApi?.submitForm();
@@ -45,7 +38,7 @@ const [SearchForm, formApi] = useVbenForm({
           },
         ],
         placeholder: $t('licenseManage.form.licenseType') || '请选择证书类型',
-        allowClear: true,
+        clearable: true,
         style: 'width: 180px;',
       },
     },
