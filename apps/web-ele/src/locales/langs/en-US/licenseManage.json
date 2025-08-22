@@ -46,7 +46,12 @@
     "title": "License Detail",
     "close": "Close",
     "noFingerprint": "No fingerprint",
-    "noRemark": "No remark"
+    "noRemark": "No remark",
+    "noApps": "No authorized apps",
+    "authorizedApps": "Authorized Apps",
+    "appName": "App Name",
+    "appVersion": "App Version",
+    "appStatus": "App Status"
   },
   "message": {
     "editSuccess": "Edit succeeded",
