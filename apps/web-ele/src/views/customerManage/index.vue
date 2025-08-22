@@ -4,6 +4,7 @@ import type { VxeGridListeners, VxeGridProps } from '#/adapter/vxe-table';
 import { nextTick, ref } from 'vue';
 
 import { ElMessage, ElMessageBox } from 'element-plus';
+import { ElUpload } from 'element-plus';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import { $t } from '#/locales';
@@ -15,6 +16,7 @@ import {
   getCustomerDetailApi,
   getCustomerListApi,
   updateCustomerApi,
+  importCustomerApi,
 } from '../../api/core/customer';
 import { getDictApi } from '../../api/core/dict';
 import CustomerForm from './components/form.vue';
@@ -92,7 +94,7 @@ const gridOptions: VxeGridProps<any> = {
     {
       field: 'action',
       title: $t('customerManage.table.operation'),
-      width: 180,
+      width: 240,
       slots: { default: 'action' },
       fixed: 'right',
     },
@@ -213,6 +215,30 @@ async function onDelete(row: any) {
   } catch (error) {
     console.error('删除失败:', error);
   }
+}
+function createImportHandler(customerId: string) {
+  return async function(options: any) {
+    const { file } = options; // file是ElUpload传递的原始文件对象
+    // 1. 检查文件类型
+    if (!file.name.endsWith('.lic')) {
+      ElMessage.error($t('customerManage.message.invalidFileType'));
+      return;
+    }
+    try {
+      // 2. 创建FormData，用于表单上传（关键步骤）
+      const formData = new FormData();
+      formData.append('file', file); //  append文件对象
+      formData.append('customerId', customerId); // 附加其他参数 
+      // 3. 调用接口时传递FormData
+      const result = await importCustomerApi(formData); // 注意：接口需要支持FormData接收
+      if (result && result.code === 100000) {
+        ElMessage.success($t('customerManage.message.importSuccess'));
+        gridApi.query();
+      }
+    } catch (error) {
+
+    }
+  };
 }
 async function onBatchDelete() {
   if (selectedRowIds.value.length === 0) {
@@ -337,6 +363,16 @@ async function submit(values: any) {
         </span>
       </template>
       <template #action="{ row }">
+        <ElUpload
+          :show-file-list="false"
+          :http-request="createImportHandler(row.id)"
+          accept=".lic"
+          style="display: inline-block"
+        >
+          <ElButton link>
+            导入license
+          </ElButton>
+        </ElUpload>
         <ElButton link @click="onEdit(row)">
           {{ $t('customerManage.action.edit') }}
         </ElButton>

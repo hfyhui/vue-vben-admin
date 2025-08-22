@@ -310,7 +310,7 @@ function onSearchForm(values: Record<string, any>) {
       <ElButton type="primary" @click="onAdd">
         {{ $t('licenseManage.action.add') }}
       </ElButton>
-      <ElUpload
+      <!-- <ElUpload
         :show-file-list="false"
         :before-upload="onImportLicense"
         accept=".lic"
@@ -319,7 +319,7 @@ function onSearchForm(values: Record<string, any>) {
         <ElButton type="primary">
           {{ $t('licenseManage.action.import') }}
         </ElButton>
-      </ElUpload>
+      </ElUpload> -->
       <ElButton type="danger" @click="onBatchDelete">
         {{ $t('licenseManage.action.batchDelete') }}
       </ElButton>
