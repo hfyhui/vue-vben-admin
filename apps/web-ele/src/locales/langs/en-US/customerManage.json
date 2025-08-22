@@ -12,7 +12,8 @@
     "edit": "Edit",
     "delete": "Delete",
     "batchDelete": "Batch Delete",
-    "view": "View"
+    "view": "View",
+    "import": "Import"
   },
   "table": {
     "customerName": "Customer Name",
@@ -71,7 +72,10 @@
     "editSuccess": "Edit successful",
     "addSuccess": "Add successful",
     "addShareholders": "Please add shareholder information",
-    "completeShareholders": "Please complete shareholder information, all fields are required"
+    "completeShareholders": "Please complete shareholder information, all fields are required",
+    "importSuccess": "Import successful",
+    "importFailed": "Import failed",
+    "invalidFileType": "Only .lic format files can be imported"
   },
   "types": {
     "company": "Company",

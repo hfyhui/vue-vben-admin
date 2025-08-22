@@ -12,7 +12,8 @@
     "edit": "编辑",
     "delete": "删除",
     "batchDelete": "批量删除",
-    "view": "查看"
+    "view": "查看",
+    "import": "导入"
   },
   "table": {
     "customerName": "客户名称",
@@ -71,7 +72,10 @@
     "editSuccess": "编辑成功",
     "addSuccess": "新增成功",
     "addShareholders": "请添加股东信息",
-    "completeShareholders": "请完善股东信息"
+    "completeShareholders": "请完善股东信息",
+    "importSuccess": "导入成功",
+    "importFailed": "导入失败",
+    "invalidFileType": "只能导入.lic格式的文件"
   },
   "types": {
     "company": "公司",

@@ -113,3 +113,12 @@ export async function getCustomerDetailApi(
 ): Promise<ApiResponse<{ data: CustomerInfo }>> {
   return proxyClient.get(`/license/customer/${id}`);
 }
+
+// 修改接口定义，支持FormData
+export async function importCustomerApi(formData: FormData): Promise<ApiResponse<any>> {
+  return proxyClient.post('/license/import', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data', // 声明为表单数据类型
+    },
+  });
+}
