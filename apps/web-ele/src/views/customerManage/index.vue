@@ -367,7 +367,7 @@ async function submit(values: any) {
           :show-file-list="false"
           :http-request="createImportHandler(row.id)"
           accept=".lic"
-          style="display: inline-block"
+          style="display: inline-block;margin-right: 10px;"
         >
           <ElButton link>
             导入license
