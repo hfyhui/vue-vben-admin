@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 
 import { $t } from '#/locales';
+import { getProductTreeApi } from '../../../api/core/license';
 
 interface LicenseInfo {
   id?: string;
@@ -11,9 +12,26 @@ interface LicenseInfo {
   expirationTime?: string;
   concurrentUsers?: number;
   licenseStatus?: string;
+  licenseStatusName?: string;
   fingerprintFeature?: string;
   remark?: string;
   msg?: string;
+  // 授权应用信息
+  productList?: Array<{
+    hierarchy: number;
+    menuId: string;
+    menuName: string;
+    parentId: string;
+    appId: number;
+    children: Array<{
+      hierarchy: number;
+      menuId: string;
+      menuName: string;
+      parentId: string;
+      appId: number;
+      children: any[];
+    }>;
+  }>;
   // 支持嵌套的数据结构
   data?: {
     authorizationType?: 'OFFICIALLY' | 'TRIAL';
@@ -23,7 +41,23 @@ interface LicenseInfo {
     expirationTime?: string;
     fingerprintFeature?: string;
     licenseStatus?: string;
+    licenseStatusName?: string;
     remark?: string;
+    productList?: Array<{
+      hierarchy: number;
+      menuId: string;
+      menuName: string;
+      parentId: string;
+      appId: number;
+      children: Array<{
+        hierarchy: number;
+        menuId: string;
+        menuName: string;
+        parentId: string;
+        appId: number;
+        children: any[];
+      }>;
+    }>;
   };
 }
 
@@ -46,11 +80,49 @@ const actualData = computed(() => {
   return props.data.data || props.data;
 });
 
+// 产品树形数据
+const productTreeData = ref<any[]>([]);
+const loading = ref(false);
+
+// 当前license已授权的应用ID列表
+const authorizedAppIds = computed(() => {
+  if (!actualData.value?.productList) return [];
+  
+  const ids: string[] = [];
+  const collectIds = (items: any[]) => {
+    items.forEach(item => {
+      // 只收集叶子节点（没有子节点的节点）的ID
+      if (!item.children || item.children.length === 0) {
+        ids.push(item.menuId);
+      } else {
+        // 如果有子节点，递归处理子节点
+        collectIds(item.children);
+      }
+    });
+  };
+  
+  collectIds(actualData.value.productList);
+  return ids;
+});
+
+// 获取产品树形数据
+async function fetchProductTree() {
+  loading.value = true;
+  try {
+    const data = await getProductTreeApi();
+    productTreeData.value = data;
+  } catch (error) {
+    console.error('获取产品树形数据失败:', error);
+  } finally {
+    loading.value = false;
+  }
+}
+
 function handleClose() {
   emit('update:visible', false);
 }
 
-function formatFingerprint(val) {
+function formatFingerprint(val: string | undefined): string {
   if (!val) return '';
   // 只对全数字的长串插入零宽空格
   if (/^\d{10,}$/.test(val)) {
@@ -58,6 +130,11 @@ function formatFingerprint(val) {
   }
   return val;
 }
+
+// 组件挂载时获取产品树形数据
+onMounted(() => {
+  fetchProductTree();
+});
 </script>
 
 <template>
@@ -82,6 +159,34 @@ function formatFingerprint(val) {
             '-'
           }}
         </ElTag>
+      </ElDescriptionsItem>
+      <!-- 授权应用信息 -->
+      <ElDescriptionsItem :label="$t('licenseManage.detail.authorizedApps')">
+        <div v-if="productTreeData.length > 0" class="apps-tree-container">
+          <el-tree
+            v-loading="loading"
+            :data="productTreeData"
+            :props="{ label: 'menuName', children: 'children' }"
+            node-key="menuId"
+            :default-expand-all="true"
+            :expand-on-click-node="false"
+            :default-checked-keys="authorizedAppIds"
+            show-checkbox
+            :check-strictly="false"
+            class="apps-tree"
+            disabled
+          >
+            <template #default="{ data }">
+              <span class="tree-node-content">
+                <span class="node-name">{{ data.menuName }}</span>
+              </span>
+            </template>
+          </el-tree>
+        </div>
+        <div v-else-if="loading" class="loading-container">
+          <span class="text-gray-600">加载中...</span>
+        </div>
+        <span v-else class="text-gray-600">{{ $t('licenseManage.detail.noApps') }}</span>
       </ElDescriptionsItem>
 
       <ElDescriptionsItem :label="$t('licenseManage.form.expireTime')">
@@ -137,16 +242,6 @@ function formatFingerprint(val) {
 </template>
 
 <style scoped>
-.license-detail .apps-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.license-detail .apps-container .app-tag {
-  margin: 0;
-}
-
 .license-detail .detail-actions {
   display: flex;
   gap: 12px;
@@ -201,6 +296,82 @@ function formatFingerprint(val) {
   white-space: pre-wrap;
   overflow-wrap: break-word;
   display: inline;
+}
+
+.license-detail .apps-tree-container {
+  width: 100%;
+  max-width: 500px;
+}
+
+.license-detail .loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  color: #6b7280;
+}
+
+.license-detail .apps-tree {
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 12px;
+  background-color: #f9fafb;
+}
+
+.license-detail .tree-node-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.license-detail .node-name {
+  font-weight: 500;
+  color: #374151;
+  font-size: 14px;
+}
+
+.license-detail .node-info {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+/* 树形组件样式优化 */
+:deep(.apps-tree .el-tree-node__content) {
+  height: auto;
+  padding: 4px 0;
+}
+
+:deep(.apps-tree .el-tree-node__label) {
+  width: 100%;
+}
+
+:deep(.apps-tree .el-tree-node__expand-icon) {
+  color: #6b7280;
+}
+
+:deep(.apps-tree .el-tree-node__expand-icon.expanded) {
+  color: #3b82f6;
+}
+
+/* 勾选框样式 */
+:deep(.apps-tree .el-checkbox) {
+  margin-right: 8px;
+}
+
+:deep(.apps-tree .el-checkbox__input.is-disabled .el-checkbox__inner) {
+  background-color: #f5f7fa;
+  border-color: #dcdfe6;
+  cursor: not-allowed;
+}
+
+:deep(.apps-tree .el-checkbox__input.is-disabled.is-checked .el-checkbox__inner) {
+  background-color: #409eff;
+  border-color: #409eff;
+}
+
+:deep(.apps-tree .el-checkbox__input.is-disabled.is-checked .el-checkbox__inner::after) {
+  border-color: #fff;
 }
 
 :deep(.license-descriptions) {

@@ -46,7 +46,12 @@
     "title": "License详情",
     "close": "关闭",
     "noFingerprint": "暂无指纹特征",
-    "noRemark": "暂无备注"
+    "noRemark": "暂无备注",
+    "noApps": "暂无授权应用",
+    "authorizedApps": "授权应用",
+    "appName": "应用名称",
+    "appVersion": "应用版本",
+    "appStatus": "应用状态"
   },
   "message": {
     "editSuccess": "编辑成功",
