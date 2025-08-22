@@ -218,7 +218,7 @@ async function onDeleteKey(keyId: string) {
             ref="keyInputRef"
             @keyup.enter="onAddKey"
             @blur="onAddKey"
-            style="width: 180px"
+            style="width: 388px"
             maxlength="15"
             show-word-limit
           />

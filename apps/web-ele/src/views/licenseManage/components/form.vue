@@ -58,22 +58,6 @@ const schema = [
     },
     rules: 'selectRequired',
   },
-  // 授权应用
-  {
-    component: h(AppTreeSelector),
-    fieldName: 'features',
-    label: $t('licenseManage.form.apps'),
-    required: true,
-    defaultValue: {},
-    rules: z
-      .any()
-      .refine(
-        (val) => val && typeof val === 'object' && Object.keys(val).length > 0,
-        {
-          message: $t('licenseManage.form.apps'),
-        },
-      ),
-  },
   {
     component: 'RadioGroup',
     fieldName: 'authorizationType',
@@ -104,6 +88,22 @@ const schema = [
       }
     },
     rules: 'selectRequired',
+  },
+  // 授权应用
+  {
+    component: h(AppTreeSelector),
+    fieldName: 'features',
+    label: $t('licenseManage.form.apps'),
+    required: true,
+    defaultValue: {},
+    rules: z
+      .any()
+      .refine(
+        (val) => val && typeof val === 'object' && Object.keys(val).length > 0,
+        {
+          message: $t('licenseManage.form.apps'),
+        },
+      ),
   },
   {
     component: 'DatePicker',
