@@ -83,6 +83,7 @@ const actualData = computed(() => {
 // 产品树形数据
 const productTreeData = ref<any[]>([]);
 const loading = ref(false);
+const treeRef = ref<any>(null);
 
 // 当前license已授权的应用ID列表
 const authorizedAppIds = computed(() => {
@@ -131,6 +132,16 @@ function formatFingerprint(val: string | undefined): string {
   return val;
 }
 
+// 阻止任何勾选操作
+function handleCheck(data: any, checkedInfo: any) {
+  // 阻止勾选状态改变，强制恢复到原始状态
+  if (treeRef.value) {
+    // 强制恢复到原始授权状态
+    treeRef.value.setCheckedKeys(authorizedAppIds.value);
+  }
+  return false;
+}
+
 // 组件挂载时获取产品树形数据
 onMounted(() => {
   fetchProductTree();
@@ -164,6 +175,7 @@ onMounted(() => {
       <ElDescriptionsItem :label="$t('licenseManage.detail.authorizedApps')">
         <div v-if="productTreeData.length > 0" class="apps-tree-container">
           <el-tree
+            ref="treeRef"
             v-loading="loading"
             :data="productTreeData"
             :props="{ label: 'menuName', children: 'children' }"
@@ -173,8 +185,8 @@ onMounted(() => {
             :default-checked-keys="authorizedAppIds"
             show-checkbox
             :check-strictly="false"
-            class="apps-tree"
-            disabled
+            class="apps-tree read-only-tree"
+            @check="handleCheck"
           >
             <template #default="{ data }">
               <span class="tree-node-content">
@@ -354,6 +366,20 @@ onMounted(() => {
   color: #3b82f6;
 }
 
+/* 只读树形组件 - 禁用复选框但保持显示 */
+:deep(.read-only-tree .el-checkbox) {
+  pointer-events: none !important;
+  opacity: 0.6 !important;
+}
+
+:deep(.read-only-tree .el-checkbox__input) {
+  cursor: not-allowed !important;
+}
+
+:deep(.read-only-tree .el-checkbox__inner) {
+  cursor: not-allowed !important;
+}
+
 /* 勾选框样式 */
 :deep(.apps-tree .el-checkbox) {
   margin-right: 8px;
@@ -365,12 +391,12 @@ onMounted(() => {
   cursor: not-allowed;
 }
 
-:deep(.apps-tree .el-checkbox__input.is-disabled.is-checked .el-checkbox__inner) {
+:deep(.apps-tree .el-tree-node__input.is-disabled.is-checked .el-checkbox__inner) {
   background-color: #409eff;
   border-color: #409eff;
 }
 
-:deep(.apps-tree .el-checkbox__input.is-disabled.is-checked .el-checkbox__inner::after) {
+:deep(.apps-tree .el-tree-node__input.is-disabled.is-checked .el-checkbox__inner::after) {
   border-color: #fff;
 }
 
