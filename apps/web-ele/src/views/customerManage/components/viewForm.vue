@@ -180,7 +180,7 @@ function handleClose() {
   margin-bottom: 16px;
   font-size: 16px;
   font-weight: 600;
-  color: #e5e7eb !important;
+  /* color: #303133 !important; */
 }
 
 .detail-actions {
