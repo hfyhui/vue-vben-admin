@@ -449,5 +449,7 @@ async function submit(values: any) {
   font-size: 14px;
 }
 
-
+:deep(.vxe-table--empty-content)  {
+  padding: 40px 0 !important;
+}
 </style>
