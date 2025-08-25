@@ -26,6 +26,9 @@
   "type": "module",
   "scripts": {
     "build": "cross-env NODE_OPTIONS=--max-old-space-size=8192 turbo build",
+    "build:ele:dev": "pnpm --filter @vben/web-ele build:dev",
+    "build:ele:test": "pnpm --filter @vben/web-ele build:test",
+    "build:ele:prod": "pnpm --filter @vben/web-ele build:prod",
     "build:analyze": "turbo build:analyze",
     "build:antd": "pnpm run build --filter=@vben/web-antd",
     "build:docker": "./scripts/deploy/build-local-docker-image.sh",

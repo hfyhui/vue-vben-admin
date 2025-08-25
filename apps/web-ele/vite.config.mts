@@ -20,6 +20,14 @@ export default defineConfig(async () => {
             target: 'http://localhost:5320/api',
             ws: true,
           },
+          '/platform': {
+            changeOrigin: true,
+            rewrite: (path) => path.replace(/^\/platform/, 'platform'),
+            // 后端接口代理地址
+            // target: 'http://10.0.2.212:8899',
+            target: 'http://172.25.1.213:8899',
+            ws: true,
+          },
         },
       },
     },

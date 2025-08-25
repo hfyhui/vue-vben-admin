@@ -237,5 +237,8 @@
     "nolebase",
     "rollup",
     "vitest"
-  ]
+  ],
+  "[plaintext]": {
+    "editor.defaultFormatter": "lkrms.inifmt"
+  }
 }

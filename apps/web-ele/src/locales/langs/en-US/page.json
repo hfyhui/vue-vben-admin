@@ -8,7 +8,8 @@
   },
   "dashboard": {
     "title": "Dashboard",
-    "analytics": "Analytics",
-    "workspace": "Workspace"
+    "customerManage": "CustomerManage",
+    "licenseManage": "LicenseManage",
+    "productList": "ProductList"
   }
 }

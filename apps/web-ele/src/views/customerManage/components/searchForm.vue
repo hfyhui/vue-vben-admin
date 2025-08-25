@@ -1,0 +1,85 @@
+<!--
+ * @Author: 小妹 cuiling.liu@callfanai.com
+ * @Date: 2025-08-15 16:35:33
+ * @LastEditors: 小妹 cuiling.liu@callfanai.com
+ * @LastEditTime: 2025-08-20 16:53:57
+ * @FilePath: \workSpace\callfans-platform-admin\apps\web-ele\src\views\customerManage\components\searchForm.vue
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+-->
+<script setup lang="ts">
+import { useVbenForm } from '#/adapter/form';
+import { $t } from '#/locales';
+
+// 定义 props
+const props = defineProps<{
+  customerTypes: any[];
+}>();
+const emit = defineEmits(['search']);
+
+const [SearchForm, formApi] = useVbenForm({
+  layout: 'horizontal',
+  schema: [
+    {
+      component: 'Input',
+      fieldName: 'customersName',
+      labelWidth: 60,
+      label: $t('customerManage.search.customerName') || '客户名称',
+      componentProps: {
+        placeholder:
+          $t('customerManage.search.customerName') || '请输入客户名称',
+        style: 'width: 180px;',
+        clearable: true,
+        onKeyup: (e: KeyboardEvent) => {
+          if (e.key === 'Enter') {
+            formApi?.submitForm();
+          }
+        },
+      },
+    },
+    {
+      component: 'Select',
+      fieldName: 'customersType',
+      labelWidth: 60,
+      label: $t('customerManage.search.customerType') || '客户类型',
+      componentProps: {
+        options:
+          props.customerTypes?.map((item: any) => ({
+            label: item.content,
+            value: item.name,
+          })) || [],
+        placeholder:
+          $t('customerManage.search.customerType') || '请选择客户类型',
+        clearable: true,
+        style: 'width: 180px;',
+      },
+    },
+  ],
+  handleSubmit(values) {
+    emit('search', values);
+  },
+  handleReset() {
+    if (formApi && formApi.resetForm) formApi.resetForm();
+    emit('search', {});
+  },
+  submitButtonOptions: { content: $t('common.search') || '查询' },
+  resetButtonOptions: { content: $t('common.reset') || '重置' },
+  wrapperClass: 'search-row-flex',
+});
+</script>
+
+<template>
+  <SearchForm />
+</template>
+
+<style scoped>
+:deep(.search-row-flex) {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 16px;
+  align-items: flex-end;
+}
+
+:deep(.search-row-flex .vben-form-item) {
+  margin-bottom: 0 !important;
+}
+</style>
