@@ -115,17 +115,6 @@ const gridOptions: VxeGridProps<any> = {
         
         // 更新缓存的总数
         cachedTotal.value = data?.total || 0;
-        
-        // 如果目标页码和当前页码不一致，需要同步更新分页器状态
-        // 通过返回数据后使用 nextTick 来确保在 DOM 更新后同步页码
-        if (targetPage !== page.currentPage) {
-          await nextTick();
-          const grid = gridApi.grid as any;
-          if (grid && grid.pagerConfig) {
-            grid.pagerConfig.currentPage = targetPage;
-          }
-        }
-        
         return data;
       },
     },
