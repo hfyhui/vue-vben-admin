@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import type { VxeGridListeners, VxeGridProps } from '#/adapter/vxe-table';
 
-import { onMounted, ref } from 'vue';
+import { nextTick, onMounted, ref } from 'vue';
 
 import { useVbenModal } from '@vben/common-ui';
 
@@ -32,6 +32,8 @@ const detailData = ref<any>(null);
 const formApiRef = ref<any>(null);
 const showForm = ref(false);
 const showDetail = ref(false);
+// 记住当前总数，避免删除后需要先查询一次获取总数
+const cachedTotal = ref<number>(0);
 
 // 客户列表数据
 const customerList = ref<{ label: string; value: string }[]>([]);
@@ -94,18 +96,36 @@ const gridOptions: VxeGridProps<any> = {
   proxyConfig: {
     ajax: {
       query: async ({ page }) => {
+        // 使用缓存的总数计算最大页，如果当前页大于最大页，current 改成 1
+        const maxPage = Math.ceil(cachedTotal.value / page.pageSize) || 1;
+        const targetPage = page.currentPage > maxPage ? 1 : page.currentPage;
+        
         // 处理时间范围，转换为 expirationTimes 格式
         let expirationTimes = undefined;
         if (searchFormData.value?.expirationTimes && Array.isArray(searchFormData.value.expirationTimes)) {
           expirationTimes = searchFormData.value.expirationTimes;
         }
         const data = await getLicenseListApi({
-          page: page.currentPage,
+          page: targetPage,
           pageSize: page.pageSize,
           customerName: searchFormData.value?.customerName,
           authorizationType: searchFormData.value?.authorizationType,
           expirationTimes,
         });
+        
+        // 更新缓存的总数
+        cachedTotal.value = data?.total || 0;
+        
+        // 如果目标页码和当前页码不一致，需要同步更新分页器状态
+        // 通过返回数据后使用 nextTick 来确保在 DOM 更新后同步页码
+        if (targetPage !== page.currentPage) {
+          await nextTick();
+          const grid = gridApi.grid as any;
+          if (grid && grid.pagerConfig) {
+            grid.pagerConfig.currentPage = targetPage;
+          }
+        }
+        
         return data;
       },
     },
@@ -250,6 +270,10 @@ async function onDelete(row: any) {
     );
     let res = await deleteLicenseApi(row.id);
     if(res.code === 100000){
+      // 删除后更新总数（减1）
+      if (cachedTotal.value > 0) {
+        cachedTotal.value -= 1;
+      }
       ElMessage.success($t('licenseManage.message.deleteSuccess'));
       gridApi.query();
     }
@@ -275,13 +299,16 @@ async function onBatchDelete() {
     );
     
     const ids = selectedRowIds.value;
+    const deleteCount = ids.length;
     let res = await deleteLicenseApi(ids);
     if(res.code === 100000){
-      ElMessage.success(`${$t('licenseManage.message.deleteSuccess')}（删除了 ${ids.length} 项）`);
+      // 删除后更新总数（减去删除的数量）
+      cachedTotal.value = Math.max(0, cachedTotal.value - deleteCount);
+      ElMessage.success(`${$t('licenseManage.message.deleteSuccess')}（删除了 ${deleteCount} 项）`);
       gridApi.query();
+      // 清空跨分页选中状态
+      clearAllSelection();
     }
-    // 清空跨分页选中状态
-    clearAllSelection();
   } catch (error) {
     if (error !== 'cancel') {
       ElMessage.error(error instanceof Error ? error.message : '批量删除失败');
@@ -295,8 +322,9 @@ onMounted(() => {
 });
 function onSearchForm(values: Record<string, any>) {
   searchFormData.value = values;
-  // 搜索时重置到第一页
-  gridApi.reload();
+  // 搜索时清空缓存，重新获取总数
+  cachedTotal.value = 0;
+  gridApi.query();
 }
 </script>
 

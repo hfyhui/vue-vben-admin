@@ -51,6 +51,8 @@ const showForm = ref(false);
 const showViewForm = ref(false);
 const editData = ref<any>(null);
 const viewData = ref<any>(null);
+// 记住当前总数，避免删除后需要先查询一次获取总数
+const cachedTotal = ref<number>(0);
 
 const gridOptions: VxeGridProps<any> = {
   minHeight: '50px',
@@ -113,14 +115,31 @@ const gridOptions: VxeGridProps<any> = {
   proxyConfig: {
     ajax: {
       query: async ({ page, form }) => {
+        // 使用缓存的总数计算最大页，如果当前页大于最大页，current 改成 1
+        const maxPage = Math.ceil(cachedTotal.value / page.pageSize) || 1;
+        const targetPage = page.currentPage > maxPage ? 1 : page.currentPage;
+        
         const res = await getCustomerListApi({
-          page: page.currentPage,
+          page: targetPage,
           pageSize: page.pageSize,
           customersName: form?.customersName || searchForm.value.customersName,
           customersType: form?.customersType || searchForm.value.customersType,
         });
 
-        return res.data
+        // 更新缓存的总数
+        cachedTotal.value = res.data.data?.total || 0;
+        
+        // 如果目标页码和当前页码不一致，需要同步更新分页器状态
+        // 通过返回数据后使用 nextTick 来确保在 DOM 更新后同步页码
+        if (targetPage !== page.currentPage) {
+          await nextTick();
+          const grid = gridApi.grid as any;
+          if (grid && grid.pagerConfig) {
+            grid.pagerConfig.currentPage = targetPage;
+          }
+        }
+
+        return res.data.data;
       },
     },
     response: {
@@ -163,8 +182,9 @@ function onSearch(values?: any) {
   if (values) {
     searchForm.value = values;
   }
-  // 搜索时重置到第一页
-  gridApi.reload();
+  // 搜索时清空缓存，重新获取总数
+  cachedTotal.value = 0;
+  gridApi.query();
 }
 function onAdd() {
   editData.value = null;
@@ -209,6 +229,10 @@ async function onDelete(row: any) {
     });
     let res = await deleteCustomerApi(row.id);
     if(res.code === 100000){
+      // 删除后更新总数（减1）
+      if (cachedTotal.value > 0) {
+        cachedTotal.value -= 1;
+      }
       ElMessage.success('删除成功');
       gridApi.query();
     }
@@ -255,13 +279,16 @@ async function onBatchDelete() {
     );
     
     const ids = selectedRowIds.value;
+    const deleteCount = ids.length;
     let res = await batchDeleteCustomerApi(ids);
     if(res.code === 100000){
-      ElMessage.success(`成功删除 ${ids.length} 个客户`);
+      // 删除后更新总数（减去删除的数量）
+      cachedTotal.value = Math.max(0, cachedTotal.value - deleteCount);
+      ElMessage.success(`成功删除 ${deleteCount} 个客户`);
       gridApi.query();
+      // 清空跨分页选中状态
+      clearAllSelection();
     }
-    // 清空跨分页选中状态
-    clearAllSelection();
   } catch {
     // 用户取消或删除失败
   }
