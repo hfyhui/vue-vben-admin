@@ -1,0 +1,46 @@
+{
+  "stats": {
+    "devicePool": "设备池",
+    "runningDevices": "运行中设备",
+    "pendingDevices": "待使用设备",
+    "other": "..."
+  },
+  "filter": {
+    "containerFilter": "容器筛选",
+    "containerFilterPlaceholder": "请选择社媒平台",
+    "socialPlatform": "社媒平台",
+    "containerSearch": "容器搜索",
+    "containerSearchPlaceholder": "请输入容器关键词",
+    "accountSearch": "账号搜索",
+    "accountSearchPlaceholder": "请输入账号关键词",
+    "containerGroup": "容器分组",
+    "containerGroupPlaceholder": "请选择容器分组",
+    "accountGroup": "账号分组",
+    "accountGroupPlaceholder": "请选择账号分组",
+    "sortCondition": "排序条件",
+    "sortConditionPlaceholder": "请选择排序"
+  },
+  "table": {
+    "server": "所属服务器",
+    "entryTime": "录入时间",
+    "chip": "所属芯片",
+    "deviceIp": "设备IP",
+    "romVersion": "ROM版本",
+    "phoneBrand": "手机品牌",
+    "phoneModel": "手机型号",
+    "operator": "运营商",
+    "phoneNumber": "手机号码",
+    "deviceGroup": "设备分组",
+    "remarks": "备注",
+    "associatedAccounts": "关联账号",
+    "associatedAgents": "关联代理",
+    "status": "状态"
+  },
+  "action": {
+    "add": "新增",
+    "import": "导入",
+    "batchDelete": "批量删除",
+    "deviceReset": "设备重置",
+    "placeholder": "???"
+  }
+}

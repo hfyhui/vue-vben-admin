@@ -9,6 +9,10 @@
   "dashboard": {
     "customerManage": "客户管理",
     "licenseManage": "license管理",
-    "productList": "产品清单"
+    "productList": "产品清单",
+    "associationCenter": "关联中心",
+    "accountPool": "账号池",
+    "containerPool": "容器池",
+    "proxyPool": "代理池"
   }
 }

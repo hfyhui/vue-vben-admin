@@ -1,0 +1,42 @@
+{
+  "stats": {
+    "proxyPool": "Proxy Pool",
+    "runningProxies": "Running Proxies",
+    "pendingProxies": "Pending Proxies",
+    "riskControlProxies": "Risk Control Proxies"
+  },
+  "filter": {
+    "regionFilter": "Region Filter",
+    "regionFilterPlaceholder": "Select region or IP",
+    "region": "Region",
+    "ip": "IP",
+    "proxySearch": "Proxy Search",
+    "proxySearchPlaceholder": "Enter proxy keyword",
+    "proxyGroup": "Proxy Group",
+    "proxyGroupPlaceholder": "Select proxy group",
+    "sortCondition": "Sort Condition",
+    "sortConditionPlaceholder": "Select sort"
+  },
+  "table": {
+    "region": "Region",
+    "loginTime": "Login Time",
+    "protocol": "Protocol",
+    "deviceIp": "Device IP",
+    "port": "Port",
+    "username": "Username",
+    "password": "Password",
+    "link": "Link",
+    "expireTime": "Expire Time",
+    "proxyGroup": "Proxy Group",
+    "remarks": "Remarks",
+    "associatedDevices": "Associated Devices",
+    "associatedAccounts": "Associated Accounts",
+    "riskAlert": "Risk Alert"
+  },
+  "action": {
+    "add": "Add",
+    "import": "Import",
+    "batchDelete": "Batch Delete"
+  }
+}
+

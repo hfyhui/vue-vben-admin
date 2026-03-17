@@ -1,0 +1,46 @@
+{
+  "stats": {
+    "devicePool": "Device Pool",
+    "runningDevices": "Running Devices",
+    "pendingDevices": "Pending Devices",
+    "other": "..."
+  },
+  "filter": {
+    "containerFilter": "Container Filter",
+    "containerFilterPlaceholder": "Select platform",
+    "socialPlatform": "Social Platform",
+    "containerSearch": "Container Search",
+    "containerSearchPlaceholder": "Enter container keyword",
+    "accountSearch": "Account Search",
+    "accountSearchPlaceholder": "Enter account keyword",
+    "containerGroup": "Container Group",
+    "containerGroupPlaceholder": "Select container group",
+    "accountGroup": "Account Group",
+    "accountGroupPlaceholder": "Select account group",
+    "sortCondition": "Sort Condition",
+    "sortConditionPlaceholder": "Select sort"
+  },
+  "table": {
+    "server": "Server",
+    "entryTime": "Entry Time",
+    "chip": "Chip",
+    "deviceIp": "Device IP",
+    "romVersion": "ROM Version",
+    "phoneBrand": "Phone Brand",
+    "phoneModel": "Phone Model",
+    "operator": "Operator",
+    "phoneNumber": "Phone Number",
+    "deviceGroup": "Device Group",
+    "remarks": "Remarks",
+    "associatedAccounts": "Associated Accounts",
+    "associatedAgents": "Associated Agents",
+    "status": "Status"
+  },
+  "action": {
+    "add": "Add",
+    "import": "Import",
+    "batchDelete": "Batch Delete",
+    "deviceReset": "Device Reset",
+    "placeholder": "???"
+  }
+}

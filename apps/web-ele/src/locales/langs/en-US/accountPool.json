@@ -1,0 +1,40 @@
+{
+  "stats": {
+    "accountPool": "Account Pool",
+    "runningAccounts": "Running Accounts",
+    "pendingAccounts": "Pending Accounts",
+    "riskControlAccounts": "Risk Control Accounts"
+  },
+  "filter": {
+    "platform": "Platform Filter",
+    "platformPlaceholder": "Select platform",
+    "socialPlatform": "Social Platform",
+    "accountSearch": "Account Search",
+    "accountSearchPlaceholder": "Enter account keyword",
+    "accountGroup": "Account Group",
+    "accountGroupPlaceholder": "Select account group",
+    "sortCondition": "Sort Condition",
+    "sortConditionPlaceholder": "Select sort"
+  },
+  "table": {
+    "platform": "Platform",
+    "entryTime": "Entry Time",
+    "riskAlert": "Risk Alert",
+    "account": "Account",
+    "accountId": "Account ID",
+    "username": "Username",
+    "userAccount": "User Account",
+    "accountPassword": "Account Password",
+    "verificationEmail": "Verification Email",
+    "emailPassword": "Email Password",
+    "remarks": "Remarks",
+    "accountGroup": "Account Group",
+    "associatedDevices": "Associated Devices",
+    "associatedAgents": "Associated Agents"
+  },
+  "action": {
+    "add": "Add",
+    "import": "Import",
+    "batchDelete": "Batch Delete"
+  }
+}

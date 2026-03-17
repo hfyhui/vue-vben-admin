@@ -1,0 +1,42 @@
+{
+  "stats": {
+    "proxyPool": "代理池",
+    "runningProxies": "运行中代理",
+    "pendingProxies": "待使用代理",
+    "riskControlProxies": "风控代理"
+  },
+  "filter": {
+    "regionFilter": "地区筛选",
+    "regionFilterPlaceholder": "请选择地区",
+    "region": "地区",
+    "ip": "IP",
+    "proxySearch": "代理搜索",
+    "proxySearchPlaceholder": "请输入代理关键词",
+    "proxyGroup": "代理分组",
+    "proxyGroupPlaceholder": "请选择代理分组",
+    "sortCondition": "排序条件",
+    "sortConditionPlaceholder": "请选择排序"
+  },
+  "table": {
+    "region": "所属地区",
+    "loginTime": "录入时间",
+    "protocol": "协议",
+    "deviceIp": "IP",
+    "port": "端口号",
+    "username": "用户名",
+    "password": "密码",
+    "link": "链路",
+    "expireTime": "到期时间",
+    "proxyGroup": "代理分组",
+    "remarks": "备注",
+    "associatedDevices": "关联设备",
+    "associatedAccounts": "关联账号",
+    "riskAlert": "风险提示"
+  },
+  "action": {
+    "add": "新增",
+    "import": "导入",
+    "batchDelete": "批量删除"
+  }
+}
+
