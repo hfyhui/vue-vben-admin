@@ -1,18 +1,12 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue';
-import { useRouter } from 'vue-router';
 
 import { ElMessage } from 'element-plus';
+import { Box, Loading } from '@element-plus/icons-vue';
 
 import { $t } from '#/locales';
 
 import { getAccountAssetPageApi } from '#/api/core/asset';
-
-const router = useRouter();
-
-function goToAccountPool() {
-  router.push('/accountPool');
-}
 
 /** 账号资产项，与接口 POST /asset/account/page 返回的 records 结构一致 */
 interface AccountItem {
@@ -20,6 +14,7 @@ interface AccountItem {
   account?: string;
   userAccount?: string;
   platform?: string;
+  logoPath?: string;
   color?: string;
   riskTips?: string;
   accountGroup?: string;
@@ -45,6 +40,50 @@ const pagination = reactive({
 });
 
 const list = ref<AccountItem[]>([]);
+const selectedIds = ref<string[]>([]);
+/** OSS 访问前缀（用于把接口返回的 logoPath 拼成可访问 URL） */
+const logoPrefix = String(import.meta.env.VITE_OSS_BASE_URL || '');
+
+/** 根据接口的 logoPath 拼出完整图片 URL */
+function getLogoUrl(logoPath?: string) {
+  if (!logoPath) return '';
+  return `${logoPrefix}/${logoPath}`;
+}
+
+/** 生成列表项的稳定 key（优先用 accountId，否则使用 platform+index 兜底） */
+function getKey(item: AccountItem, index: number) {
+  return item.accountId || `${item.platform || 'account'}-${index}`;
+}
+
+/** 判断某个列表项是否处于选中状态 */
+function isSelected(item: AccountItem, index: number) {
+  const key = getKey(item, index);
+  return selectedIds.value.includes(key);
+}
+
+/** 切换某个列表项的选中状态（多选） */
+function toggleSelect(item: AccountItem, index: number) {
+  const key = getKey(item, index);
+  const idx = selectedIds.value.indexOf(key);
+  if (idx > -1) selectedIds.value.splice(idx, 1);
+  else selectedIds.value.push(key);
+}
+
+/** 获取当前已选中的账号列表（按选择顺序返回，用于自动关联的一一配对） */
+function getSelectedAccounts() {
+  const map = new Map<string, AccountItem>();
+  list.value.forEach((item, index) => {
+    map.set(getKey(item, index), item);
+  });
+  return selectedIds.value
+    .map((key) => map.get(key))
+    .filter((item): item is AccountItem => Boolean(item));
+}
+
+/** 清空当前选择（对外暴露给父组件调用） */
+function clearSelectedAccounts() {
+  selectedIds.value = [];
+}
 
 /** 右侧色条颜色，直接使用接口返回的 color，无则默认 gray */
 function getRiskColor(color?: string): string {
@@ -58,8 +97,8 @@ function buildRequestParams() {
     size: pagination.size,
   };
   if (filterForm.accountSearch) params.accountName = filterForm.accountSearch;
-  if (filterForm.accountGroup) params.groupId = [filterForm.accountGroup];
-  if (filterForm.platform) params.appId = filterForm.platform;
+  if (filterForm.accountGroup) params.suiteIds = [filterForm.accountGroup];
+  if (filterForm.platform) params.appIds = [filterForm.platform];
   if (filterForm.sortCondition) {
     try {
       params.sortCondition = JSON.parse(filterForm.sortCondition);
@@ -70,6 +109,7 @@ function buildRequestParams() {
   return params;
 }
 
+/** 拉取账号分页数据（内部做追加、分页推进、结束判断） */
 async function fetchData() {
   if (loading.value || finished.value) return;
 
@@ -101,13 +141,16 @@ async function fetchData() {
   }
 }
 
+/** 执行查询：重置列表与分页，并重新加载第一页 */
 function handleSearch() {
   list.value = [];
   pagination.current = 1;
   finished.value = false;
+  selectedIds.value = [];
   fetchData();
 }
 
+/** 无限滚动加载更多 */
 function handleLoadMore() {
   if (loading.value || finished.value) return;
   fetchData();
@@ -118,8 +161,109 @@ function getAccountDisplayName(item: AccountItem) {
   return item.account || item.userAccount || $t('associationCenter.accountUnknown');
 }
 
+/** 生成拖拽预览 DOM：多选时把本次拖拽的账号都展示在影子里 */
+function createDragPreviewElement(items: AccountItem[]) {
+  const root = document.createElement('div');
+  root.style.position = 'fixed';
+  root.style.top = '-9999px';
+  root.style.left = '-9999px';
+  root.style.minWidth = '180px';
+  root.style.maxWidth = '260px';
+  root.style.maxHeight = '220px';
+  root.style.overflowY = 'auto';
+  root.style.padding = '6px 8px';
+  root.style.borderRadius = '8px';
+  root.style.background = 'rgba(48, 49, 51, 0.92)';
+  root.style.color = '#fff';
+  root.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.25)';
+  root.style.fontSize = '12px';
+
+  items.forEach((item) => {
+    const row = document.createElement('div');
+    row.style.display = 'flex';
+    row.style.alignItems = 'center';
+    row.style.gap = '6px';
+    row.style.padding = '2px 0';
+
+    const img = document.createElement('img');
+    img.src = getLogoUrl(item.logoPath);
+    img.style.width = '16px';
+    img.style.height = '16px';
+    img.style.borderRadius = '4px';
+    img.style.objectFit = 'cover';
+    row.appendChild(img);
+
+    const text = document.createElement('span');
+    text.textContent = item.accountId ?? '-';
+    text.style.whiteSpace = 'nowrap';
+    text.style.overflow = 'hidden';
+    text.style.textOverflow = 'ellipsis';
+    row.appendChild(text);
+    root.appendChild(row);
+  });
+
+  document.body.appendChild(root);
+  return root;
+}
+
+/** 拖拽开始：把“已选账号 + 当前拖拽账号”打包到 dataTransfer（并校验同平台唯一） */
+function onAccountDragStart(ev: DragEvent, item: AccountItem, index: number) {
+  const dt = ev.dataTransfer;
+  if (!dt) return;
+
+  // 如果已有多选，则拖拽时把「已选中的账号 + 当前拖拽的账号」一起带上
+  const dragKey = getKey(item, index);
+  const keysSet = new Set(selectedIds.value);
+  keysSet.add(dragKey);
+  const keys = Array.from(keysSet);
+  const dragItems = list.value.filter((row, i) =>
+    keys.includes(getKey(row, i)),
+  );
+
+  const platformMap: Record<string, number> = {};
+  for (const it of dragItems) {
+    const p = (it.platform || '').trim();
+    if (!p) continue;
+    platformMap[p] = (platformMap[p] || 0) + 1;
+    if (platformMap[p] > 1) {
+      ElMessage.error('同一批拖拽中，每个社媒平台只能选择一个账号');
+      ev.preventDefault();
+      return;
+    }
+  }
+
+  dt.effectAllowed = 'copy';
+  dt.setData(
+    'application/x-account-items',
+    JSON.stringify(
+      dragItems.map((it) => ({
+        accountId: it.accountId,
+        account: it.account,
+        userAccount: it.userAccount,
+        platform: it.platform,
+        logoPath: it.logoPath,
+      })),
+    ),
+  );
+
+  // 使用自定义拖拽预览，保证拖拽影子展示本次拖拽的全部账号
+  const previewEl = createDragPreviewElement(dragItems);
+  dt.setDragImage(previewEl, 20, 16);
+  // 不能立即 remove，否则部分浏览器会退回默认单条影子
+  setTimeout(() => {
+    previewEl.remove();
+  }, 100);
+}
+
+/** 组件初始化时加载第一页账号数据 */
 onMounted(() => {
   fetchData();
+});
+
+/** 向父组件暴露：读取已选账号、清空已选账号 */
+defineExpose({
+  getSelectedAccounts,
+  clearSelectedAccounts,
 });
 </script>
 
@@ -173,21 +317,6 @@ onMounted(() => {
           />
         </el-select>
       </div>
-      <el-tooltip
-        :content="$t('associationCenter.accountPool')"
-        placement="top"
-      >
-        <el-button
-          type="primary"
-          link
-          class="jump-btn"
-          @click="goToAccountPool"
-        >
-          <el-icon :size="18">
-            <i-ep-top-right />
-          </el-icon>
-        </el-button>
-      </el-tooltip>
     </div>
 
     <div
@@ -202,10 +331,19 @@ onMounted(() => {
             v-for="(item, index) in list"
             :key="item.accountId || `account-${index}`"
             class="account-row"
+            :class="{ selected: isSelected(item, index) }"
+            draggable="true"
+            @click.stop="toggleSelect(item, index)"
+            @dragstart="onAccountDragStart($event, item, index)"
           >
             <div class="account-info">
-              <div class="platform-icon platform-xiaohongshu">
-                {{ item.platform || '小红书' }}
+              <div class="platform-icon">
+                <img
+                  v-if="item.logoPath"
+                  :src="getLogoUrl(item.logoPath)"
+                  class="platform-logo"
+                  alt="logo"
+                />
               </div>
               <div class="account-main">
                 <div class="account-id">
@@ -237,14 +375,14 @@ onMounted(() => {
       >
         <template #image>
           <el-icon :size="80" color="var(--el-border-color)">
-            <i-ep-box />
+            <Box />
           </el-icon>
         </template>
       </el-empty>
 
       <div v-if="loading" class="board-loading">
         <el-icon class="is-loading">
-          <i-ep-loading />
+          <Loading />
         </el-icon>
         <span>{{ $t('associationCenter.loadingMore') }}</span>
       </div>
@@ -298,11 +436,6 @@ onMounted(() => {
 .filter-input :deep(.el-input__wrapper),
 .filter-input :deep(.el-select__wrapper) {
   border-radius: 6px;
-}
-
-.jump-btn {
-  flex-shrink: 0;
-  margin-left: 4px;
 }
 
 .board-content {
@@ -364,6 +497,13 @@ onMounted(() => {
   position: relative;
   height: 46px;
   min-height: 44px;
+  cursor: grab;
+  user-select: none;
+}
+
+.account-row.selected {
+  border-color: var(--el-color-primary);
+  box-shadow: 0 0 0 1px var(--el-color-primary-light-5);
 }
 
 .account-info {
@@ -383,10 +523,14 @@ onMounted(() => {
   font-size: 11px;
   color: #fff;
   flex-shrink: 0;
+  background: var(--el-fill-color-light);
+  overflow: hidden;
 }
 
-.platform-xiaohongshu {
-  background: linear-gradient(135deg, #ff2442 0%, #ff6b6b 100%);
+.platform-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .account-main {

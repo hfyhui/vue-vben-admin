@@ -53,5 +53,6 @@
   "officialEnable": "正式启用",
   "containerReset": "容器重置",
   "reverseQuery": "反向查询",
-  "viewSwitch": "视图切换"
+  "viewSwitch": "视图切换",
+  "jump": "跳转"
 }

@@ -51,5 +51,6 @@
   "officialEnable": "Officially Enable",
   "containerReset": "Container Reset",
   "reverseQuery": "Reverse Query",
-  "viewSwitch": "View Switch"
+  "viewSwitch": "View Switch",
+  "jump": "Jump"
 }
