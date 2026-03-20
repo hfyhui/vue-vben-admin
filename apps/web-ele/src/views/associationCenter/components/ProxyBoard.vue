@@ -11,6 +11,7 @@ import { getProxyAssetPageApi } from '#/api/core/asset';
 /** 代理资产项，与接口 POST /asset/proxy/page 返回的 records 结构一致 */
 interface ProxyItem {
   id?: string;
+  accountId?: string;
   area?: string;
   ip?: string;
   proxy?: string;
@@ -45,7 +46,7 @@ const selectedIds = ref<string[]>([]);
 
 /** 生成列表项稳定 key（优先 id，其次 proxy，再次 index） */
 function getKey(item: ProxyItem, index: number) {
-  return item.id || item.proxy || `proxy-${index}`;
+  return item.ip
 }
 
 /** 判断代理卡片是否被选中 */
@@ -84,46 +85,28 @@ function getRiskColor(color?: string): string {
 
 /** 构建代理分页查询参数，与接口字段保持一致 */
 function buildRequestParams() {
-  const params: Record<string, any> = {
+  return {
     current: pagination.current,
     size: pagination.size,
+    area: filterForm.area,
+    proxy: filterForm.proxySearch,
+    groupId: filterForm.proxyGroup,
+    sortCondition: filterForm.sortCondition,
   };
-  if (filterForm.area) params.area = filterForm.area;
-  if (filterForm.proxySearch) params.proxy = filterForm.proxySearch;
-  if (filterForm.proxyGroup) params.groupId = filterForm.proxyGroup;
-  if (filterForm.sortCondition) {
-    try {
-      params.sortCondition = JSON.parse(filterForm.sortCondition);
-    } catch {
-      params.sortCondition = { [filterForm.sortCondition]: 'asc' };
-    }
-  }
-  return params;
 }
 
 /** 拉取代理分页数据（内部做列表追加、分页推进与结束判断） */
 async function fetchData() {
-  if (loading.value || finished.value) return;
+  if (loading.value) return;
 
   loading.value = true;
   try {
-    const data = await getProxyAssetPageApi<ProxyItem>(buildRequestParams());
-
-    if (!data || !Array.isArray(data.records)) {
-      ElMessage.error($t('common.error.loadFailed'));
-      finished.value = true;
-      return;
-    }
-
-    list.value.push(...data.records);
-    pagination.total = data.total ?? pagination.total;
-
-    const loaded = list.value.length;
-    if (loaded >= pagination.total || data.records.length === 0) {
-      finished.value = true;
-    } else {
-      pagination.current += 1;
-    }
+    const { records = [], total = 0 } =
+      await getProxyAssetPageApi<ProxyItem>(buildRequestParams());
+    list.value.push(...records);
+    pagination.total = total;
+    finished.value = records.length === 0 || list.value.length >= total;
+    if (!finished.value) pagination.current += 1;
   } catch (error) {
     console.error(error);
     ElMessage.error($t('common.error.loadFailed'));
@@ -144,8 +127,8 @@ function handleSearch() {
 
 /** 无限滚动加载更多代理数据 */
 function handleLoadMore() {
-  if (loading.value || finished.value) return;
-  fetchData();
+  if (loading.value) return;
+  void fetchData();
 }
 
 /** 代理拖拽开始：写入 dataTransfer，供设备看板接收绑定 */
@@ -157,6 +140,7 @@ function onProxyDragStart(ev: DragEvent, item: ProxyItem) {
     'application/x-proxy-item',
     JSON.stringify({
       id: item.id,
+      accountId: item.accountId,
       area: item.area,
       ip: item.ip,
       proxy: item.proxy,

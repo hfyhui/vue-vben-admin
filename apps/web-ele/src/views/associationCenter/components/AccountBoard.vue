@@ -6,7 +6,7 @@ import { Box, Loading } from '@element-plus/icons-vue';
 
 import { $t } from '#/locales';
 
-import { getAccountAssetPageApi } from '#/api/core/asset';
+import { getAccountAssetPageApi, getAssetAppListApi } from '#/api/core/asset';
 
 /** 账号资产项，与接口 POST /asset/account/page 返回的 records 结构一致 */
 interface AccountItem {
@@ -14,6 +14,9 @@ interface AccountItem {
   account?: string;
   userAccount?: string;
   platform?: string;
+  appId?: string;
+  appCode?: string;
+  appName?: string;
   logoPath?: string;
   color?: string;
   riskTips?: string;
@@ -22,6 +25,11 @@ interface AccountItem {
   inputTime?: string;
   remark?: string;
   [key: string]: any;
+}
+
+/** 统一读取账号 appId（用于拖拽批次去重） */
+function getAccountAppId(item: AccountItem) {
+  return String(item.appId || '').trim();
 }
 
 const loading = ref(false);
@@ -41,8 +49,9 @@ const pagination = reactive({
 
 const list = ref<AccountItem[]>([]);
 const selectedIds = ref<string[]>([]);
+const platformOptions = ref<Array<{ label: string; value: string }>>([]);
 /** OSS 访问前缀（用于把接口返回的 logoPath 拼成可访问 URL） */
-const logoPrefix = String(import.meta.env.VITE_OSS_BASE_URL || '');
+const logoPrefix = import.meta.env.VITE_OSS_BASE_URL
 
 /** 根据接口的 logoPath 拼出完整图片 URL */
 function getLogoUrl(logoPath?: string) {
@@ -50,9 +59,9 @@ function getLogoUrl(logoPath?: string) {
   return `${logoPrefix}/${logoPath}`;
 }
 
-/** 生成列表项的稳定 key（优先用 accountId，否则使用 platform+index 兜底） */
+/** 生成列表项的稳定 key用 accountId */
 function getKey(item: AccountItem, index: number) {
-  return item.accountId || `${item.platform || 'account'}-${index}`;
+  return item.accountId
 }
 
 /** 判断某个列表项是否处于选中状态 */
@@ -100,11 +109,7 @@ function buildRequestParams() {
   if (filterForm.accountGroup) params.suiteIds = [filterForm.accountGroup];
   if (filterForm.platform) params.appIds = [filterForm.platform];
   if (filterForm.sortCondition) {
-    try {
-      params.sortCondition = JSON.parse(filterForm.sortCondition);
-    } catch {
-      params.sortCondition = { [filterForm.sortCondition]: 'asc' };
-    }
+    params.sortCondition = filterForm.sortCondition;
   }
   return params;
 }
@@ -116,12 +121,6 @@ async function fetchData() {
   loading.value = true;
   try {
     const data = await getAccountAssetPageApi<AccountItem>(buildRequestParams());
-
-    if (!data || !Array.isArray(data.records)) {
-      ElMessage.error($t('common.error.loadFailed'));
-      finished.value = true;
-      return;
-    }
 
     list.value.push(...data.records);
     pagination.total = data.total ?? pagination.total;
@@ -141,6 +140,25 @@ async function fetchData() {
   }
 }
 
+/** 拉取平台筛选项（应用列表接口） */
+async function fetchPlatformOptions() {
+  try {
+    const data = await getAssetAppListApi({
+      current: 1,
+      size: 200,
+      applicationStatus: 0,
+    });
+    platformOptions.value = (data.records || [])
+      .map((item) => ({
+        label: item.applicationName ?? '',
+        value: item.id ?? '',
+      }));
+  } catch (error) {
+    console.error(error);
+    ElMessage.error('平台筛选项加载失败');
+  }
+}
+
 /** 执行查询：重置列表与分页，并重新加载第一页 */
 function handleSearch() {
   list.value = [];
@@ -156,9 +174,9 @@ function handleLoadMore() {
   fetchData();
 }
 
-/** 显示账号名称：优先 account，其次 userAccount */
+/** 显示账号名称account */
 function getAccountDisplayName(item: AccountItem) {
-  return item.account || item.userAccount || $t('associationCenter.accountUnknown');
+  return item.account 
 }
 
 /** 生成拖拽预览 DOM：多选时把本次拖拽的账号都展示在影子里 */
@@ -220,12 +238,12 @@ function onAccountDragStart(ev: DragEvent, item: AccountItem, index: number) {
     keys.includes(getKey(row, i)),
   );
 
-  const platformMap: Record<string, number> = {};
+  const appIdMap: Record<string, number> = {};
   for (const it of dragItems) {
-    const p = (it.platform || '').trim();
-    if (!p) continue;
-    platformMap[p] = (platformMap[p] || 0) + 1;
-    if (platformMap[p] > 1) {
+    const appId = getAccountAppId(it);
+    if (!appId) continue;
+    appIdMap[appId] = (appIdMap[appId] || 0) + 1;
+    if (appIdMap[appId] > 1) {
       ElMessage.error('同一批拖拽中，每个社媒平台只能选择一个账号');
       ev.preventDefault();
       return;
@@ -241,6 +259,9 @@ function onAccountDragStart(ev: DragEvent, item: AccountItem, index: number) {
         account: it.account,
         userAccount: it.userAccount,
         platform: it.platform,
+        appId: it.appId,
+        appCode: it.appCode,
+        appName: it.appName,
         logoPath: it.logoPath,
       })),
     ),
@@ -258,6 +279,7 @@ function onAccountDragStart(ev: DragEvent, item: AccountItem, index: number) {
 /** 组件初始化时加载第一页账号数据 */
 onMounted(() => {
   fetchData();
+  fetchPlatformOptions();
 });
 
 /** 向父组件暴露：读取已选账号、清空已选账号 */
@@ -279,8 +301,10 @@ defineExpose({
           clearable
         >
           <el-option
-            label="社媒平台"
-            value="social"
+            v-for="item in platformOptions"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
           />
         </el-select>
       </div>
@@ -316,6 +340,9 @@ defineExpose({
             value=""
           />
         </el-select>
+      </div>
+      <div class="filter-actions">
+        <el-button type="primary" @click="handleSearch">搜索</el-button>
       </div>
     </div>
 
@@ -436,6 +463,10 @@ defineExpose({
 .filter-input :deep(.el-input__wrapper),
 .filter-input :deep(.el-select__wrapper) {
   border-radius: 6px;
+}
+
+.filter-actions {
+  flex-shrink: 0;
 }
 
 .board-content {

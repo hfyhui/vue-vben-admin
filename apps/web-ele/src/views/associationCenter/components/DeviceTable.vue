@@ -4,7 +4,6 @@ import {
   getDeviceVersion,
   getPlatformIconLabel,
   getPlatformIconStyle,
-  parseAccountList,
 } from '../composables/useDeviceDisplay';
 
 import type { DeviceItem } from '#/api/core/asset';
@@ -17,8 +16,14 @@ type BoundAccount = {
   logoPath?: string;
 };
 
+type BoundProxy = {
+  id?: string;
+  ip?: string;
+  proxy?: string;
+};
+
 /** 仅展示有明确平台图标的关联（抖/快/书等），无平台信息的不展示 */
-const logoPrefix = String(import.meta.env.VITE_OSS_BASE_URL || '');
+const logoPrefix = import.meta.env.VITE_OSS_BASE_URL
 function getLogoUrl(logoPath?: string) {
   if (!logoPath) return '';
   return `${logoPrefix}/${logoPath}`;
@@ -28,44 +33,52 @@ function getBoundAccounts(
   row: DeviceItem,
 ): Array<{ platform?: string; id?: string; label: string; tooltip: string; logoPath?: string }> {
   const result: Array<{ platform?: string; id?: string; label: string; tooltip: string; logoPath?: string }> = [];
-  const bound = (row.boundAccounts as BoundAccount[] | undefined) || [];
+  const accountInfos = (row.accountInfos as Array<Record<string, any>> | undefined) || [];
+  const bound =
+    accountInfos.length > 0
+      ? accountInfos.map((it) => ({
+          accountId: it.accountId,
+          platform: it.appId,
+          logoPath: it.appLogo,
+        }))
+      : ((row.boundAccounts as BoundAccount[] | undefined) || []);
   for (const acc of bound) {
-    const platform = acc.platform || acc.account || acc.userAccount || '';
-    const id = acc.accountId || acc.account || acc.userAccount || '';
+    const platform = acc.platform;
+    const id = acc.accountId;
     const label = getPlatformIconLabel(platform) || platform?.slice(0, 1) || '';
-    if (acc.logoPath) {
-      result.push({
-        platform,
-        id,
-        label,
-        tooltip: id ? `${platform || '账号'}: ${id}` : platform || '',
-        logoPath: acc.logoPath,
-      });
-      continue;
-    }
-    if (label && label !== '?') {
-      result.push({
-        platform,
-        id,
-        label,
-        tooltip: id ? `${platform || '账号'}: ${id}` : platform || '',
-      });
-    }
-  }
-  const parsed = parseAccountList(row.account);
-  for (const p of parsed) {
-    if (p.id) continue; // 纯数字 ID 无平台图标，不展示
-    const label = getPlatformIconLabel(p.platform) || p.platform?.slice(0, 1) || '';
-    if (label && label !== '?') {
-      result.push({
-        platform: p.platform,
-        id: p.id,
-        label,
-        tooltip: p.id || p.platform || '',
-      });
-    }
+    result.push({
+      platform,
+      id,
+      label,
+      tooltip: id || '',
+      logoPath: acc.logoPath,
+    });
   }
   return result;
+}
+
+function getGroupDisplay(row: DeviceItem) {
+  if (Array.isArray(row.groups)) return row.groups.filter(Boolean).join(',');
+  return row.deviceGroup
+}
+
+function getServerDisplay(row: DeviceItem) {
+  return row.connIp
+}
+
+function getPhoneDisplay(row: DeviceItem) {
+  return row.deviceNum
+}
+
+function getProxyDisplay(row: DeviceItem) {
+  const bound = (row.boundProxies as BoundProxy[] | undefined) || [];
+  if (bound.length > 0) {
+    return bound
+      .map((p) => p.proxy)
+      .filter(Boolean)
+      .join(',');
+  }
+  return row.prox
 }
 
 const props = defineProps<{
@@ -131,15 +144,31 @@ function getRowClassName({ row }: { row: DeviceItem }) {
       </el-table-column>
 
       <el-table-column prop="deviceIp" label="设备IP" min-width="120" />
-      <el-table-column prop="deviceGroup" label="分组信息" min-width="100" />
-      <el-table-column prop="proxy" label="网络代理" min-width="180" />
-      <el-table-column prop="server" label="代理IP" min-width="150" />
+      <el-table-column label="分组信息" min-width="100">
+        <template #default="{ row }">
+          {{ getGroupDisplay(row) }}
+        </template>
+      </el-table-column>
+      <el-table-column label="网络代理" min-width="180">
+        <template #default="{ row }">
+          <span :title="getProxyDisplay(row)">{{ getProxyDisplay(row) }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="代理IP" min-width="150">
+        <template #default="{ row }">
+          {{ getServerDisplay(row) }}
+        </template>
+      </el-table-column>
       <el-table-column label="设备版本" min-width="100">
         <template #default="{ row }">
           {{ getDeviceVersion(row) }}
         </template>
       </el-table-column>
-      <el-table-column prop="phoneNumber" label="手机号" min-width="140" />
+      <el-table-column label="手机号" min-width="140">
+        <template #default="{ row }">
+          {{ getPhoneDisplay(row) }}
+        </template>
+      </el-table-column>
       <el-table-column label="关联状态" min-width="140" align="left">
         <template #default="{ row }">
           <div

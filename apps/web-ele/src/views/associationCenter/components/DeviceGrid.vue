@@ -6,12 +6,21 @@ import { $t } from '#/locales';
 import type { DeviceItem } from '#/api/core/asset';
 
 import {
-  getPlatformIconLabel,
   getStatusColor,
   getDeviceVersion,
   getProxyIp,
-  parseAccountList,
 } from '../composables/useDeviceDisplay';
+
+type BoundProxy = {
+  id?: string;
+  ip?: string;
+  proxy?: string;
+};
+
+type BoundAccount = {
+  accountId?: string;
+  logoPath?: string;
+};
 
 const logoPrefix = String(import.meta.env.VITE_OSS_BASE_URL || '');
 function getLogoUrl(logoPath?: string) {
@@ -48,6 +57,25 @@ function onDrop(ev: DragEvent, item: DeviceItem) {
 function onToggleSelect(item: DeviceItem) {
   emit('toggleSelect', item);
 }
+
+function getProxyDisplay(item: DeviceItem) {
+  return ((item.boundProxies as BoundProxy[] | undefined)?.map((p) => p.ip).join(',')) || '';
+}
+
+function getGroupDisplay(item: DeviceItem) {
+  return (item.groups as string[]).join(',');
+}
+
+function getPhoneDisplay(item: DeviceItem) {
+  return item.deviceNum;
+}
+
+function getBoundAccounts(item: DeviceItem): BoundAccount[] {
+  return ((item.accountInfos as Array<Record<string, any>> | undefined)?.map((acc) => ({
+    accountId: acc.accountId,
+    logoPath: acc.appLogo,
+  })) || []);
+}
 </script>
 
 <template>
@@ -60,24 +88,29 @@ function onToggleSelect(item: DeviceItem) {
     <template v-if="list.length">
       <div class="device-grid">
         <div
-          v-for="(item, index) in list"
-          :key="item.deviceIp || `device-${index}`"
+          v-for="item in list"
+          :key="item.deviceIp"
           class="device-card"
-          :class="{ selected: selectedDeviceKeys.includes(item.deviceIp || '') }"
+          :class="{ selected: selectedDeviceKeys.includes(item.deviceIp as string) }"
           @click.stop="onToggleSelect(item)"
           @dragover="onDragOver"
           @drop="onDrop($event, item)"
         >
           <div class="card-status" :class="getStatusColor(item.color)" />
           <div class="card-body">
-            <div class="card-ip">{{ item.deviceIp || '-' }}</div>
+            <div class="card-ip">{{ item.deviceIp }}</div>
             <div class="card-row">
               <span class="card-label">{{ $t('associationCenter.groupInfo') }}:</span>
-              <span>{{ item.deviceGroup || '-' }}</span>
+              <span>{{ getGroupDisplay(item) }}</span>
             </div>
             <div class="card-row">
               <span class="card-label">{{ $t('associationCenter.networkProxy') }}:</span>
-              <span>{{ item.proxy || '-' }}</span>
+              <span
+                class="card-proxy-ellipsis"
+                :title="getProxyDisplay(item)"
+              >
+                {{ getProxyDisplay(item) }}
+              </span>
             </div>
             <div class="card-row">
               <span class="card-label">{{ $t('associationCenter.proxyIp') }}:</span>
@@ -89,32 +122,21 @@ function onToggleSelect(item: DeviceItem) {
             </div>
             <div class="card-row card-phone">
               <el-icon><Iphone /></el-icon>
-              <span>{{ item.phoneNumber || '-' }}</span>
+              <span>{{ getPhoneDisplay(item) }}</span>
             </div>
             <div
-              v-if="(item.boundAccounts && item.boundAccounts.length) || item.account || item.remark"
+              v-if="getBoundAccounts(item).length"
               class="card-row card-account"
             >
-              <div v-if="item.remark" class="account-remark">
-                <span class="tiktok-icon" />
-                {{ item.remark }}
-              </div>
-              <div v-else class="account-icons">
+              <div class="account-icons">
                 <span
-                  v-for="(acc, i) in parseAccountList(item.account)"
-                  :key="'raw-' + String(acc.id || acc.platform || i)"
-                  class="platform-badge"
-                >
-                  {{ acc.id || acc.platform || '' }}
-                </span>
-                <span
-                  v-for="(acc, i) in (item.boundAccounts || [])"
-                  :key="'bound-' + String(acc.accountId || acc.account || i)"
+                  v-for="acc in getBoundAccounts(item)"
+                  :key="'bound-' + acc.accountId"
                   class="bound-account"
                 >
                   <el-tooltip
                     v-if="acc.logoPath"
-                    :content="acc.accountId || acc.account || acc.userAccount || ''"
+                    :content="acc.accountId"
                     placement="top"
                   >
                     <img
@@ -123,14 +145,6 @@ function onToggleSelect(item: DeviceItem) {
                       alt="account-logo"
                     />
                   </el-tooltip>
-                  <template v-else>
-                    <span class="platform-icon platform-icon-bound">
-                      {{ getPlatformIconLabel(acc.platform || acc.account || acc.userAccount) }}
-                    </span>
-                    <span class="bound-account-id">
-                      {{ acc.accountId || acc.account || acc.userAccount || '' }}
-                    </span>
-                  </template>
                 </span>
               </div>
             </div>
@@ -238,11 +252,26 @@ function onToggleSelect(item: DeviceItem) {
 .card-row {
   font-size: 12px;
   color: var(--el-text-color-secondary);
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  width: 100%;
 }
 
 .card-label {
   color: var(--el-text-color-regular);
   margin-right: 4px;
+  flex-shrink: 0;
+}
+
+.card-proxy-ellipsis {
+  display: inline-block;
+  width: 130px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
 }
 
 .card-phone {
@@ -283,15 +312,6 @@ function onToggleSelect(item: DeviceItem) {
   gap: 4px;
 }
 
-.bound-account-id {
-  font-size: 11px;
-  color: var(--el-text-color-secondary);
-  max-width: 110px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .bound-account-logo {
   width: 24px;
   height: 24px;
@@ -299,14 +319,6 @@ function onToggleSelect(item: DeviceItem) {
   object-fit: cover;
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.6);
   cursor: pointer;
-}
-
-.platform-badge {
-  font-size: 10px;
-  padding: 2px 6px;
-  background: var(--el-fill-color-light);
-  border-radius: 4px;
-  color: var(--el-text-color-secondary);
 }
 
 .platform-icon {

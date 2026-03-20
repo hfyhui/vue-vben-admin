@@ -11,6 +11,7 @@ import { useTitle } from '@vueuse/core';
 import ElementPlus, { ElLoading } from 'element-plus';
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import { $t, setupI18n } from '#/locales';
+import { useAssetEnumsStore } from '#/store';
 
 import { initComponentAdapter } from './adapter/component';
 import { initSetupVbenForm } from './adapter/form';
@@ -50,6 +51,9 @@ async function bootstrap(namespace: string) {
 
   // 配置 pinia-tore
   await initStores(app, { namespace });
+
+  // 进入项目后预加载资产枚举，后续业务直接从缓存读取
+  void useAssetEnumsStore().ensureAssetEnumsLoaded();
 
   // 安装权限指令
   registerAccessDirective(app);

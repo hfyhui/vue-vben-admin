@@ -38,26 +38,12 @@ export function getStatusColor(color?: string): string {
   return colorMap[color?.toLowerCase() ?? ''] ?? 'gray';
 }
 
-/** 解析账号显示：account 可能是逗号分隔的平台/账号列表 */
-export function parseAccountList(
-  account?: string,
-): Array<{ platform?: string; id?: string }> {
-  if (!account) return [];
-  const parts = account.trim().split(/[,，、]/).filter(Boolean);
-  return parts.map((p) => {
-    const trimmed = p.trim();
-    const match = trimmed.match(/^(\d+)$/);
-    if (match) return { id: match[1] };
-    return { platform: trimmed };
-  });
-}
-
 /** 设备版本显示：优先 romVersion，或组合 phoneBrand */
 export function getDeviceVersion(item: DeviceItem): string {
-  return item.romVersion || item.phoneBrand || item.phoneModel || '-';
+  return item.deviceVersion || item.romVersion || item.phoneBrand || item.phoneModel || '-';
 }
 
 /** 代理 IP / 次要 IP：server 为所属服务器 */
 export function getProxyIp(item: DeviceItem): string {
-  return item.server || '-';
+  return item.connIp || item.server || '-';
 }

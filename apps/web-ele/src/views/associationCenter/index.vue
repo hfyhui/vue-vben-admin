@@ -2,8 +2,10 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 
+import { ElMessage } from 'element-plus';
 import { TopRight } from '@element-plus/icons-vue';
 
+import { enableAssetApi } from '#/api/core/asset';
 import { $t } from '#/locales';
 
 import StatsOverview from './components/StatsOverview.vue';
@@ -23,7 +25,48 @@ function onViewSwitch() {
 function onAutoAssociate() {
   const accounts = accountBoardRef.value?.getSelectedAccounts?.() || [];
   const proxies = proxyBoardRef.value?.getSelectedProxies?.() || [];
-  deviceBoardRef.value?.autoAssociateWithSelections?.(accounts, proxies);
+
+  // 代理超出时，丢弃 bandingCount 更大的代理，但保持剩余代理原始顺序（保证一一对应顺序）
+  let usedProxies = proxies;
+  if (proxies.length > accounts.length) {
+    const dropCount = proxies.length - accounts.length;
+    const dropIndexes = new Set(
+      proxies
+        .map((item: any, index: number) => ({
+          index,
+          bandingCount: Number(item?.bandingCount ?? 0),
+        }))
+        .sort((a, b) => b.bandingCount - a.bandingCount || b.index - a.index)
+        .slice(0, dropCount)
+        .map((item) => item.index),
+    );
+    usedProxies = proxies.filter((_, index) => !dropIndexes.has(index));
+  }
+
+  deviceBoardRef.value?.autoAssociateWithSelections?.(accounts, usedProxies);
+}
+
+async function onOfficialEnable() {
+  const boardList = deviceBoardRef.value?.getDeviceBoardList?.() || [];
+  console.log('[associationCenter] 设备看板列表数据:', boardList);
+
+  const deviceEnables = deviceBoardRef.value?.getSelectedDeviceEnables?.() || [];
+  if (!deviceEnables.length) {
+    ElMessage.warning('请先在设备看板中选择需要正式启用的数据');
+    return;
+  }
+
+  try {
+    const response = await enableAssetApi({ deviceEnables });
+    if (response?.code === 100000) {
+      ElMessage.success(response.msg || '正式启用成功');
+      return;
+    }
+    ElMessage.error(response?.msg || '正式启用失败');
+  } catch (error) {
+    console.error(error);
+    ElMessage.error('正式启用失败');
+  }
 }
 </script>
 
@@ -65,7 +108,9 @@ function onAutoAssociate() {
         <el-button type="primary" @click="onAutoAssociate">
           {{ $t('associationCenter.autoAssociate') }}
         </el-button>
-        <el-button type="primary">{{ $t('associationCenter.officialEnable') }}</el-button>
+        <el-button type="primary" @click="onOfficialEnable">
+          {{ $t('associationCenter.officialEnable') }}
+        </el-button>
         <el-button type="danger">{{ $t('associationCenter.containerReset') }}</el-button>
         <el-button type="primary">{{ $t('associationCenter.reverseQuery') }}</el-button>
       </div>
