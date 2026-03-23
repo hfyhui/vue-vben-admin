@@ -74,18 +74,24 @@ type BoundProxy = {
   area?: string;
   ip?: string;
   proxy?: string;
+  proxyArea?: string;
   proxyGroup?: string;
 };
 
 function getProxyId(proxy: Partial<BoundProxy> & Record<string, any>) {
-  return String(proxy.ip || '').trim();
+  return proxy.ip as string;
+}
+
+/** 代理展示值：优先使用原始 proxy 串，缺失时再回退 area + ip / ip */
+function getProxyDisplayText(proxy: Partial<BoundProxy> & Record<string, any>) {
+  return proxy.proxy as string;
 }
 
 /** 统一读取账号 appId（用于同设备唯一校验） */
 function getAccountAppId(
   account: Partial<BoundAccount> & Record<string, any>,
 ): string {
-  return String(account.appId).trim();
+  return account.appId as string;
 }
 
 /** 收集设备已绑定的 appId（含后端 accountInfos 与前端 boundAccounts） */
@@ -105,6 +111,28 @@ function getDeviceBoundAppIds(item: DeviceItem) {
   return appIds;
 }
 
+/** 合并 accountInfos（接口）与 boundAccounts（前端新增），按 accountId 去重 */
+function getMergedBoundAccounts(item: DeviceItem): BoundAccount[] {
+  const fromApi = (item.accountInfos as Record<string, any>[] | undefined) || [];
+  const fromBound = (item.boundAccounts as BoundAccount[] | undefined) || [];
+  const byId = new Map<string, BoundAccount>();
+  fromApi.forEach((a) => {
+    if (a.accountId) {
+      byId.set(a.accountId, {
+        accountId: a.accountId,
+        appId: a.appId,
+        userAccount: a.userAccount,
+        account: a.accountNickname,
+        logoPath: a.appLogo,
+      });
+    }
+  });
+  fromBound.forEach((a) => {
+    if (a.accountId) byId.set(a.accountId, a);
+  });
+  return [...byId.values()];
+}
+
 /** 将 boundAccounts 同步回接口字段 accountInfos，确保新增绑定可回显 */
 function syncAccountInfosFromBound(item: DeviceItem) {
   const accounts = (item.boundAccounts as BoundAccount[] | undefined) || [];
@@ -116,6 +144,22 @@ function syncAccountInfosFromBound(item: DeviceItem) {
     accountNickname: acc.account,
     color: item.color,
   }));
+}
+
+/** 收集设备已绑定的账号 ID（兼容后端 accountInfos 与前端 boundAccounts） */
+function getDeviceBoundAccountIds(item: DeviceItem) {
+  const accountIds = new Set<string>();
+  const boundAccounts = (item.boundAccounts as BoundAccount[] | undefined) || [];
+  const accountInfos = (item.accountInfos as Record<string, any>[] | undefined) || [];
+
+  boundAccounts.forEach((acc) => {
+    accountIds.add(acc.accountId as string);
+  });
+  accountInfos.forEach((acc) => {
+    accountIds.add(acc.accountId as string);
+  });
+
+  return [...accountIds];
 }
 
 /** 构建设备分页请求参数，与容器分页接口字段一致 */
@@ -297,9 +341,7 @@ function getSelectedDeviceEnables() {
   );
   return selectedRecords
     .map((item) => {
-      const accountIds = ((item.boundAccounts as BoundAccount[] | undefined) || [])
-        .map((acc) => acc.accountId || '')
-        .filter(Boolean);
+      const accountIds = getDeviceBoundAccountIds(item);
       const bound = (item.boundProxies as BoundProxy[] | undefined) || [];
       const proxyId = bound.length > 0 ? getProxyId(bound[0]!) : '';
       const deviceId = String(getDeviceId(item) || '');
@@ -363,7 +405,7 @@ function onCardDrop(ev: DragEvent, item: DeviceItem) {
       return;
     }
 
-    const existing = (target.boundAccounts as BoundAccount[] | undefined) || [];
+    const existing = getMergedBoundAccounts(target);
     const existingAppIds = getDeviceBoundAppIds(target);
     const currentAppIds = new Set(existingAppIds);
 
@@ -391,7 +433,10 @@ function onCardDrop(ev: DragEvent, item: DeviceItem) {
       return;
     }
 
-    target.boundProxies = [proxy];
+    const displayProxy = getProxyDisplayText(proxy);
+    target.boundProxies = [{ ...proxy, proxy: displayProxy, proxyArea: proxy.area }];
+    target.proxy = displayProxy;
+    target.proxyArea = proxy.area;
     updateTableData();
     ElMessage.success('代理已绑定到设备');
   }
@@ -442,8 +487,7 @@ function autoAssociateWithSelections(
     const proxy = usedProxies[i];
     if (!target || !account || !proxy) continue;
 
-    const existingAccounts =
-      (target.boundAccounts as BoundAccount[] | undefined) || [];
+    const existingAccounts = getMergedBoundAccounts(target);
     const existingAppIds = getDeviceBoundAppIds(target);
     const accountAppId = getAccountAppId(account as Record<string, any>);
     if (accountAppId && existingAppIds.has(accountAppId)) {
@@ -455,7 +499,10 @@ function autoAssociateWithSelections(
 
     target.boundAccounts = [...existingAccounts, account];
     syncAccountInfosFromBound(target);
-    target.boundProxies = [proxy];
+    const displayProxy = getProxyDisplayText(proxy);
+    target.boundProxies = [{ ...proxy, proxy: displayProxy, proxyArea: proxy.area }];
+    target.proxy = displayProxy;
+    target.proxyArea = proxy.area;
   }
 
   updateTableData();

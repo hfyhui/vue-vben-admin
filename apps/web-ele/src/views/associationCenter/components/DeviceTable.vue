@@ -18,6 +18,8 @@ type BoundAccount = {
 
 type BoundProxy = {
   id?: string;
+  area?: string;
+  proxyArea?: string;
   ip?: string;
   proxy?: string;
 };
@@ -45,6 +47,7 @@ function getBoundAccounts(
   for (const acc of bound) {
     const platform = acc.platform;
     const id = acc.accountId;
+    if (!id) continue;
     const label = getPlatformIconLabel(platform) || platform?.slice(0, 1) || '';
     result.push({
       platform,
@@ -74,11 +77,16 @@ function getProxyDisplay(row: DeviceItem) {
   const bound = (row.boundProxies as BoundProxy[] | undefined) || [];
   if (bound.length > 0) {
     return bound
-      .map((p) => p.proxy)
+      .map((p) => {
+        const area = p.area;
+        const ip = p.ip
+        if (area) return `${area} ${ip ?? ''}`.trim();
+        return ip ?? '';
+      })
       .filter(Boolean)
       .join(',');
   }
-  return row.prox
+  return row.proxy
 }
 
 const props = defineProps<{
@@ -156,7 +164,7 @@ function getRowClassName({ row }: { row: DeviceItem }) {
       </el-table-column>
       <el-table-column label="代理IP" min-width="150">
         <template #default="{ row }">
-          {{ getServerDisplay(row) }}
+          {{ row.proxyIp }}
         </template>
       </el-table-column>
       <el-table-column label="设备版本" min-width="100">
@@ -177,7 +185,7 @@ function getRowClassName({ row }: { row: DeviceItem }) {
           >
             <el-tooltip
               v-for="(acc, i) in getBoundAccounts(row)"
-              :key="`acc-${i}-${acc.id || acc.platform}`"
+              :key="`acc-${i}-${acc.id}`"
               :content="acc.tooltip"
               placement="top"
             >

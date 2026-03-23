@@ -73,6 +73,18 @@ export interface AssetAppListQuery extends PageQuery {
   applicationStatus?: number;
 }
 
+function resolvePageData(payload: any): any {
+  if (!payload || typeof payload !== 'object') return null;
+  if ('records' in payload) return payload;
+  if (payload.data && typeof payload.data === 'object') {
+    if ('records' in payload.data) return payload.data;
+    if (payload.data.data && typeof payload.data.data === 'object' && 'records' in payload.data.data) {
+      return payload.data.data;
+    }
+  }
+  return null;
+}
+
 export async function getAccountAssetPageApi<T = any>(
   params: PageQuery,
 ): Promise<PageResult<T>> {
@@ -86,7 +98,7 @@ export async function getAccountAssetPageApi<T = any>(
     '/asset/account/page',
     reqParams,
   );
-  const data: any = (response as any)?.data ?? response;
+  const data: any = resolvePageData(response);
 
   if (data && typeof data === 'object' && 'records' in data) {
     return {
@@ -117,7 +129,7 @@ export async function getProxyAssetPageApi<T = any>(
     '/asset/proxy/page',
     reqParams,
   );
-  const data: any = (response as any)?.data ?? response;
+  const data: any = resolvePageData(response);
   if (data && typeof data === 'object' && 'records' in data) {
     return {
       records: (data.records ?? []) as T[],
@@ -150,7 +162,7 @@ export async function getContainerAssetPageApi<T = DeviceItem>(
     '/asset/container/page',
     reqParams,
   );
-  const data: any = (response as any)?.data ?? response;
+  const data: any = resolvePageData(response);
   if (data && typeof data === 'object' && 'records' in data) {
     return {
       records: (data.records ?? []) as T[],

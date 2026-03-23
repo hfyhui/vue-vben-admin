@@ -11,18 +11,13 @@ import {
   getProxyIp,
 } from '../composables/useDeviceDisplay';
 
-type BoundProxy = {
-  id?: string;
-  ip?: string;
-  proxy?: string;
-};
-
 type BoundAccount = {
   accountId?: string;
   logoPath?: string;
 };
 
-const logoPrefix = String(import.meta.env.VITE_OSS_BASE_URL || '');
+const logoPrefix = import.meta.env.VITE_OSS_BASE_URL
+
 function getLogoUrl(logoPath?: string) {
   if (!logoPath) return '';
   return `${logoPrefix}/${logoPath}`;
@@ -58,8 +53,8 @@ function onToggleSelect(item: DeviceItem) {
   emit('toggleSelect', item);
 }
 
-function getProxyDisplay(item: DeviceItem) {
-  return ((item.boundProxies as BoundProxy[] | undefined)?.map((p) => p.ip).join(',')) || '';
+function getDeviceKey(item: DeviceItem) {
+  return item.deviceIp || '';
 }
 
 function getGroupDisplay(item: DeviceItem) {
@@ -70,11 +65,26 @@ function getPhoneDisplay(item: DeviceItem) {
   return item.deviceNum;
 }
 
+function getProxyDisplay(item: DeviceItem) {
+  const boundProxy = item.boundProxies?.[0] as Record<string, any> | undefined;
+  if (boundProxy) {
+    const area = boundProxy.proxyArea ?? boundProxy.area;
+    const ip = boundProxy.ip ?? boundProxy.proxyIp;
+    if (area) return `${area} ${ip ?? ''}`.trim();
+    return ip ?? '';
+  }
+  return item.proxy 
+}
+
 function getBoundAccounts(item: DeviceItem): BoundAccount[] {
-  return ((item.accountInfos as Array<Record<string, any>> | undefined)?.map((acc) => ({
-    accountId: acc.accountId,
-    logoPath: acc.appLogo,
-  })) || []);
+  return (
+    (item.accountInfos as Array<Record<string, any>> | undefined)
+      ?.filter((acc) => Boolean(acc?.accountId))
+      .map((acc) => ({
+        accountId: acc.accountId,
+        logoPath: acc.appLogo,
+      })) || []
+  );
 }
 </script>
 
@@ -91,7 +101,7 @@ function getBoundAccounts(item: DeviceItem): BoundAccount[] {
           v-for="item in list"
           :key="item.deviceIp"
           class="device-card"
-          :class="{ selected: selectedDeviceKeys.includes(item.deviceIp as string) }"
+          :class="{ selected: selectedDeviceKeys.includes(getDeviceKey(item)) }"
           @click.stop="onToggleSelect(item)"
           @dragover="onDragOver"
           @drop="onDrop($event, item)"
@@ -105,12 +115,14 @@ function getBoundAccounts(item: DeviceItem): BoundAccount[] {
             </div>
             <div class="card-row">
               <span class="card-label">{{ $t('associationCenter.networkProxy') }}:</span>
-              <span
-                class="card-proxy-ellipsis"
-                :title="getProxyDisplay(item)"
+              <el-tooltip
+                :content="getProxyDisplay(item)"
+                placement="top"
               >
-                {{ getProxyDisplay(item) }}
-              </span>
+                <span class="card-proxy-ellipsis">
+                  {{ getProxyDisplay(item) }}
+                </span>
+              </el-tooltip>
             </div>
             <div class="card-row">
               <span class="card-label">{{ $t('associationCenter.proxyIp') }}:</span>

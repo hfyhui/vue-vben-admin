@@ -43,7 +43,7 @@ export function getDeviceVersion(item: DeviceItem): string {
   return item.deviceVersion || item.romVersion || item.phoneBrand || item.phoneModel || '-';
 }
 
-/** 代理 IP / 次要 IP：server 为所属服务器 */
+/** 代理 IP：优先 proxyIp，其次 connIp/server */
 export function getProxyIp(item: DeviceItem): string {
-  return item.connIp || item.server || '-';
+  return item.proxyIp
 }
