@@ -139,33 +139,37 @@ function getRowClassName({ row }: { row: DeviceItem }) {
         </template>
       </el-table-column>
 
-      <el-table-column prop="deviceIp" label="设备IP" min-width="120" />
-      <el-table-column label="分组信息" min-width="100">
+      <el-table-column
+        prop="deviceIp"
+        :label="$t('associationCenter.deviceIp')"
+        min-width="120"
+      />
+      <el-table-column :label="$t('associationCenter.groupInfo')" min-width="100">
         <template #default="{ row }">
           {{ getGroupDisplay(row) }}
         </template>
       </el-table-column>
-      <el-table-column label="网络代理" min-width="180">
+      <el-table-column :label="$t('associationCenter.networkProxy')" min-width="180">
         <template #default="{ row }">
           <span :title="getProxyDisplay(row)">{{ getProxyDisplay(row) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="代理IP" min-width="150">
+      <el-table-column :label="$t('associationCenter.proxyIp')" min-width="150">
         <template #default="{ row }">
           {{ row.proxyIp }}
         </template>
       </el-table-column>
-      <el-table-column label="设备版本" min-width="100">
+      <el-table-column :label="$t('associationCenter.deviceVersion')" min-width="100">
         <template #default="{ row }">
           {{ getDeviceVersion(row) }}
         </template>
       </el-table-column>
-      <el-table-column label="手机号" min-width="140">
+      <el-table-column :label="$t('associationCenter.phoneNumber')" min-width="140">
         <template #default="{ row }">
           {{ getPhoneDisplay(row) }}
         </template>
       </el-table-column>
-      <el-table-column label="关联状态" min-width="140" align="left">
+      <el-table-column :label="$t('associationCenter.associationStatus')" min-width="140" align="left">
         <template #default="{ row }">
           <div
             v-if="getBoundAccounts(row).length > 0"
