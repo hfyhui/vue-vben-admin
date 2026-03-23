@@ -1,46 +1,8 @@
 import type { DeviceItem } from '#/api/core/asset';
 
-/** 平台图标标签 */
-export function getPlatformIconLabel(platform?: string): string {
-  if (!platform) return '';
-  const name = platform.toLowerCase();
-  if (name.includes('抖音') || name.includes('douyin')) return '抖';
-  if (name.includes('快手') || name.includes('kuaishou')) return '快';
-  if (name.includes('小红书') || name.includes('xhs')) return '书';
-  return platform.slice(0, 1);
-}
-
-/** 平台图标背景样式（与账号看板卡片一致） */
-export function getPlatformIconStyle(platform?: string): Record<string, string> {
-  const name = (platform || '').toLowerCase();
-  if (name.includes('抖音') || name.includes('douyin')) {
-    return { background: 'linear-gradient(135deg, #ff2442 0%, #ff6b6b 100%)' };
-  }
-  if (name.includes('快手') || name.includes('kuaishou')) {
-    return { background: 'linear-gradient(135deg, #ff6600 0%, #ff9933 100%)' };
-  }
-  if (name.includes('小红书') || name.includes('xhs')) {
-    return { background: 'linear-gradient(135deg, #ff2442 0%, #ff6b6b 100%)' };
-  }
-  return { background: 'linear-gradient(135deg, #409eff 0%, #79bbff 100%)' };
-}
-
-/** 状态颜色映射 */
-export function getStatusColor(color?: string): string {
-  const colorMap: Record<string, string> = {
-    gray: 'gray',
-    green: 'green',
-    yellow: 'yellow',
-    orange: 'orange',
-    red: 'red',
-    black: 'black',
-  };
-  return colorMap[color?.toLowerCase() ?? ''] ?? 'gray';
-}
-
 /** 设备版本显示：优先 romVersion，或组合 phoneBrand */
 export function getDeviceVersion(item: DeviceItem): string {
-  return item.deviceVersion || item.romVersion || item.phoneBrand || item.phoneModel || '-';
+  return item.deviceVersion
 }
 
 /** 代理 IP：优先 proxyIp，其次 connIp/server */

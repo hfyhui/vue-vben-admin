@@ -6,7 +6,6 @@ import { $t } from '#/locales';
 import type { DeviceItem } from '#/api/core/asset';
 
 import {
-  getStatusColor,
   getDeviceVersion,
   getProxyIp,
 } from '../composables/useDeviceDisplay';
@@ -106,7 +105,7 @@ function getBoundAccounts(item: DeviceItem): BoundAccount[] {
           @dragover="onDragOver"
           @drop="onDrop($event, item)"
         >
-          <div class="card-status" :class="getStatusColor(item.color)" />
+          <div class="card-status" :class="(item.color || 'gray').toLowerCase()" />
           <div class="card-body">
             <div class="card-ip">{{ item.deviceIp }}</div>
             <div class="card-row">

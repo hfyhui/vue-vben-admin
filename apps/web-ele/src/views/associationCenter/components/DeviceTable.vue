@@ -1,9 +1,6 @@
 <script setup lang="ts">
 import {
-  getStatusColor,
   getDeviceVersion,
-  getPlatformIconLabel,
-  getPlatformIconStyle,
 } from '../composables/useDeviceDisplay';
 
 import type { DeviceItem } from '#/api/core/asset';
@@ -33,26 +30,21 @@ function getLogoUrl(logoPath?: string) {
 
 function getBoundAccounts(
   row: DeviceItem,
-): Array<{ platform?: string; id?: string; label: string; tooltip: string; logoPath?: string }> {
-  const result: Array<{ platform?: string; id?: string; label: string; tooltip: string; logoPath?: string }> = [];
+): Array<{ id?: string; tooltip: string; logoPath?: string }> {
+  const result: Array<{ id?: string; tooltip: string; logoPath?: string }> = [];
   const accountInfos = (row.accountInfos as Array<Record<string, any>> | undefined) || [];
   const bound =
     accountInfos.length > 0
       ? accountInfos.map((it) => ({
           accountId: it.accountId,
-          platform: it.appId,
           logoPath: it.appLogo,
         }))
       : ((row.boundAccounts as BoundAccount[] | undefined) || []);
   for (const acc of bound) {
-    const platform = acc.platform;
     const id = acc.accountId;
     if (!id) continue;
-    const label = getPlatformIconLabel(platform) || platform?.slice(0, 1) || '';
     result.push({
-      platform,
       id,
-      label,
       tooltip: id || '',
       logoPath: acc.logoPath,
     });
@@ -63,10 +55,6 @@ function getBoundAccounts(
 function getGroupDisplay(row: DeviceItem) {
   if (Array.isArray(row.groups)) return row.groups.filter(Boolean).join(',');
   return row.deviceGroup
-}
-
-function getServerDisplay(row: DeviceItem) {
-  return row.connIp
 }
 
 function getPhoneDisplay(row: DeviceItem) {
@@ -147,7 +135,7 @@ function getRowClassName({ row }: { row: DeviceItem }) {
         align="center"
       >
         <template #default="{ row }">
-          <span class="table-status" :class="getStatusColor(row.color)" />
+          <span class="table-status" :class="(row.color || 'gray').toLowerCase()" />
         </template>
       </el-table-column>
 
@@ -195,13 +183,6 @@ function getRowClassName({ row }: { row: DeviceItem }) {
                 class="platform-logo-cell"
                 alt="account-logo"
               />
-              <span
-                v-else
-                class="platform-icon-cell"
-                :style="getPlatformIconStyle(acc.platform)"
-              >
-                {{ acc.label }}
-              </span>
             </el-tooltip>
           </div>
           <span v-else class="table-empty-status">-</span>
@@ -272,20 +253,6 @@ function getRowClassName({ row }: { row: DeviceItem }) {
   flex-wrap: wrap;
   align-items: center;
   gap: 4px;
-}
-
-.platform-icon-cell {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: 500;
-  color: #fff;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.5);
-  flex-shrink: 0;
 }
 
 .platform-logo-cell {
