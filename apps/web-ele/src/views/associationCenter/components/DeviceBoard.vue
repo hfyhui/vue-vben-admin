@@ -319,7 +319,7 @@ function handleTogglePinDevices() {
     return;
   }
   if (!selectedDeviceKeys.value.length) {
-    ElMessage.warning('请先选择设备后再置顶');
+    ElMessage.warning($t('associationCenter.selectDeviceBeforePin'));
     return;
   }
   pinnedDeviceKeys.value = selectedDeviceKeys.value.filter(Boolean);
@@ -401,7 +401,7 @@ function onCardDrop(ev: DragEvent, item: DeviceItem) {
     try {
       accounts = JSON.parse(accountData) as BoundAccount[];
     } catch {
-      ElMessage.error('拖拽账号数据解析失败');
+      ElMessage.error($t('associationCenter.accountDragParseFailed'));
       return;
     }
 
@@ -412,7 +412,7 @@ function onCardDrop(ev: DragEvent, item: DeviceItem) {
     for (const acc of accounts) {
       const appId = getAccountAppId(acc as Record<string, any>);
       if (appId && currentAppIds.has(appId)) {
-        ElMessage.error('同一设备内，每个社媒平台只能绑定一个账号');
+        ElMessage.error($t('associationCenter.oneAccountPerPlatformPerDevice'));
         return;
       }
       if (appId) currentAppIds.add(appId);
@@ -429,7 +429,7 @@ function onCardDrop(ev: DragEvent, item: DeviceItem) {
     try {
       proxy = JSON.parse(proxyData) as BoundProxy;
     } catch {
-      ElMessage.error('拖拽代理数据解析失败');
+      ElMessage.error($t('associationCenter.proxyDragParseFailed'));
       return;
     }
 
@@ -438,7 +438,7 @@ function onCardDrop(ev: DragEvent, item: DeviceItem) {
     target.proxy = displayProxy;
     target.proxyArea = proxy.area;
     updateTableData();
-    ElMessage.success('代理已绑定到设备');
+    ElMessage.success($t('associationCenter.proxyBoundToDevice'));
   }
 }
 
@@ -461,13 +461,13 @@ function autoAssociateWithSelections(
     .map((key) => deviceMap.get(key))
     .filter((item): item is DeviceItem => Boolean(item));
   if (!accounts.length || !proxies.length || !devices.length) {
-    ElMessage.warning('请先在账号看板、代理看板、设备看板中分别选择数据');
+    ElMessage.warning($t('associationCenter.selectDataInAllBoardsFirst'));
     return;
   }
 
   // 自动关联要求账号与设备严格 1v1，数量必须一致
   if (accounts.length !== devices.length) {
-    ElMessage.error('自动关联需要账号数量与设备数量一致（1v1）');
+    ElMessage.error($t('associationCenter.autoAssociateCountMismatch'));
     return;
   }
 
@@ -477,7 +477,7 @@ function autoAssociateWithSelections(
       ? proxies.slice(0, bindCount)
       : Array.from({ length: bindCount }, (_, i) => proxies[i % proxies.length]);
   if (bindCount <= 0) {
-    ElMessage.warning('可关联的数据不足');
+    ElMessage.warning($t('associationCenter.insufficientDataToAssociate'));
     return;
   }
 
@@ -492,7 +492,9 @@ function autoAssociateWithSelections(
     const accountAppId = getAccountAppId(account as Record<string, any>);
     if (accountAppId && existingAppIds.has(accountAppId)) {
       ElMessage.error(
-        `设备 ${target.deviceIp || ''} 已绑定该 appId 账号，无法重复绑定`,
+        $t('associationCenter.deviceAlreadyBoundAppId', {
+          deviceIp: target.deviceIp || '',
+        }),
       );
       return;
     }
@@ -510,17 +512,23 @@ function autoAssociateWithSelections(
   const reusedProxyCount = Math.max(0, bindCount - proxies.length);
   if (droppedProxyCount > 0) {
     ElMessage.success(
-      `自动关联成功，已关联 ${bindCount} 组数据，已丢弃 ${droppedProxyCount} 个多余代理`,
+      $t('associationCenter.autoAssociateSuccessDropped', {
+        bindCount,
+        droppedProxyCount,
+      }),
     );
     return;
   }
   if (reusedProxyCount > 0) {
     ElMessage.success(
-      `自动关联成功，已关联 ${bindCount} 组数据，代理已复用 ${reusedProxyCount} 次`,
+      $t('associationCenter.autoAssociateSuccessReused', {
+        bindCount,
+        reusedProxyCount,
+      }),
     );
     return;
   }
-  ElMessage.success(`自动关联成功，已关联 ${bindCount} 组数据`);
+  ElMessage.success($t('associationCenter.autoAssociateSuccess', { bindCount }));
 }
 
 /** 向父组件暴露的方法：切换视图、自动关联、清空设备选择 */
@@ -585,12 +593,12 @@ onMounted(() => {
           class="filter-input"
           clearable
         >
-          <el-option label="已关联" value="associated" />
-          <el-option label="未关联" value="unassociated" />
+          <el-option :label="$t('associationCenter.associated')" value="associated" />
+          <el-option :label="$t('associationCenter.unassociated')" value="unassociated" />
         </el-select>
       </div>
       <el-button type="primary" @click="handleSearch">
-        {{ $t('common.search') }}
+        {{ $t('associationCenter.search') }}
       </el-button>
       <DevicePinActions
         :pinned-active="showPinnedOnly"

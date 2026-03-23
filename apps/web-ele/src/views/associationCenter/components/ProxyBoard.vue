@@ -46,7 +46,7 @@ const selectedIds = ref<string[]>([]);
 
 /** 生成列表项稳定 key（优先 id，其次 proxy，再次 index） */
 function getKey(item: ProxyItem, index: number) {
-  return item.ip
+  return item.id || item.proxy || item.ip || `proxy-${index}`;
 }
 
 /** 判断代理卡片是否被选中 */
@@ -168,22 +168,22 @@ defineExpose({
         <label class="filter-label">{{ $t('associationCenter.regionFilter') }}</label>
         <el-select
           v-model="filterForm.area"
-          placeholder="地区筛选"
+          :placeholder="$t('associationCenter.regionFilterPlaceholder')"
           class="filter-input"
           clearable
           @change="handleSearch"
         >
-          <el-option label="重庆" value="重庆" />
-          <el-option label="北京" value="北京" />
-          <el-option label="上海" value="上海" />
-          <el-option label="广州" value="广州" />
+          <el-option :label="$t('associationCenter.regionChongqing')" value="重庆" />
+          <el-option :label="$t('associationCenter.regionBeijing')" value="北京" />
+          <el-option :label="$t('associationCenter.regionShanghai')" value="上海" />
+          <el-option :label="$t('associationCenter.regionGuangzhou')" value="广州" />
         </el-select>
       </div>
       <div class="filter-item">
         <label class="filter-label">{{ $t('associationCenter.proxySearch') }}</label>
         <el-input
           v-model="filterForm.proxySearch"
-          placeholder="代理搜索"
+          :placeholder="$t('associationCenter.proxySearchPlaceholder')"
           class="filter-input"
           clearable
           @keyup.enter="handleSearch"
@@ -193,7 +193,7 @@ defineExpose({
         <label class="filter-label">{{ $t('associationCenter.proxyGroup') }}</label>
         <el-input
           v-model="filterForm.proxyGroup"
-          placeholder="账号分组"
+          :placeholder="$t('associationCenter.proxyGroupPlaceholder')"
           class="filter-input"
           clearable
         />
@@ -202,12 +202,12 @@ defineExpose({
         <label class="filter-label">{{ $t('associationCenter.sortCondition') }}</label>
         <el-select
           v-model="filterForm.sortCondition"
-          placeholder="排序条件"
+          :placeholder="$t('associationCenter.sortConditionPlaceholder')"
           class="filter-input"
           clearable
           @change="handleSearch"
         >
-          <el-option label="默认" value="" />
+          <el-option :label="$t('associationCenter.defaultOption')" value="" />
         </el-select>
       </div>
     </div>
@@ -231,7 +231,7 @@ defineExpose({
           >
             <div class="card-info">
               <span class="card-amount" :class="getRiskColor(item.surplusDaysColor)">
-                {{ item.surplusDays ?? '-' }}天
+                {{ item.surplusDays ?? '-' }}{{ $t('associationCenter.daySuffix') }}
               </span>
               <span class="card-area">{{ item.area || '-' }}</span>
               <span class="card-ip">{{ item.ip || item.proxy || '-' }}</span>

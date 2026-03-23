@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { $t } from '#/locales';
+
 defineProps<{
   pinnedActive: boolean;
 }>();
@@ -14,7 +16,7 @@ function handlePinSelected() {
 
 <template>
   <el-button :type="pinnedActive ? 'info' : 'warning'" @click="handlePinSelected">
-    {{ pinnedActive ? '取消置顶' : '置顶' }}
+    {{ pinnedActive ? $t('associationCenter.unpin') : $t('associationCenter.pin') }}
   </el-button>
 </template>
 

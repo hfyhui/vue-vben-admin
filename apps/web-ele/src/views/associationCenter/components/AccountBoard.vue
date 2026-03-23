@@ -155,7 +155,7 @@ async function fetchPlatformOptions() {
       }));
   } catch (error) {
     console.error(error);
-    ElMessage.error('平台筛选项加载失败');
+    ElMessage.error($t('associationCenter.platformOptionsLoadFailed'));
   }
 }
 
@@ -296,7 +296,7 @@ defineExpose({
         <label class="filter-label">{{ $t('associationCenter.platformFilter') }}</label>
         <el-select
           v-model="filterForm.platform"
-          placeholder="社媒平台"
+          :placeholder="$t('associationCenter.platformPlaceholder')"
           class="filter-input"
           clearable
         >
@@ -312,7 +312,7 @@ defineExpose({
         <label class="filter-label">{{ $t('associationCenter.accountSearch') }}</label>
         <el-input
           v-model="filterForm.accountSearch"
-          placeholder="账号搜索"
+          :placeholder="$t('associationCenter.accountSearchPlaceholder')"
           class="filter-input"
           clearable
           @keyup.enter="handleSearch"
@@ -322,7 +322,7 @@ defineExpose({
         <label class="filter-label">{{ $t('associationCenter.accountGroup') }}</label>
         <el-input
           v-model="filterForm.accountGroup"
-          placeholder="账号分组"
+          :placeholder="$t('associationCenter.accountGroupPlaceholder')"
           class="filter-input"
           clearable
         />
@@ -331,18 +331,20 @@ defineExpose({
         <label class="filter-label">{{ $t('associationCenter.sortCondition') }}</label>
         <el-select
           v-model="filterForm.sortCondition"
-          placeholder="排序条件"
+          :placeholder="$t('associationCenter.sortConditionPlaceholder')"
           class="filter-input"
           clearable
         >
           <el-option
-            label="默认"
+            :label="$t('associationCenter.defaultOption')"
             value=""
           />
         </el-select>
       </div>
       <div class="filter-actions">
-        <el-button type="primary" @click="handleSearch">搜索</el-button>
+        <el-button type="primary" @click="handleSearch">
+          {{ $t('associationCenter.search') }}
+        </el-button>
       </div>
     </div>
 

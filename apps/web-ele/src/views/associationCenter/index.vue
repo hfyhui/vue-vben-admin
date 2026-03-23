@@ -52,20 +52,22 @@ async function onOfficialEnable() {
 
   const deviceEnables = deviceBoardRef.value?.getSelectedDeviceEnables?.() || [];
   if (!deviceEnables.length) {
-    ElMessage.warning('请先在设备看板中选择需要正式启用的数据');
+    ElMessage.warning($t('associationCenter.selectDeviceBeforeOfficialEnable'));
     return;
   }
 
   try {
     const response = await enableAssetApi({ deviceEnables });
     if (response?.code === 100000) {
-      ElMessage.success(response.msg || '正式启用成功');
+      ElMessage.success(
+        response.msg || $t('associationCenter.officialEnableSuccess'),
+      );
       return;
     }
-    ElMessage.error(response?.msg || '正式启用失败');
+    ElMessage.error(response?.msg || $t('associationCenter.officialEnableFailed'));
   } catch (error) {
     console.error(error);
-    ElMessage.error('正式启用失败');
+    ElMessage.error($t('associationCenter.officialEnableFailed'));
   }
 }
 </script>
