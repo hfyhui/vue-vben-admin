@@ -35,7 +35,7 @@ function getAccountAppId(item: AccountItem) {
 const loading = ref(false);
 const finished = ref(false);
 const filterForm = reactive({
-  platform: '' as string,
+  platform: [] as string[],
   accountSearch: '',
   accountGroup: '',
   sortCondition: '' as string,
@@ -107,7 +107,7 @@ function buildRequestParams() {
   };
   if (filterForm.accountSearch) params.accountName = filterForm.accountSearch;
   if (filterForm.accountGroup) params.suiteIds = [filterForm.accountGroup];
-  if (filterForm.platform) params.appIds = [filterForm.platform];
+  if (filterForm.platform.length) params.appIds = filterForm.platform;
   if (filterForm.sortCondition) {
     params.sortCondition = filterForm.sortCondition;
   }
@@ -298,6 +298,9 @@ defineExpose({
           v-model="filterForm.platform"
           :placeholder="$t('associationCenter.platformPlaceholder')"
           class="filter-input"
+          multiple
+          collapse-tags
+          collapse-tags-tooltip
           clearable
         >
           <el-option

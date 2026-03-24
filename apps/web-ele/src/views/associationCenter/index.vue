@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { ElMessage } from 'element-plus';
 import { TopRight } from '@element-plus/icons-vue';
 
-import { enableAssetApi } from '#/api/core/asset';
+import { enableAssetApi, getAssetSummaryApi } from '#/api/core/asset';
 import { $t } from '#/locales';
 
 import StatsOverview from './components/StatsOverview.vue';
@@ -17,6 +17,52 @@ const router = useRouter();
 const accountBoardRef = ref<InstanceType<typeof AccountBoard> | null>(null);
 const proxyBoardRef = ref<InstanceType<typeof ProxyBoard> | null>(null);
 const deviceBoardRef = ref<InstanceType<typeof DeviceBoard> | null>(null);
+const overviewStats = ref([
+  { key: 'containerPool', current: 0, total: 0 },
+  { key: 'accountPool', current: 0, total: 0 },
+  { key: 'proxyPool', current: 0, total: 0 },
+  { key: 'userCount', current: 0, total: 0 },
+]);
+
+function toSafeNumber(value: unknown) {
+  const num = Number(value ?? 0);
+  return Number.isFinite(num) ? num : 0;
+}
+
+async function loadAssetSummary() {
+  try {
+    const response = await getAssetSummaryApi();
+    const summary = response?.data ?? (response as any) ?? {};
+    overviewStats.value = [
+      {
+        key: 'containerPool',
+        current: toSafeNumber(summary.deviceUsedNum),
+        total: toSafeNumber(summary.deviceTotalNum),
+      },
+      {
+        key: 'accountPool',
+        current: toSafeNumber(summary.accountUsedNum),
+        total: toSafeNumber(summary.accountTotalNum),
+      },
+      {
+        key: 'proxyPool',
+        current: toSafeNumber(summary.proxyUsedNum),
+        total: toSafeNumber(summary.proxyTotalNum),
+      },
+      {
+        key: 'userCount',
+        current: toSafeNumber(summary.userUsedNum),
+        total: toSafeNumber(summary.userTotalNum),
+      },
+    ];
+  } catch (error) {
+    console.error('[associationCenter] 获取汇总信息失败:', error);
+  }
+}
+
+onMounted(() => {
+  loadAssetSummary();
+});
 
 function onViewSwitch() {
   deviceBoardRef.value?.toggleViewMode?.();
@@ -74,7 +120,7 @@ async function onOfficialEnable() {
 
 <template>
   <div style="padding: 12px">
-    <StatsOverview />
+    <StatsOverview :stats="overviewStats" />
 
     <el-row :gutter="16">
       <el-col :xs="24" :md="12">

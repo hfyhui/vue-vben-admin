@@ -73,16 +73,52 @@ export interface AssetAppListQuery extends PageQuery {
   applicationStatus?: number;
 }
 
-function resolvePageData(payload: any): any {
-  if (!payload || typeof payload !== 'object') return null;
-  if ('records' in payload) return payload;
-  if (payload.data && typeof payload.data === 'object') {
-    if ('records' in payload.data) return payload.data;
-    if (payload.data.data && typeof payload.data.data === 'object' && 'records' in payload.data.data) {
-      return payload.data.data;
-    }
-  }
-  return null;
+export interface AssetSummaryData {
+  deviceTotalNum?: string;
+  deviceUsedNum?: string;
+  accountTotalNum?: string;
+  accountUsedNum?: string;
+  proxyTotalNum?: string;
+  proxyUsedNum?: string;
+  userTotalNum?: string;
+  userUsedNum?: string;
+}
+
+export interface AssetSummaryResponse {
+  code: number;
+  msg: string;
+  data: AssetSummaryData;
+}
+
+export interface ProxyRegionTreeNode {
+  name?: string;
+  level?: number;
+  children?: ProxyRegionTreeNode[];
+}
+
+export interface DeviceGroupItem {
+  groupId?: string;
+  groupName?: string;
+}
+
+export interface AccountPoolNumData {
+  accountTotalNum?: string;
+  accountUsedNum?: string;
+  accountWaitNum?: string;
+  accountRiskNum?: string;
+}
+
+function resolvePageResult<T>(
+  response: any,
+  fallback: { current: number; size: number },
+): PageResult<T> {
+  const page = response?.data ?? response ?? {};
+  return {
+    records: Array.isArray(page.records) ? page.records : [],
+    total: Number(page.total ?? 0),
+    size: Number(page.size ?? fallback.size),
+    current: Number(page.current ?? fallback.current),
+  };
 }
 
 export async function getAccountAssetPageApi<T = any>(
@@ -98,23 +134,10 @@ export async function getAccountAssetPageApi<T = any>(
     '/asset/account/page',
     reqParams,
   );
-  const data: any = resolvePageData(response);
-
-  if (data && typeof data === 'object' && 'records' in data) {
-    return {
-      records: (data.records ?? []) as T[],
-      total: data.total ?? 0,
-      size: data.size ?? reqParams.size,
-      current: data.current ?? reqParams.current,
-    };
-  }
-
-  return {
-    records: [],
-    total: 0,
-    size: reqParams.size,
+  return resolvePageResult<T>(response, {
     current: reqParams.current,
-  };
+    size: reqParams.size,
+  });
 }
 
 export async function getProxyAssetPageApi<T = any>(
@@ -129,21 +152,10 @@ export async function getProxyAssetPageApi<T = any>(
     '/asset/proxy/page',
     reqParams,
   );
-  const data: any = resolvePageData(response);
-  if (data && typeof data === 'object' && 'records' in data) {
-    return {
-      records: (data.records ?? []) as T[],
-      total: data.total ?? 0,
-      size: data.size ?? reqParams.size,
-      current: data.current ?? reqParams.current,
-    };
-  }
-  return {
-    records: [],
-    total: 0,
-    size: reqParams.size,
+  return resolvePageResult<T>(response, {
     current: reqParams.current,
-  };
+    size: reqParams.size,
+  });
 }
 
 /** 获取容器资产分页信息 POST /asset/container/page */
@@ -162,21 +174,10 @@ export async function getContainerAssetPageApi<T = DeviceItem>(
     '/asset/container/page',
     reqParams,
   );
-  const data: any = resolvePageData(response);
-  if (data && typeof data === 'object' && 'records' in data) {
-    return {
-      records: (data.records ?? []) as T[],
-      total: data.total ?? 0,
-      size: data.size ?? reqParams.size,
-      current: data.current ?? reqParams.current,
-    };
-  }
-  return {
-    records: [],
-    total: 0,
-    size: reqParams.size,
+  return resolvePageResult<T>(response, {
     current: reqParams.current,
-  };
+    size: reqParams.size,
+  });
 }
 
 // 兼容已有调用命名
@@ -186,18 +187,34 @@ export const getDeviceAssetPageApi = getContainerAssetPageApi;
 export async function enableAssetApi(
   params: AssetEnableParams,
 ): Promise<ApiResponse<null>> {
-  const response = await proxyClient.post<ApiResponse<null>>('/asset/enable', params);
-  return (response as any)?.data
-    ? ((response as any).data as ApiResponse<null>)
-    : (response as ApiResponse<null>);
+  return proxyClient.post<ApiResponse<null>>('/asset/enable', params);
 }
 
 /** 获取资产模块枚举信息 GET /asset/enums */
 export async function getAssetEnumsApi(): Promise<AssetEnumsResponse> {
   const response = await proxyClient.get<AssetEnumsResponse>('/asset/enums');
-  return (response as any)?.data
-    ? ((response as any).data as AssetEnumsResponse)
-    : (response as AssetEnumsResponse);
+  return response as AssetEnumsResponse;
+}
+
+/** 获取关联中心汇总信息 GET /asset/summary */
+export async function getAssetSummaryApi(): Promise<AssetSummaryResponse> {
+  const response = await proxyClient.get<AssetSummaryResponse>('/asset/summary');
+  return response as AssetSummaryResponse;
+}
+
+/** 获取代理地区树 GET /asset/proxy/region-tree */
+export async function getProxyRegionTreeApi(): Promise<ApiResponse<ProxyRegionTreeNode[]>> {
+  return proxyClient.get<ApiResponse<ProxyRegionTreeNode[]>>('/asset/proxy/region-tree');
+}
+
+/** 查询设备分组 GET /asset/device/group */
+export async function getDeviceGroupApi(): Promise<ApiResponse<DeviceGroupItem[]>> {
+  return proxyClient.get<ApiResponse<DeviceGroupItem[]>>('/asset/device/group');
+}
+
+/** 获取账号池数量 GET /asset/account/num */
+export async function getAccountPoolNumApi(): Promise<ApiResponse<AccountPoolNumData>> {
+  return proxyClient.get<ApiResponse<AccountPoolNumData>>('/asset/account/num');
 }
 
 /** 获取平台应用列表 POST /asset/app/list */
@@ -209,27 +226,13 @@ export async function getAssetAppListApi(
     current: params.current ?? 1,
     size: params.size ?? 100,
   };
-  const response = await proxyClient.post<any>('/asset/app/list', reqParams);
-  const payload: any = (response as any)?.data ?? response;
-  const pageData: any =
-    payload && typeof payload === 'object' && 'records' in payload
-      ? payload
-      : payload?.data;
-
-  if (pageData && typeof pageData === 'object' && 'records' in pageData) {
-    return {
-      records: (pageData.records ?? []) as AssetAppItem[],
-      total: pageData.total ?? 0,
-      size: pageData.size ?? reqParams.size,
-      current: pageData.current ?? reqParams.current,
-    };
-  }
-
-  return {
-    records: [],
-    total: 0,
-    size: reqParams.size,
+  const response = await proxyClient.post<PageResult<AssetAppItem>>(
+    '/asset/app/list',
+    reqParams,
+  );
+  return resolvePageResult<AssetAppItem>(response, {
     current: reqParams.current,
-  };
+    size: reqParams.size,
+  });
 }
 

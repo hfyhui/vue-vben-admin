@@ -85,6 +85,16 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
+    name: 'ApplicationManage',
+    path: '/applicationManage',
+    component: () => import('#/views/applicationManage/index.vue'),
+    meta: {
+      icon: 'lucide:copyright',
+      title: $t('page.dashboard.applicationManage'),
+      order: 9999,
+    }
+  },
+  {
     name: 'DemosPage',
     path: '/demos/page',
     component: () => import('#/views/demos/page/index.vue'),

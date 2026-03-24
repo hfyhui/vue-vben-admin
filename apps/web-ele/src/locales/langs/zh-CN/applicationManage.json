@@ -1,0 +1,31 @@
+{
+  "title": "应用管理",
+  "stats": {
+    "totalApplications": "应用总数",
+    "enabledApplications": "已启用",
+    "disabledApplications": "已禁用"
+  },
+  "search": {
+    "applicationName": "应用名称",
+    "applicationNamePlaceholder": "请输入",
+    "status": "状态",
+    "statusPlaceholder": "请选择"
+  },
+  "action": {
+    "add": "新增",
+    "batchDelete": "批量删除"
+  },
+  "table": {
+    "applicationName": "应用名称",
+    "scriptList": "脚本清单",
+    "index": "序号",
+    "status": "状态",
+    "operation": "操作"
+  },
+  "message": {
+    "selectBeforeDelete": "请先选择要删除的应用",
+    "batchDeleteConfirm": "确定要删除选中的 {count} 个应用吗？",
+    "deleteConfirm": "确定要删除「{name}」吗？",
+    "deleteSuccess": "删除成功"
+  }
+}

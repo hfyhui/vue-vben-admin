@@ -9,6 +9,7 @@ import { $t } from '#/locales';
 
 import {
   getContainerAssetPageApi,
+  getDeviceGroupApi,
   type DeviceItem,
 } from '#/api/core/asset';
 
@@ -46,6 +47,7 @@ const pagination = reactive({
 
 const list = ref<DeviceItem[]>([]);
 const allMockRecords = ref<DeviceItem[]>([]);
+const groupOptions = ref<Array<{ groupId: string; groupName: string }>>([]);
 const selectedDeviceKeys = ref<string[]>([]);
 const pinnedDeviceKeys = ref<string[]>([]);
 const pinMode = ref(false);
@@ -194,6 +196,22 @@ async function fetchData() {
     finished.value = true;
   } finally {
     loading.value = false;
+  }
+}
+
+async function fetchDeviceGroups() {
+  try {
+    const response = await getDeviceGroupApi();
+    const groups = Array.isArray(response?.data) ? response.data : [];
+    groupOptions.value = groups
+      .map((item) => ({
+        groupId: String(item?.groupId ?? ''),
+        groupName: String(item?.groupName ?? ''),
+      }))
+      .filter((item) => item.groupId && item.groupName);
+  } catch (error) {
+    console.error(error);
+    ElMessage.error($t('common.error.loadFailed'));
   }
 }
 
@@ -542,6 +560,7 @@ defineExpose({
 
 /** 组件初始化：生成 mock 数据并加载第一页 */
 onMounted(() => {
+  void fetchDeviceGroups();
   void fetchData();
 });
 </script>
@@ -578,12 +597,20 @@ onMounted(() => {
       </div>
       <div class="filter-item">
         <label class="filter-label">{{ $t('associationCenter.deviceGroup') }}</label>
-        <el-input
+        <el-select
           v-model="filterForm.groupId"
           :placeholder="$t('associationCenter.deviceGroup')"
           class="filter-input"
           clearable
-        />
+          @change="handleSearch"
+        >
+          <el-option
+            v-for="item in groupOptions"
+            :key="item.groupId"
+            :label="item.groupName"
+            :value="item.groupId"
+          />
+        </el-select>
       </div>
       <div class="filter-item">
         <label class="filter-label">{{ $t('associationCenter.associationStatus') }}</label>

@@ -6,7 +6,10 @@ import { Box, Loading } from '@element-plus/icons-vue';
 
 import { $t } from '#/locales';
 
-import { getProxyAssetPageApi } from '#/api/core/asset';
+import {
+  getProxyAssetPageApi,
+  getProxyRegionTreeApi,
+} from '#/api/core/asset';
 
 /** 代理资产项，与接口 POST /asset/proxy/page 返回的 records 结构一致 */
 interface ProxyItem {
@@ -25,11 +28,18 @@ interface ProxyItem {
   [key: string]: any;
 }
 
+interface RegionOption {
+  label: string;
+  value: string;
+  children?: RegionOption[];
+}
+
 const loading = ref(false);
 const finished = ref(false);
 
 const filterForm = reactive({
   area: '',
+  areaPath: [] as string[],
   proxySearch: '',
   proxyGroup: '',
   sortCondition: '',
@@ -43,6 +53,15 @@ const pagination = reactive({
 
 const list = ref<ProxyItem[]>([]);
 const selectedIds = ref<string[]>([]);
+const regionOptions = ref<RegionOption[]>([]);
+
+const regionCascaderProps = {
+  value: 'value',
+  label: 'label',
+  children: 'children',
+  emitPath: true,
+  checkStrictly: false,
+};
 
 /** 生成列表项稳定 key（优先 id，其次 proxy，再次 index） */
 function getKey(item: ProxyItem, index: number) {
@@ -93,6 +112,31 @@ function buildRequestParams() {
     groupId: filterForm.proxyGroup,
     sortCondition: filterForm.sortCondition,
   };
+}
+
+function mapRegionOptions(nodes: any[] = []): RegionOption[] {
+  return nodes.map((node) => ({
+    label: String(node?.name ?? ''),
+    value: String(node?.name ?? ''),
+    children: Array.isArray(node?.children)
+      ? mapRegionOptions(node.children)
+      : undefined,
+  }));
+}
+
+async function loadRegionTree() {
+  try {
+    const response = await getProxyRegionTreeApi();
+    regionOptions.value = mapRegionOptions(response?.data ?? []);
+  } catch (error) {
+    console.error(error);
+    ElMessage.error($t('common.error.loadFailed'));
+  }
+}
+
+function handleRegionChange(path: string[]) {
+  filterForm.area = path?.[path.length - 1] ?? '';
+  handleSearch();
 }
 
 /** 拉取代理分页数据（内部做列表追加、分页推进与结束判断） */
@@ -151,6 +195,7 @@ function onProxyDragStart(ev: DragEvent, item: ProxyItem) {
 
 /** 组件初始化时加载第一页代理数据 */
 onMounted(() => {
+  loadRegionTree();
   fetchData();
 });
 
@@ -166,18 +211,16 @@ defineExpose({
     <div class="filter-bar">
       <div class="filter-item">
         <label class="filter-label">{{ $t('associationCenter.regionFilter') }}</label>
-        <el-select
-          v-model="filterForm.area"
+        <el-cascader
+          v-model="filterForm.areaPath"
+          :options="regionOptions"
+          :props="regionCascaderProps"
+          :show-all-levels="false"
           :placeholder="$t('associationCenter.regionFilterPlaceholder')"
           class="filter-input"
           clearable
-          @change="handleSearch"
-        >
-          <el-option :label="$t('associationCenter.regionChongqing')" value="重庆" />
-          <el-option :label="$t('associationCenter.regionBeijing')" value="北京" />
-          <el-option :label="$t('associationCenter.regionShanghai')" value="上海" />
-          <el-option :label="$t('associationCenter.regionGuangzhou')" value="广州" />
-        </el-select>
+          @change="handleRegionChange"
+        />
       </div>
       <div class="filter-item">
         <label class="filter-label">{{ $t('associationCenter.proxySearch') }}</label>

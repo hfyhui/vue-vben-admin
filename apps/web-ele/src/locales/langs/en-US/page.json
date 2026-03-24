@@ -8,6 +8,7 @@
   },
   "dashboard": {
     "title": "Dashboard",
+    "applicationManage": "Application Management",
     "customerManage": "CustomerManage",
     "licenseManage": "LicenseManage",
     "productList": "ProductList",

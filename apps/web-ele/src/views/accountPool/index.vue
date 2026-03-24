@@ -1,12 +1,15 @@
 <script lang="ts" setup>
 import type { VxeTableGridOptions } from '#/adapter/vxe-table';
 
+import { onMounted, ref } from 'vue';
+
 import { Page } from '@vben/common-ui';
 
 import { ElMessage } from 'element-plus';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import { $t } from '#/locales';
+import { getAccountPoolNumApi } from '#/api/core/asset';
 
 import {
   getAccountPoolListApi,
@@ -14,7 +17,7 @@ import {
   useColumns,
 } from './account-pool-table-config';
 
-const [Grid, gridApi] = useVbenVxeGrid({
+const [Grid] = useVbenVxeGrid({
   formOptions: getFormOptions(),
   gridOptions: {
     columns: useColumns(),
@@ -62,12 +65,36 @@ function onBatchDelete() {
   ElMessage.info($t('accountPool.action.batchDelete'));
 }
 
-const statsData = [
+const statsData = ref([
   { key: 'accountPool', value: 56 },
   { key: 'runningAccounts', value: 20 },
   { key: 'pendingAccounts', value: 36 },
   { key: 'riskControlAccounts', value: 3 },
-];
+]);
+
+function toSafeNumber(value: unknown) {
+  const num = Number(value ?? 0);
+  return Number.isFinite(num) ? num : 0;
+}
+
+async function loadAccountPoolNum() {
+  try {
+    const response = await getAccountPoolNumApi();
+    const data = response?.data ?? {};
+    statsData.value = [
+      { key: 'accountPool', value: toSafeNumber(data.accountTotalNum) },
+      { key: 'runningAccounts', value: toSafeNumber(data.accountUsedNum) },
+      { key: 'pendingAccounts', value: toSafeNumber(data.accountWaitNum) },
+      { key: 'riskControlAccounts', value: toSafeNumber(data.accountRiskNum) },
+    ];
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+onMounted(() => {
+  loadAccountPoolNum();
+});
 </script>
 
 <template>

@@ -20,6 +20,8 @@ import { useAuthStore } from '#/store';
 import { refreshTokenApi } from './core';
 
 const { apiURL } = useAppConfig(import.meta.env, import.meta.env.PROD);
+const platformBaseURL = import.meta.env.VITE_GLOB_OTHER_API_URL || '/platform';
+const socialBaseURL = import.meta.env.VITE_GLOB_SOCIAL_API_URL || '/social';
 
 function createRequestClient(baseURL: string, options?: RequestClientOptions) {
   const client = new RequestClient({
@@ -135,78 +137,83 @@ export const apiClient = createRequestClient(apiURL, {
   responseReturn: 'data',
 });
 
-// Admin 客户端 - 用于 /admin 前缀的请求（真实后端）
-export const proxyClient = new RequestClient({
-  baseURL: '/platform', // 使用代理路径
-  headers: {
-    'Content-Type': 'application/json;charset=utf-8',
-  },
-  timeout: 10_000,
-});
+function createBackendClient(baseURL: string) {
+  const client = new RequestClient({
+    baseURL,
+    headers: {
+      'Content-Type': 'application/json;charset=utf-8',
+    },
+    timeout: 100000,
+  });
 
-// 为 proxyClient 添加请求拦截器，过滤空值参数
-proxyClient.addRequestInterceptor({
-  fulfilled: async (config) => {
-    // 过滤空值参数，但保留 FormData 对象
-    if (
-      config.data &&
-      typeof config.data === 'object' &&
-      !(config.data instanceof FormData)
-    ) {
-      const filteredData: any = {};
-      Object.keys(config.data).forEach((key) => {
-        const value = config.data[key];
-        if (value !== null && value !== undefined && value !== '') {
-          filteredData[key] = value;
-        }
-      });
-      config.data = filteredData;
-    }
-
-    if (config.params && typeof config.params === 'object') {
-      const filteredParams: any = {};
-      Object.keys(config.params).forEach((key) => {
-        const value = config.params[key];
-        if (value !== null && value !== undefined && value !== '') {
-          filteredParams[key] = value;
-        }
-      });
-      config.params = filteredParams;
-    }
-
-    return config;
-  },
-});
-
-// 为 proxyClient 添加响应拦截器，统一处理错误码
-proxyClient.addResponseInterceptor({
-  fulfilled: (response) => {
-    const { data: responseData, status } = response;
-    if (status >= 200 && status < 400) {
-      // 检查响应数据中的code字段
-      if (responseData && typeof responseData === 'object' && 'code' in responseData) {
-        const { code, msg } = responseData;
-        if (code === 100000) {
-          return responseData;
-        }else{
-          ElMessage.error(msg);
-        }       
-        // 抛出错误，让调用方处理
-        return responseData
+  client.addRequestInterceptor({
+    fulfilled: async (config) => {
+      // 过滤空值参数，但保留 FormData 对象
+      if (
+        config.data &&
+        typeof config.data === 'object' &&
+        !(config.data instanceof FormData)
+      ) {
+        const filteredData: any = {};
+        Object.keys(config.data).forEach((key) => {
+          const value = config.data[key];
+          if (value !== null && value !== undefined && value !== '') {
+            filteredData[key] = value;
+          }
+        });
+        config.data = filteredData;
       }
-      // 如果没有code字段，直接返回数据
-      return responseData;
-    }
-    
-    return response;
-  },
-  rejected: (error) => {
-    // 处理网络错误等异常情况
-    const errorMessage = error?.response?.data?.msg || '网络请求失败';
-    ElMessage.error(errorMessage);
-    return Promise.reject(error);
-  },
-});
+
+      if (config.params && typeof config.params === 'object') {
+        const filteredParams: any = {};
+        Object.keys(config.params).forEach((key) => {
+          const value = config.params[key];
+          if (value !== null && value !== undefined && value !== '') {
+            filteredParams[key] = value;
+          }
+        });
+        config.params = filteredParams;
+      }
+
+      return config;
+    },
+  });
+
+  client.addResponseInterceptor({
+    fulfilled: (response) => {
+      const { data: responseData, status } = response;
+      if (status >= 200 && status < 400) {
+        // 检查响应数据中的code字段
+        if (responseData && typeof responseData === 'object' && 'code' in responseData) {
+          const { code, msg } = responseData;
+          if (code === 100000) {
+            return responseData;
+          } else {
+            ElMessage.error(msg);
+          }
+          return responseData;
+        }
+        return responseData;
+      }
+
+      return response;
+    },
+    rejected: (error) => {
+      // 处理网络错误等异常情况
+      const errorMessage = error?.response?.data?.msg || '网络请求失败';
+      ElMessage.error(errorMessage);
+      return Promise.reject(error);
+    },
+  });
+
+  return client;
+}
+
+// Admin 客户端 - 用于 /platform 前缀的请求（真实后端）
+export const proxyClient = createBackendClient(platformBaseURL);
+
+// Social 客户端 - 用于 /social 前缀的请求（MCC）
+export const socialClient = createBackendClient(socialBaseURL);
 
 // 保持向后兼容
 export const requestClient = apiClient;
