@@ -96,9 +96,9 @@ export interface ProxyRegionTreeNode {
   children?: ProxyRegionTreeNode[];
 }
 
-export interface DeviceGroupItem {
-  groupId?: string;
-  groupName?: string;
+export interface AssetGroupItem {
+  id?: string;
+  suiteName?: string;
 }
 
 export interface AccountPoolNumData {
@@ -190,6 +190,13 @@ export async function enableAssetApi(
   return proxyClient.post<ApiResponse<null>>('/asset/enable', params);
 }
 
+/** 正式启用前校验账号与容器、代理与容器 POST /asset/check/account-device */
+export async function checkAccountDeviceApi(
+  params: AssetEnableParams,
+): Promise<ApiResponse<null>> {
+  return proxyClient.post<ApiResponse<null>>('/asset/check/account-device', params);
+}
+
 /** 获取资产模块枚举信息 GET /asset/enums */
 export async function getAssetEnumsApi(): Promise<AssetEnumsResponse> {
   const response = await proxyClient.get<AssetEnumsResponse>('/asset/enums');
@@ -207,9 +214,9 @@ export async function getProxyRegionTreeApi(): Promise<ApiResponse<ProxyRegionTr
   return proxyClient.get<ApiResponse<ProxyRegionTreeNode[]>>('/asset/proxy/region-tree');
 }
 
-/** 查询设备分组 GET /asset/device/group */
-export async function getDeviceGroupApi(): Promise<ApiResponse<DeviceGroupItem[]>> {
-  return proxyClient.get<ApiResponse<DeviceGroupItem[]>>('/asset/device/group');
+/** 查询分组 GET /asset/group */
+export async function getAssetGroupApi(): Promise<ApiResponse<AssetGroupItem[]>> {
+  return proxyClient.get<ApiResponse<AssetGroupItem[]>>('/asset/group');
 }
 
 /** 获取账号池数量 GET /asset/account/num */

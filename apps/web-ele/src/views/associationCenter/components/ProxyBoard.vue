@@ -13,6 +13,7 @@ import {
 
 /** 代理资产项，与接口 POST /asset/proxy/page 返回的 records 结构一致 */
 interface ProxyItem {
+  proxyId?: string;
   id?: string;
   accountId?: string;
   area?: string;
@@ -36,6 +37,9 @@ interface RegionOption {
 
 const loading = ref(false);
 const finished = ref(false);
+const props = defineProps<{
+  groupOptions?: Array<{ id: string; suiteName: string }>;
+}>();
 
 const filterForm = reactive({
   area: '',
@@ -65,7 +69,7 @@ const regionCascaderProps = {
 
 /** 生成列表项稳定 key（优先 id，其次 proxy，再次 index） */
 function getKey(item: ProxyItem, index: number) {
-  return item.id || item.proxy || item.ip || `proxy-${index}`;
+  return item.proxyId || item.id || item.proxy || item.ip || `proxy-${index}`;
 }
 
 /** 判断代理卡片是否被选中 */
@@ -183,6 +187,7 @@ function onProxyDragStart(ev: DragEvent, item: ProxyItem) {
   dt.setData(
     'application/x-proxy-item',
     JSON.stringify({
+      proxyId: item.proxyId,
       id: item.id,
       accountId: item.accountId,
       area: item.area,
@@ -234,12 +239,20 @@ defineExpose({
       </div>
       <div class="filter-item">
         <label class="filter-label">{{ $t('associationCenter.proxyGroup') }}</label>
-        <el-input
+        <el-select
           v-model="filterForm.proxyGroup"
           :placeholder="$t('associationCenter.proxyGroupPlaceholder')"
           class="filter-input"
           clearable
-        />
+          @change="handleSearch"
+        >
+          <el-option
+            v-for="item in props.groupOptions || []"
+            :key="item.id"
+            :label="item.suiteName"
+            :value="item.id"
+          />
+        </el-select>
       </div>
       <div class="filter-item">
         <label class="filter-label">{{ $t('associationCenter.sortCondition') }}</label>

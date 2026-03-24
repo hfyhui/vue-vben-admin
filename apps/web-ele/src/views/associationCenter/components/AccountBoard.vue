@@ -34,6 +34,9 @@ function getAccountAppId(item: AccountItem) {
 
 const loading = ref(false);
 const finished = ref(false);
+const props = defineProps<{
+  groupOptions?: Array<{ id: string; suiteName: string }>;
+}>();
 const filterForm = reactive({
   platform: [] as string[],
   accountSearch: '',
@@ -323,12 +326,20 @@ defineExpose({
       </div>
       <div class="filter-item">
         <label class="filter-label">{{ $t('associationCenter.accountGroup') }}</label>
-        <el-input
+        <el-select
           v-model="filterForm.accountGroup"
           :placeholder="$t('associationCenter.accountGroupPlaceholder')"
           class="filter-input"
           clearable
-        />
+          @change="handleSearch"
+        >
+          <el-option
+            v-for="item in props.groupOptions || []"
+            :key="item.id"
+            :label="item.suiteName"
+            :value="item.id"
+          />
+        </el-select>
       </div>
       <div class="filter-item">
         <label class="filter-label">{{ $t('associationCenter.sortCondition') }}</label>

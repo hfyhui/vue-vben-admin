@@ -5,7 +5,12 @@ import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { TopRight } from '@element-plus/icons-vue';
 
-import { enableAssetApi, getAssetSummaryApi } from '#/api/core/asset';
+import {
+  checkAccountDeviceApi,
+  enableAssetApi,
+  getAssetGroupApi,
+  getAssetSummaryApi,
+} from '#/api/core/asset';
 import { $t } from '#/locales';
 
 import StatsOverview from './components/StatsOverview.vue';
@@ -23,6 +28,7 @@ const overviewStats = ref([
   { key: 'proxyPool', current: 0, total: 0 },
   { key: 'userCount', current: 0, total: 0 },
 ]);
+const sharedGroupOptions = ref<Array<{ id: string; suiteName: string }>>([]);
 
 function toSafeNumber(value: unknown) {
   const num = Number(value ?? 0);
@@ -60,8 +66,24 @@ async function loadAssetSummary() {
   }
 }
 
+async function loadGroupOptions() {
+  try {
+    const response = await getAssetGroupApi();
+    const groups = Array.isArray(response?.data) ? response.data : [];
+    sharedGroupOptions.value = groups
+      .map((item) => ({
+        id: String(item?.id ?? ''),
+        suiteName: String(item?.suiteName ?? ''),
+      }))
+      .filter((item) => item.id && item.suiteName);
+  } catch (error) {
+    console.error('[associationCenter] 获取分组失败:', error);
+  }
+}
+
 onMounted(() => {
   loadAssetSummary();
+  loadGroupOptions();
 });
 
 function onViewSwitch() {
@@ -103,6 +125,14 @@ async function onOfficialEnable() {
   }
 
   try {
+    const checkResponse = await checkAccountDeviceApi({ deviceEnables });
+    if (checkResponse?.code !== 100000) {
+      if (!checkResponse?.msg) {
+        ElMessage.error($t('associationCenter.officialEnableFailed'));
+      }
+      return;
+    }
+
     const response = await enableAssetApi({ deviceEnables });
     if (response?.code === 100000) {
       ElMessage.success(
@@ -110,7 +140,9 @@ async function onOfficialEnable() {
       );
       return;
     }
-    ElMessage.error(response?.msg || $t('associationCenter.officialEnableFailed'));
+    if (!response?.msg) {
+      ElMessage.error($t('associationCenter.officialEnableFailed'));
+    }
   } catch (error) {
     console.error(error);
     ElMessage.error($t('associationCenter.officialEnableFailed'));
@@ -133,7 +165,7 @@ async function onOfficialEnable() {
               </el-link>
             </div>
           </template>
-          <AccountBoard ref="accountBoardRef" />
+          <AccountBoard ref="accountBoardRef" :group-options="sharedGroupOptions" />
         </el-card>
       </el-col>
       <el-col :xs="24" :md="12">
@@ -146,7 +178,7 @@ async function onOfficialEnable() {
               </el-link>
             </div>
           </template>
-          <ProxyBoard ref="proxyBoardRef" />
+          <ProxyBoard ref="proxyBoardRef" :group-options="sharedGroupOptions" />
         </el-card>
       </el-col>
     </el-row>
@@ -169,7 +201,7 @@ async function onOfficialEnable() {
 
     <!-- 设备看板 -->
     <el-card>
-      <DeviceBoard ref="deviceBoardRef" />
+      <DeviceBoard ref="deviceBoardRef" :group-options="sharedGroupOptions" />
     </el-card>
   </div>
 </template>

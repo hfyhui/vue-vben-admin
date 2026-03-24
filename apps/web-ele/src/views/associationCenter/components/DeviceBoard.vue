@@ -9,7 +9,6 @@ import { $t } from '#/locales';
 
 import {
   getContainerAssetPageApi,
-  getDeviceGroupApi,
   type DeviceItem,
 } from '#/api/core/asset';
 
@@ -18,6 +17,9 @@ import DeviceGrid from './DeviceGrid.vue';
 import DeviceTable from './DeviceTable.vue';
 
 const router = useRouter();
+const props = defineProps<{
+  groupOptions?: Array<{ id: string; suiteName: string }>;
+}>();
 const loading = ref(false);
 const finished = ref(false);
 
@@ -47,7 +49,6 @@ const pagination = reactive({
 
 const list = ref<DeviceItem[]>([]);
 const allMockRecords = ref<DeviceItem[]>([]);
-const groupOptions = ref<Array<{ groupId: string; groupName: string }>>([]);
 const selectedDeviceKeys = ref<string[]>([]);
 const pinnedDeviceKeys = ref<string[]>([]);
 const pinMode = ref(false);
@@ -71,6 +72,7 @@ type BoundAccount = {
 };
 
 type BoundProxy = {
+  proxyId?: string;
   id?: string;
   accountId?: string;
   area?: string;
@@ -81,7 +83,7 @@ type BoundProxy = {
 };
 
 function getProxyId(proxy: Partial<BoundProxy> & Record<string, any>) {
-  return proxy.ip as string;
+  return proxy.proxyId as string;
 }
 
 /** 代理展示值：优先使用原始 proxy 串，缺失时再回退 area + ip / ip */
@@ -199,22 +201,6 @@ async function fetchData() {
   }
 }
 
-async function fetchDeviceGroups() {
-  try {
-    const response = await getDeviceGroupApi();
-    const groups = Array.isArray(response?.data) ? response.data : [];
-    groupOptions.value = groups
-      .map((item) => ({
-        groupId: String(item?.groupId ?? ''),
-        groupName: String(item?.groupName ?? ''),
-      }))
-      .filter((item) => item.groupId && item.groupName);
-  } catch (error) {
-    console.error(error);
-    ElMessage.error($t('common.error.loadFailed'));
-  }
-}
-
 /** 执行查询：重置分页/列表/选择状态并重新加载 */
 function handleSearch() {
   pagination.current = 1;
@@ -314,6 +300,14 @@ function getDeviceId(item: DeviceItem) {
   return item.deviceId
 }
 
+/** 从设备记录中提取可用于正式启用接口的代理 ID */
+function getDeviceProxyId(item: DeviceItem) {
+  const bound = (item.boundProxies as BoundProxy[] | undefined) || [];
+  const fromBound = bound.length > 0 ? getProxyId(bound[0]!) : '';
+  if (fromBound) return fromBound;
+  return String((item as Record<string, any>)?.proxyId || '');
+}
+
 /** 切换设备选中状态（用于自动关联） */
 function toggleDeviceSelect(item: DeviceItem) {
   const key = getDeviceKey(item);
@@ -360,8 +354,7 @@ function getSelectedDeviceEnables() {
   return selectedRecords
     .map((item) => {
       const accountIds = getDeviceBoundAccountIds(item);
-      const bound = (item.boundProxies as BoundProxy[] | undefined) || [];
-      const proxyId = bound.length > 0 ? getProxyId(bound[0]!) : '';
+      const proxyId = getDeviceProxyId(item);
       const deviceId = String(getDeviceId(item) || '');
       const deviceIp = String(item.deviceIp || '');
       if (!deviceId) return null;
@@ -560,7 +553,6 @@ defineExpose({
 
 /** 组件初始化：生成 mock 数据并加载第一页 */
 onMounted(() => {
-  void fetchDeviceGroups();
   void fetchData();
 });
 </script>
@@ -605,10 +597,10 @@ onMounted(() => {
           @change="handleSearch"
         >
           <el-option
-            v-for="item in groupOptions"
-            :key="item.groupId"
-            :label="item.groupName"
-            :value="item.groupId"
+            v-for="item in props.groupOptions || []"
+            :key="item.id"
+            :label="item.suiteName"
+            :value="item.id"
           />
         </el-select>
       </div>
