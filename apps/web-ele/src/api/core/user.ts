@@ -1,6 +1,6 @@
 import type { UserInfo } from '@vben/types';
 
-import { noPrefixClient } from '#/api/request';
+import { authClient } from '#/api/request';
 
 interface BackendUserInfoResponse {
   data?: Record<string, any> | null;
@@ -13,9 +13,7 @@ interface BackendUserInfoResponse {
  * 获取用户信息
  */
 export async function getUserInfoApi() {
-  const response = await noPrefixClient.get<BackendUserInfoResponse>(
-    '/auth/getInfo/',
-  );
+  const response = await authClient.get<BackendUserInfoResponse>('/auth/getInfo');
   const rawUser = (response?.user ?? {}) as Record<string, any>;
 
   const mappedUser: UserInfo = {

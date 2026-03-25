@@ -34,6 +34,10 @@ export interface ApiResponse<T = any> {
   msg?: string;
 }
 
+export interface ApplicationDeleteParams {
+  checkIds: string[];
+}
+
 /** 获取应用管理分页列表 - 走 /social 代理到 MCC */
 export async function getApplicationPageApi(
   params: ApplicationPageParams,
@@ -46,5 +50,22 @@ export async function getApplicationPageApi(
       applicationStatus: params.applicationStatus,
     }),
   };
-  return socialClient.post('/application/management/page', reqParams);
+  return socialClient.post('/social/application/management/page', reqParams);
+}
+
+/** 删除应用（支持批量） */
+export async function deleteApplicationApi(
+  checkIds: string[],
+): Promise<ApiResponse<null>> {
+  return socialClient.delete('/social/application/management', {
+    data: { checkIds } satisfies ApplicationDeleteParams,
+  });
+}
+
+/** 启用/禁用应用 */
+export async function updateApplicationStatusApi(
+  id: string,
+  status: 0 | 1,
+): Promise<ApiResponse<null>> {
+  return socialClient.post(`/social/application/management/${id}/${status}`);
 }

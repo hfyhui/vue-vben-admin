@@ -1,4 +1,4 @@
-import { baseRequestClient, socialClient } from '#/api/request';
+import { authClient, baseRequestClient } from '#/api/request';
 
 export namespace AuthApi {
   /** 登录接口参数 */
@@ -22,7 +22,7 @@ export namespace AuthApi {
  * 登录
  */
 export async function loginApi(data: AuthApi.LoginParams) {
-  const response = await socialClient.post<{ token: string }>('/auth/login', data);
+  const response = await authClient.post<{ token: string }>('/auth/login', data);
   return { accessToken: response.token };
 }
 

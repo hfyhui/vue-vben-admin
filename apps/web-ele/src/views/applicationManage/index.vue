@@ -6,6 +6,7 @@ import { Page } from '@vben/common-ui';
 import { ElMessage, ElMessageBox } from 'element-plus';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
+import { deleteApplicationApi, updateApplicationStatusApi } from '#/api/core/application';
 import { $t } from '#/locales';
 
 import {
@@ -57,7 +58,10 @@ function onAdd() {
 }
 
 async function onBatchDelete() {
-  const checkboxRecords = gridApi.getCheckboxRecords?.() ?? [];
+  const checkboxRecords =
+    (gridApi as any)?.grid?.getCheckboxRecords?.() ??
+    (gridApi as any)?.getCheckboxRecords?.() ??
+    [];
   if (checkboxRecords.length === 0) {
     ElMessage.warning(
       $t('applicationManage.message.selectBeforeDelete') || '请先选择要删除的应用',
@@ -72,6 +76,10 @@ async function onBatchDelete() {
       $t('common.prompt') || '提示',
       { type: 'warning' },
     );
+    const checkIds = checkboxRecords
+      .map((item: ApplicationItem) => String(item.id ?? ''))
+      .filter(Boolean);
+    await deleteApplicationApi(checkIds);
     ElMessage.success($t('applicationManage.message.deleteSuccess') || '删除成功');
     gridApi.reload();
   } catch {
@@ -79,14 +87,31 @@ async function onBatchDelete() {
   }
 }
 
+async function onUpdateStatus(row: ApplicationItem, status: 0 | 1) {
+  const message =
+    status === 1
+      ? `是否确认禁用应用：${row.applicationName}?`
+      : `是否确认启用应用：${row.applicationName}?`;
+  try {
+    await ElMessageBox.confirm(message, $t('common.prompt') || '提示', {
+      confirmButtonText: '是',
+      cancelButtonText: '否',
+      type: status === 1 ? 'warning' : 'info',
+    });
+    await updateApplicationStatusApi(String(row.id), status);
+    ElMessage.success(status === 1 ? '禁用成功' : '启用成功');
+    gridApi.reload();
+  } catch {
+    // 用户取消
+  }
+}
+
 function onEnable(row: ApplicationItem) {
-  ElMessage.info(`启用「${row.applicationName}」待对接 API`);
-  gridApi.reload();
+  return onUpdateStatus(row, 0);
 }
 
 function onDisable(row: ApplicationItem) {
-  ElMessage.info(`禁用「${row.applicationName}」待对接 API`);
-  gridApi.reload();
+  return onUpdateStatus(row, 1);
 }
 
 function onEdit(row: ApplicationItem) {
@@ -101,6 +126,7 @@ async function onDelete(row: ApplicationItem) {
       $t('common.prompt') || '提示',
       { type: 'warning' },
     );
+    await deleteApplicationApi([String(row.id)]);
     ElMessage.success($t('applicationManage.message.deleteSuccess') || '删除成功');
     gridApi.reload();
   } catch {

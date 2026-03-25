@@ -22,6 +22,7 @@ import { refreshTokenApi } from './core';
 const { apiURL } = useAppConfig(import.meta.env, import.meta.env.PROD);
 const platformBaseURL = import.meta.env.VITE_GLOB_OTHER_API_URL || '/platform';
 const socialBaseURL = import.meta.env.VITE_GLOB_SOCIAL_API_URL || '/social';
+const authApiBaseURL = import.meta.env.VITE_GLOB_AUTH_API_URL || '/auth';
 const customAuthorization = import.meta.env.VITE_GLOB_AUTHORIZATION;
 const backendSuccessCodes = new Set([200, 100000]);
 
@@ -232,6 +233,9 @@ export const proxyClient = createBackendClient(platformBaseURL);
 
 // Social 客户端 - 用于 /social 前缀的请求（MCC）
 export const socialClient = createBackendClient(socialBaseURL);
+
+// Auth 客户端 - 仅用于登录/用户信息，避免影响其他 /social 接口
+export const authClient = createBackendClient(authApiBaseURL);
 
 // 无前缀客户端 - 用于直接以 / 开头的后端接口
 export const noPrefixClient = createBackendClient('');

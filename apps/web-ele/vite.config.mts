@@ -30,6 +30,7 @@ export default defineConfig(async () => {
           },
           '/auth': {
             changeOrigin: true,
+            rewrite: (path) => path.replace(/^\/auth/, ''),
             // 登录/用户信息接口代理，测试环境
             target: 'https://test.callfansai.cn',
             secure: false,
