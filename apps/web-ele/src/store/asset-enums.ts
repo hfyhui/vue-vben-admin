@@ -63,7 +63,15 @@ export const useAssetEnumsStore = defineStore('asset-enums', () => {
     return ((enums.value?.[key] ?? []) as T);
   }
 
+  function $reset() {
+    enums.value = {};
+    loaded.value = false;
+    loading.value = false;
+    window.localStorage.removeItem(ASSET_ENUMS_CACHE_KEY);
+  }
+
   return {
+    $reset,
     enums,
     loaded,
     loading,

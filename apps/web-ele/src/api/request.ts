@@ -22,6 +22,12 @@ import { refreshTokenApi } from './core';
 const { apiURL } = useAppConfig(import.meta.env, import.meta.env.PROD);
 const platformBaseURL = import.meta.env.VITE_GLOB_OTHER_API_URL || '/platform';
 const socialBaseURL = import.meta.env.VITE_GLOB_SOCIAL_API_URL || '/social';
+const customAuthorization = import.meta.env.VITE_GLOB_AUTHORIZATION;
+const backendSuccessCodes = new Set([200, 100000]);
+
+function formatBearerToken(token: null | string) {
+  return token ? `Bearer ${token}` : '';
+}
 
 function createRequestClient(baseURL: string, options?: RequestClientOptions) {
   const client = new RequestClient({
@@ -148,6 +154,18 @@ function createBackendClient(baseURL: string) {
 
   client.addRequestInterceptor({
     fulfilled: async (config) => {
+      const accessStore = useAccessStore();
+      config.headers = config.headers || {};
+      // 优先使用环境变量固定 Authorization；未配置时回退为登录态 token。
+      if (customAuthorization) {
+        config.headers.Authorization = customAuthorization;
+      } else {
+        const authToken = formatBearerToken(accessStore.accessToken);
+        if (authToken) {
+          config.headers.Authorization = authToken;
+        }
+      }
+
       // 过滤空值参数，但保留 FormData 对象
       if (
         config.data &&
@@ -186,9 +204,9 @@ function createBackendClient(baseURL: string) {
         // 检查响应数据中的code字段
         if (responseData && typeof responseData === 'object' && 'code' in responseData) {
           const { code, msg } = responseData;
-          if (code === 100000) {
+          if (backendSuccessCodes.has(Number(code))) {
             return responseData;
-          } else {
+          } else if (msg) {
             ElMessage.error(msg);
           }
           return responseData;
@@ -214,6 +232,9 @@ export const proxyClient = createBackendClient(platformBaseURL);
 
 // Social 客户端 - 用于 /social 前缀的请求（MCC）
 export const socialClient = createBackendClient(socialBaseURL);
+
+// 无前缀客户端 - 用于直接以 / 开头的后端接口
+export const noPrefixClient = createBackendClient('');
 
 // 保持向后兼容
 export const requestClient = apiClient;

@@ -46,5 +46,5 @@ export async function getApplicationPageApi(
       applicationStatus: params.applicationStatus,
     }),
   };
-  return socialClient.post('/social/application/management/page', reqParams);
+  return socialClient.post('/application/management/page', reqParams);
 }
