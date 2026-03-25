@@ -1,0 +1,199 @@
+<script lang="ts" setup>
+import { reactive, ref, watch } from 'vue';
+
+import { ElMessage } from 'element-plus';
+import { QuestionFilled } from '@element-plus/icons-vue';
+
+import {
+  getApplicationScriptListApi,
+  type ApplicationScriptItem,
+  type ApplicationUpsertPayload,
+} from '#/api/core/application';
+import ImageUpload from '#/components/ImageUpload.vue';
+
+const props = defineProps<{
+  modelValue?: Record<string, any> | null;
+  visible: boolean;
+}>();
+
+const emit = defineEmits<{
+  (e: 'submit', payload: ApplicationUpsertPayload): void;
+  (e: 'update:visible', value: boolean): void;
+}>();
+
+const submitFormRef = ref();
+const scriptLoading = ref(false);
+const scriptOptionsRaw = ref<ApplicationScriptItem[]>([]);
+const submitData = reactive<Record<string, any>>({
+  activityName: '',
+  applicationName: '',
+  logoPath: '',
+  orderNum: undefined,
+  packageName: '',
+  programType: [],
+});
+const rules = {
+  applicationName: [{ required: true, message: '请输入应用名称', trigger: 'blur' }],
+  logoPath: [{ required: true, message: '请上传Logo', trigger: 'change' }],
+  programType: [{ required: true, message: '请选择脚本清单', trigger: 'change' }],
+};
+
+async function fetchScriptOptions() {
+  if (scriptLoading.value) return;
+  scriptLoading.value = true;
+  try {
+    const res = await getApplicationScriptListApi();
+    scriptOptionsRaw.value = (res as any).data;
+  } catch {
+    scriptOptionsRaw.value = [];
+    ElMessage.warning('脚本清单加载失败，请稍后重试');
+  } finally {
+    scriptLoading.value = false;
+  }
+}
+
+watch(
+  () => props.visible,
+  async (visible) => {
+    if (!visible) return;
+    await fetchScriptOptions();
+    const row = props.modelValue;
+    if (!row) {
+      resetForm();
+      return;
+    }
+    const mappedIds = Array.isArray(row.programIds)
+      ? row.programIds.map((id: any) => String(id))
+      : [];
+    submitData.id = row.id;
+    submitData.applicationName = row.applicationName;
+    submitData.logoPath = row.logoPath;
+    submitData.packageName = row.packageName;
+    submitData.activityName = row.activityName;
+    submitData.orderNum = row.orderNum;
+    submitData.programType = mappedIds;
+    submitData.applicationStatus = row.applicationStatus;
+  },
+  { immediate: true },
+);
+
+async function submitFn() {
+  const valid = await submitFormRef.value?.validate?.().then(() => true).catch(() => false);
+  if (!valid) return;
+  const payload: ApplicationUpsertPayload = {
+    id: submitData.id,
+    applicationName: submitData.applicationName,
+    logoPath: submitData.logoPath,
+    packageName: submitData.packageName,
+    activityName: submitData.activityName,
+    orderNum: submitData.orderNum,
+    programIds: Array.isArray(submitData.programType)
+      ? submitData.programType.map((id: any) => String(id))
+      : [],
+    applicationStatus: submitData.applicationStatus,
+  };
+  emit('submit', payload);
+}
+
+function resetForm() {
+  submitData.id = undefined;
+  submitData.applicationName = '';
+  submitData.logoPath = '';
+  submitData.packageName = '';
+  submitData.activityName = '';
+  submitData.orderNum = undefined;
+  submitData.programType = [];
+  submitData.applicationStatus = undefined;
+  submitFormRef.value?.resetFields?.();
+}
+
+defineExpose({
+  reset: resetForm,
+  resetSubmitting: () => {},
+  submitFn,
+});
+</script>
+
+<template>
+  <el-form ref="submitFormRef" :model="submitData" :rules="rules" label-width="120px">
+    <el-form-item label="应用名称" prop="applicationName">
+      <el-input v-model="submitData.applicationName" maxlength="20" show-word-limit />
+    </el-form-item>
+
+    <el-form-item prop="logoPath">
+      <template #label>
+        <span class="logo-label">
+          <span>上传logo</span>
+          <el-tooltip content="建议logo尺寸为 16px * 16px" placement="top">
+            <el-icon class="logo-tip-icon"><QuestionFilled /></el-icon>
+          </el-tooltip>
+        </span>
+      </template>
+      <ImageUpload
+        v-model="submitData.logoPath"
+        file-format=".jpg,.jpeg,.png,.bmp,.gif"
+        :file-size="5120"
+        @change="
+          () => {
+            submitFormRef?.validateField?.('logoPath');
+          }
+        "
+      />
+    </el-form-item>
+
+    <el-form-item label="包名" prop="packageName">
+      <el-input v-model="submitData.packageName" maxlength="1000" />
+    </el-form-item>
+
+    <el-form-item label="Activity名称" prop="activityName">
+      <el-input v-model="submitData.activityName" maxlength="1000" />
+    </el-form-item>
+
+    <el-form-item label="脚本清单" prop="programType">
+      <el-select
+        v-model="submitData.programType"
+        multiple
+        filterable
+        clearable
+        collapse-tags
+        collapse-tags-tooltip
+        :loading="scriptLoading"
+        placeholder="请选择脚本"
+        style="width: 100%"
+      >
+        <el-option
+          v-for="op in scriptOptionsRaw"
+          :key="op.id"
+          :label="op.programName"
+          :value="String(op.id)"
+        />
+      </el-select>
+    </el-form-item>
+
+    <el-form-item label="序号" prop="orderNum">
+      <el-input-number
+        v-model="submitData.orderNum"
+        :min="0"
+        :max="999999"
+        :step="1"
+        :precision="0"
+        controls
+        style="width: 100%"
+      />
+    </el-form-item>
+  </el-form>
+</template>
+
+<style scoped>
+.logo-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.logo-tip-icon {
+  color: #f56c6c;
+  font-size: 16px;
+  cursor: pointer;
+}
+</style>

@@ -237,9 +237,6 @@ export const socialClient = createBackendClient(socialBaseURL);
 // Auth 客户端 - 仅用于登录/用户信息，避免影响其他 /social 接口
 export const authClient = createBackendClient(authApiBaseURL);
 
-// 无前缀客户端 - 用于直接以 / 开头的后端接口
-export const noPrefixClient = createBackendClient('');
-
 // 保持向后兼容
 export const requestClient = apiClient;
 

@@ -38,6 +38,24 @@ export interface ApplicationDeleteParams {
   checkIds: string[];
 }
 
+export interface ApplicationScriptItem {
+  id: string;
+  name?: string;
+  programName?: string;
+  [key: string]: any;
+}
+
+export interface ApplicationUpsertPayload {
+  id?: string;
+  applicationName: string;
+  logoPath: string;
+  packageName?: string;
+  activityName?: string;
+  programIds: string[];
+  orderNum?: number;
+  applicationStatus?: 0 | 1;
+}
+
 /** 获取应用管理分页列表 - 走 /social 代理到 MCC */
 export async function getApplicationPageApi(
   params: ApplicationPageParams,
@@ -68,4 +86,34 @@ export async function updateApplicationStatusApi(
   status: 0 | 1,
 ): Promise<ApiResponse<null>> {
   return socialClient.post(`/social/application/management/${id}/${status}`);
+}
+
+/** 获取应用详情 */
+export async function getApplicationDetailApi(
+  id: string,
+): Promise<ApiResponse<ApplicationItem>> {
+  return socialClient.get(`/social/application/management/${id}`);
+}
+
+/** 获取脚本清单 */
+export async function getApplicationScriptListApi(): Promise<
+  ApiResponse<ApplicationScriptItem[]>
+> {
+  return socialClient.get('/social/application/management/script');
+}
+
+/** 新增应用 */
+export async function createApplicationApi(
+  data: ApplicationUpsertPayload,
+): Promise<ApiResponse<null>> {
+  // 兼容旧系统：新增走 PUT
+  return socialClient.put('/social/application/management', data);
+}
+
+/** 编辑应用 */
+export async function updateApplicationApi(
+  data: ApplicationUpsertPayload,
+): Promise<ApiResponse<null>> {
+  // 兼容旧系统：编辑走 POST
+  return socialClient.post('/social/application/management', data);
 }

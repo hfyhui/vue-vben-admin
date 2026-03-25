@@ -1,12 +1,20 @@
 <script lang="ts" setup>
 import type { VxeTableGridOptions } from '#/adapter/vxe-table';
+import { ref } from 'vue';
 
 import { Page } from '@vben/common-ui';
 
 import { ElMessage, ElMessageBox } from 'element-plus';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
-import { deleteApplicationApi, updateApplicationStatusApi } from '#/api/core/application';
+import {
+  createApplicationApi,
+  deleteApplicationApi,
+  getApplicationDetailApi,
+  updateApplicationApi,
+  updateApplicationStatusApi,
+  type ApplicationUpsertPayload,
+} from '#/api/core/application';
 import { $t } from '#/locales';
 
 import {
@@ -15,6 +23,7 @@ import {
   getScriptListDisplay,
   useColumns,
 } from './application-manage-table-config';
+import ApplicationForm from './components/ApplicationForm.vue';
 import type { ApplicationItem } from './application-manage-table-config';
 
 const [Grid, gridApi] = useVbenVxeGrid({
@@ -53,34 +62,34 @@ const [Grid, gridApi] = useVbenVxeGrid({
   } as VxeTableGridOptions,
 });
 
+const showForm = ref(false);
+const editData = ref<ApplicationItem | null>(null);
+const applicationFormRef = ref<InstanceType<typeof ApplicationForm>>();
+
 function onAdd() {
-  ElMessage.info($t('applicationManage.action.add') || '新增功能待对接 API');
+  editData.value = null;
+  showForm.value = true;
 }
 
 async function onBatchDelete() {
-  const checkboxRecords =
-    (gridApi as any)?.grid?.getCheckboxRecords?.() ??
-    (gridApi as any)?.getCheckboxRecords?.() ??
-    [];
+  const checkboxRecords = (gridApi as any).grid.getCheckboxRecords();
   if (checkboxRecords.length === 0) {
-    ElMessage.warning(
-      $t('applicationManage.message.selectBeforeDelete') || '请先选择要删除的应用',
-    );
+    ElMessage.warning($t('applicationManage.message.selectBeforeDelete'));
     return;
   }
   try {
     await ElMessageBox.confirm(
       $t('applicationManage.message.batchDeleteConfirm', {
         count: checkboxRecords.length,
-      }) || `确定要删除选中的 ${checkboxRecords.length} 个应用吗？`,
-      $t('common.prompt') || '提示',
+      }),
+      $t('common.prompt'),
       { type: 'warning' },
     );
     const checkIds = checkboxRecords
-      .map((item: ApplicationItem) => String(item.id ?? ''))
+      .map((item: ApplicationItem) => String(item.id))
       .filter(Boolean);
     await deleteApplicationApi(checkIds);
-    ElMessage.success($t('applicationManage.message.deleteSuccess') || '删除成功');
+    ElMessage.success($t('applicationManage.message.deleteSuccess'));
     gridApi.reload();
   } catch {
     // 用户取消
@@ -93,7 +102,7 @@ async function onUpdateStatus(row: ApplicationItem, status: 0 | 1) {
       ? `是否确认禁用应用：${row.applicationName}?`
       : `是否确认启用应用：${row.applicationName}?`;
   try {
-    await ElMessageBox.confirm(message, $t('common.prompt') || '提示', {
+    await ElMessageBox.confirm(message, $t('common.prompt'), {
       confirmButtonText: '是',
       cancelButtonText: '否',
       type: status === 1 ? 'warning' : 'info',
@@ -115,19 +124,62 @@ function onDisable(row: ApplicationItem) {
 }
 
 function onEdit(row: ApplicationItem) {
-  ElMessage.info(`编辑「${row.applicationName}」待对接 API`);
+  openEditDialog(row);
+}
+
+async function openEditDialog(row: ApplicationItem) {
+  try {
+    const res = await getApplicationDetailApi(String(row.id));
+    const detail = (res as any).data;
+    editData.value = {
+      ...row,
+      ...detail,
+    };
+    showForm.value = true;
+  } catch {
+    ElMessage.error('获取应用详情失败');
+  }
+}
+
+function onFormDialogClose() {
+  applicationFormRef.value?.reset?.();
+  showForm.value = false;
+  editData.value = null;
+  applicationFormRef.value?.resetSubmitting?.();
+}
+
+async function submitApplication(values: ApplicationUpsertPayload) {
+  try {
+    const payload: ApplicationUpsertPayload = {
+      ...values,
+      applicationStatus: values.applicationStatus,
+    };
+    const isEdit = !!values.id;
+    if (isEdit) {
+      await updateApplicationApi(payload);
+      ElMessage.success('编辑成功');
+    } else {
+      await createApplicationApi(payload);
+      ElMessage.success('新增成功');
+    }
+    showForm.value = false;
+    editData.value = null;
+    applicationFormRef.value?.resetSubmitting?.();
+    gridApi.reload();
+  } catch {
+    applicationFormRef.value?.resetSubmitting?.();
+  }
 }
 
 async function onDelete(row: ApplicationItem) {
   try {
     await ElMessageBox.confirm(
-      $t('applicationManage.message.deleteConfirm', { name: row.applicationName }) ||
-        `确定要删除「${row.applicationName}」吗？`,
-      $t('common.prompt') || '提示',
+      $t('applicationManage.message.deleteConfirm', { name: row.applicationName }),
+      $t('common.prompt'),
       { type: 'warning' },
     );
     await deleteApplicationApi([String(row.id)]);
-    ElMessage.success($t('applicationManage.message.deleteSuccess') || '删除成功');
+    ElMessage.success($t('applicationManage.message.deleteSuccess'));
     gridApi.reload();
   } catch {
     // 用户取消
@@ -141,10 +193,10 @@ async function onDelete(row: ApplicationItem) {
     <Grid>
         <template #toolbar-actions>
           <ElButton class="mr-2" type="primary" @click="onAdd">
-            {{ $t('applicationManage.action.add') || '新增' }}
+            {{ $t('applicationManage.action.add') }}
           </ElButton>
           <ElButton type="danger" @click="onBatchDelete">
-            {{ $t('applicationManage.action.batchDelete') || '批量删除' }}
+            {{ $t('applicationManage.action.batchDelete') }}
           </ElButton>
         </template>
 
@@ -157,33 +209,56 @@ async function onDelete(row: ApplicationItem) {
         <template #status="{ row }">
           {{
             row.applicationStatus === 0
-              ? ($t('common.enable') || '启用')
-              : ($t('common.disable') || '禁用')
+              ? $t('common.enable')
+              : $t('common.disable')
           }}
         </template>
 
         <template #action="{ row }">
           <template v-if="row.applicationStatus === 0">
             <el-button type="warning" link @click="onDisable(row)">
-              {{ $t('common.disable') || '禁用' }}
+              {{ $t('common.disable') }}
             </el-button>
             <el-button type="primary" link @click="onEdit(row)">
-              {{ $t('common.edit') || '编辑' }}
+              {{ $t('common.edit') }}
             </el-button>
           </template>
           <template v-else>
             <el-button type="success" link @click="onEnable(row)">
-              {{ $t('common.enable') || '启用' }}
+              {{ $t('common.enable') }}
             </el-button>
             <el-button type="primary" link @click="onEdit(row)">
-              {{ $t('common.edit') || '编辑' }}
+              {{ $t('common.edit') }}
             </el-button>
             <el-button type="danger" link @click="onDelete(row)">
-              {{ $t('common.del') || '删除' }}
+              {{ $t('common.del') }}
             </el-button>
           </template>
         </template>
     </Grid>
+    <ElDialog
+      v-model="showForm"
+      :title="editData?.id ? $t('common.edit') : $t('common.add')"
+      width="720px"
+      :close-on-click-modal="false"
+      @close="onFormDialogClose"
+    >
+      <ApplicationForm
+        ref="applicationFormRef"
+        :visible="showForm"
+        :model-value="editData"
+        @submit="submitApplication"
+        @update:visible="showForm = $event"
+      />
+      <template #footer>
+        <div class="dialog-footer">
+          <ElButton @click="onFormDialogClose">{{ $t('common.cancel') }}</ElButton>
+          <ElButton type="primary" @click="applicationFormRef?.submitFn?.()">
+            {{ $t('common.confirm') }}
+          </ElButton>
+        </div>
+      </template>
+    </ElDialog>
   </Page>
 </template>
 

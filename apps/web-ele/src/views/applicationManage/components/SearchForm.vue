@@ -11,9 +11,9 @@ const [SearchForm, formApi] = useVbenForm({
       component: 'Input',
       fieldName: 'applicationName',
       labelWidth: 80,
-      label: $t('applicationManage.search.applicationName') || '应用名称',
+      label: $t('applicationManage.search.applicationName'),
       componentProps: {
-        placeholder: $t('applicationManage.search.applicationNamePlaceholder') || '请输入',
+        placeholder: $t('applicationManage.search.applicationNamePlaceholder'),
         style: 'width: 180px;',
         clearable: true,
         onKeyup: (e: KeyboardEvent) => {
@@ -27,13 +27,13 @@ const [SearchForm, formApi] = useVbenForm({
       component: 'Select',
       fieldName: 'applicationStatus',
       labelWidth: 60,
-      label: $t('applicationManage.search.status') || '状态',
+      label: $t('applicationManage.search.status'),
       componentProps: {
         options: [
-          { label: $t('common.enable') || '启用', value: 0 },
-          { label: $t('common.disable') || '禁用', value: 1 },
+          { label: $t('common.enable') , value: 0 },
+          { label: $t('common.disable') , value: 1 },
         ],
-        placeholder: $t('applicationManage.search.statusPlaceholder') || '请选择',
+        placeholder: $t('applicationManage.search.statusPlaceholder') ,
         clearable: true,
         style: 'width: 180px;',
       },
@@ -46,8 +46,8 @@ const [SearchForm, formApi] = useVbenForm({
     if (formApi && formApi.resetForm) formApi.resetForm();
     emit('search', {});
   },
-  submitButtonOptions: { content: $t('common.search') || '查询' },
-  resetButtonOptions: { content: $t('common.reset') || '重置' },
+  submitButtonOptions: { content: $t('common.search') },
+  resetButtonOptions: { content: $t('common.reset') },
   wrapperClass: 'search-row-flex',
 });
 </script>
