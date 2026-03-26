@@ -1,5 +1,7 @@
 import type { VbenFormProps } from '#/adapter/form';
 
+import { getProxyAssetPageApi } from '#/api/core/asset';
+
 import { $t } from '#/locales';
 
 export interface ProxyPoolRow {
@@ -11,7 +13,7 @@ export interface ProxyPoolRow {
   port: string;
   username: string;
   password: string;
-   link: string;
+  link: string;
   expireTime: string;
   proxyGroup: string;
   remarks: string;
@@ -23,16 +25,56 @@ export interface ProxyPoolRow {
 export async function getProxyPoolListApi(_params: {
   page: number;
   pageSize: number;
+  regionFilter?: string;
+  proxySearch?: string;
+  proxyGroup?: string;
+  sortCondition?: string;
   [key: string]: any;
 }) {
-  const total = 0;
-  const list: ProxyPoolRow[] = [];
+  const { page, pageSize, regionFilter, proxySearch, proxyGroup, sortCondition } =
+    _params;
 
-  return new Promise<{ list: ProxyPoolRow[]; total: number }>((resolve) => {
-    setTimeout(() => {
-      resolve({ list, total });
-    }, 300);
+  const reqParams: Record<string, any> = {
+    current: page ?? 1,
+    size: pageSize ?? 10,
+  };
+
+  if (proxySearch) {
+    if (regionFilter === 'region') {
+      reqParams.area = proxySearch;
+    } else {
+      reqParams.proxy = proxySearch;
+    }
+  }
+  if (proxyGroup) reqParams.suiteIds = [proxyGroup];
+  if (sortCondition) reqParams.sortType = sortCondition;
+
+  const data = await getProxyAssetPageApi(reqParams);
+  const list: ProxyPoolRow[] = (data.records ?? []).map((item: any, index) => {
+    const proxyIp = item.ip 
+    return {
+      id: item.proxyId,
+      region: item.area,
+      loginTime: item.inputTime,
+      protocol: item.protocol,
+      deviceIp: proxyIp,
+      port: item.proxyLinkPort,
+      username: item.username,
+      password: item.password,
+      link: item.link,
+      expireTime: item.expireTime,
+      proxyGroup: item.proxyGroup,
+      remarks: item.remark,
+      associatedDevices: item.deviceIp,
+      associatedAccounts: item.accountId,
+      riskAlert: item.riskTips,
+    };
   });
+
+  return {
+    list,
+    total: Number(data.total ?? 0),
+  };
 }
 
 export const getFormOptions = (): VbenFormProps => ({
@@ -74,7 +116,8 @@ export const getFormOptions = (): VbenFormProps => ({
       componentProps: {
         placeholder: $t('proxyPool.filter.sortConditionPlaceholder'),
         options: [
-          { value: 'region', label: $t('proxyPool.filter.region') },
+          { value: '1', label: $t('proxyPool.filter.sortByRisk') },
+          { value: '2', label: $t('proxyPool.filter.sortByInputTime') },
         ],
         virtualized: false,
       },

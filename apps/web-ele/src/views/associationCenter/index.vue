@@ -216,9 +216,35 @@ async function onReverseQuery() {
       : proxyIds.length
         ? { proxyIds }
         : { deviceIds: finalDeviceIds };
+    const selectedType: 'account' | 'proxy' | 'device' = accountIds.length
+      ? 'account'
+      : proxyIds.length
+        ? 'proxy'
+        : 'device';
     console.log('[associationCenter] 反向查询基本信息:', payload);
     const response = await reverseQueryAssetApi(payload);
     if (response?.code === 100000) {
+      const reverseData = (response?.data ?? {}) as {
+        accountInfos?: any[] | null;
+        proxyInfos?: any[] | null;
+        deviceInfos?: any[] | null;
+      };
+      // 查询源看板保持原样，仅刷新其它两个看板。
+      if (selectedType !== 'account') {
+        accountBoardRef.value?.applyReverseQueryAccounts?.(
+          reverseData.accountInfos,
+        );
+      }
+      if (selectedType !== 'proxy') {
+        proxyBoardRef.value?.applyReverseQueryProxies?.(
+          reverseData.proxyInfos,
+        );
+      }
+      if (selectedType !== 'device') {
+        deviceBoardRef.value?.applyReverseQueryDevices?.(
+          reverseData.deviceInfos,
+        );
+      }
       ElMessage.success(response?.msg);
       return;
     }

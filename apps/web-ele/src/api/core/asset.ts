@@ -325,3 +325,16 @@ export async function downloadAccountTemplateApi(): Promise<void> {
   URL.revokeObjectURL(url);
 }
 
+/** 下载代理模板 GET /asset/template/proxy */
+export async function downloadProxyTemplateApi(): Promise<void> {
+  const blob = await proxyClient.download('/asset/template/proxy');
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'proxy_template.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+

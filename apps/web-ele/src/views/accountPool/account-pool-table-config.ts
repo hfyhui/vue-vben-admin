@@ -7,6 +7,7 @@ import { $t } from '#/locales';
 /** 与 GET /platform/asset/group（getAssetGroupApi）返回项一致，用于筛选下拉 */
 export type AccountPoolGroupOption = { id: string; suiteName: string };
 export type AccountPoolPlatformOption = { id: string; applicationName: string };
+export type AccountPoolSortOption = { label: string; value: string };
 
 export interface AccountPoolRow {
   id: string;
@@ -107,6 +108,7 @@ export async function getAccountPoolListApi(_params: {
 export const getFormOptions = (
   groupOptions: AccountPoolGroupOption[] = [],
   platformOptions: AccountPoolPlatformOption[] = [],
+  sortOptions: AccountPoolSortOption[] = [],
 ): VbenFormProps => ({
   collapsed: false,
   schema: [
@@ -157,9 +159,8 @@ export const getFormOptions = (
       label: $t('accountPool.filter.sortCondition'),
       componentProps: {
         placeholder: $t('accountPool.filter.sortConditionPlaceholder'),
-        options: [
-          { value: 'accountGroup', label: $t('accountPool.filter.accountGroup') },
-        ],
+        clearable: true,
+        options: sortOptions,
       },
     },
   ],

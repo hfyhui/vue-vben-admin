@@ -73,7 +73,7 @@ function getProxyDisplay(row: DeviceItem) {
       })
       .filter(Boolean)
       .join(',');
-  }
+  } 
   return row.proxy
 }
 

@@ -5,6 +5,7 @@ import { Page } from '@vben/common-ui';
 
 import { ElMessage } from 'element-plus';
 
+import { downloadProxyTemplateApi } from '#/api/core/asset';
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import { $t } from '#/locales';
 
@@ -58,6 +59,15 @@ function onImport() {
   ElMessage.info($t('proxyPool.action.import'));
 }
 
+async function onDownloadTemplate() {
+  try {
+    await downloadProxyTemplateApi();
+  } catch (error) {
+    console.error('[proxyPool] 下载代理模板失败:', error);
+    ElMessage.error($t('proxyPool.message.downloadFailed'));
+  }
+}
+
 function onBatchDelete() {
   ElMessage.info($t('proxyPool.action.batchDelete'));
 }
@@ -99,6 +109,9 @@ const statsData = [
           </ElButton>
           <ElButton class="mr-2" type="primary" @click="onImport">
             {{ $t('proxyPool.action.import') }}
+          </ElButton>
+          <ElButton class="mr-2" type="primary" @click="onDownloadTemplate">
+            {{ $t('proxyPool.action.downloadTemplate') }}
           </ElButton>
           <ElButton type="danger" @click="onBatchDelete">
             {{ $t('proxyPool.action.batchDelete') }}

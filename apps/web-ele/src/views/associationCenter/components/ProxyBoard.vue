@@ -102,6 +102,17 @@ function clearSelectedProxies() {
   selectedIds.value = [];
 }
 
+/** 应用反向查询结果（有数据则覆盖渲染，无数据则展示空） */
+function applyReverseQueryProxies(proxies: ProxyItem[] | null | undefined) {
+  const nextList = Array.isArray(proxies) ? proxies : [];
+  list.value = nextList;
+  selectedIds.value = [];
+  pagination.current = 1;
+  pagination.total = nextList.length;
+  finished.value = true;
+  loading.value = false;
+}
+
 /** 右侧色条颜色，直接使用接口返回的 color，无则默认 gray */
 function getRiskColor(color?: string): string {
   return color || 'gray';
@@ -209,6 +220,7 @@ onMounted(() => {
 defineExpose({
   getSelectedProxies,
   clearSelectedProxies,
+  applyReverseQueryProxies,
 });
 </script>
 

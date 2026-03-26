@@ -355,6 +355,23 @@ function getSelectedDeviceIds() {
   }, [] as string[]);
 }
 
+/** 应用反向查询结果（有数据则覆盖渲染，无数据则展示空） */
+function applyReverseQueryDevices(devices: DeviceItem[] | null | undefined) {
+  const nextList = Array.isArray(devices) ? devices : [];
+  allMockRecords.value = [...nextList];
+  list.value = [...nextList];
+  selectedDeviceKeys.value = [];
+  pinnedDeviceKeys.value = [];
+  pinMode.value = false;
+  pagination.current = 1;
+  pagination.total = nextList.length;
+  tablePagination.current = 1;
+  tablePagination.total = nextList.length;
+  finished.value = true;
+  loading.value = false;
+  updateTableData();
+}
+
 /** 构建正式启用接口所需的 deviceEnables 数组 */
 function getSelectedDeviceEnables() {
   const keySet = new Set(selectedDeviceKeys.value);
@@ -560,6 +577,7 @@ defineExpose({
   getSelectedDeviceEnables,
   getDeviceBoardList,
   getSelectedDeviceIds,
+  applyReverseQueryDevices,
 });
 
 /** 组件初始化：生成 mock 数据并加载第一页 */

@@ -15,7 +15,9 @@
     "proxyGroup": "代理分组",
     "proxyGroupPlaceholder": "请选择代理分组",
     "sortCondition": "排序条件",
-    "sortConditionPlaceholder": "请选择排序"
+    "sortConditionPlaceholder": "请选择排序",
+    "sortByRisk": "按风险排序（低风险优先）",
+    "sortByInputTime": "按录入时间排序（新录入优先）"
   },
   "table": {
     "region": "所属地区",
@@ -36,7 +38,11 @@
   "action": {
     "add": "新增",
     "import": "导入",
+    "downloadTemplate": "下载模板",
     "batchDelete": "批量删除"
+  },
+  "message": {
+    "downloadFailed": "下载失败"
   }
 }
 
