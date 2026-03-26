@@ -108,6 +108,35 @@ export interface AccountPoolNumData {
   accountRiskNum?: string;
 }
 
+export interface ReverseQueryParams {
+  accountIds?: string[];
+  proxyIds?: string[];
+  deviceIds?: string[];
+}
+
+export interface BatchDelAccountParams {
+  accountIds?: string[];
+}
+
+export interface ImportAccountParams {
+  appId: string;
+  file: File;
+}
+
+export interface AddAccountParams {
+  appId?: string;
+  riskLevel?: string;
+  appAccount?: string;
+  userName?: string;
+  userAccount?: string;
+  password?: string;
+  email?: string;
+  remark?: string;
+  suiteId?: string;
+  suiteName?: string;
+  suiteDesc?: string;
+}
+
 function resolvePageResult<T>(
   response: any,
   fallback: { current: number; size: number },
@@ -224,6 +253,46 @@ export async function getAccountPoolNumApi(): Promise<ApiResponse<AccountPoolNum
   return proxyClient.get<ApiResponse<AccountPoolNumData>>('/asset/account/num');
 }
 
+/** 反向查询 POST /asset/reverse/query */
+export async function reverseQueryAssetApi(
+  params: ReverseQueryParams,
+): Promise<ApiResponse<Record<string, any>>> {
+  return proxyClient.post<ApiResponse<Record<string, any>>>('/asset/reverse/query', params);
+}
+
+/** 批量删除账号 DELETE /asset/batch/del-account */
+export async function batchDeleteAccountApi(
+  accountIds: string[],
+): Promise<ApiResponse<null>> {
+  const payload: BatchDelAccountParams = { accountIds };
+  return proxyClient.delete<ApiResponse<null>>('/asset/batch/del-account', {
+    data: payload,
+  });
+}
+
+/** 导入账号 POST /asset/account/import */
+export async function importAccountApi(
+  params: ImportAccountParams,
+): Promise<ApiResponse<null>> {
+  const formData = new FormData();
+  formData.append('file', params.file);
+  return proxyClient.post<ApiResponse<null>>('/asset/account/import', formData, {
+    params: {
+      appId: params.appId,
+    },
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+}
+
+/** 新增账号 POST /asset/add/account */
+export async function addAccountApi(
+  params: AddAccountParams,
+): Promise<ApiResponse<null>> {
+  return proxyClient.post<ApiResponse<null>>('/asset/add/account', params);
+}
+
 /** 获取平台应用列表 POST /asset/app/list */
 export async function getAssetAppListApi(
   params: AssetAppListQuery = {},
@@ -241,5 +310,18 @@ export async function getAssetAppListApi(
     current: reqParams.current,
     size: reqParams.size,
   });
+}
+
+/** 下载账号模板 GET /asset/template/account */
+export async function downloadAccountTemplateApi(): Promise<void> {
+  const blob = await proxyClient.download('/asset/template/account');
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'account_template.xlsx';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 

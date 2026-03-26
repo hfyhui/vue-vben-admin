@@ -1,6 +1,12 @@
 import type { VbenFormProps } from '#/adapter/form';
 
+import { getAccountAssetPageApi } from '#/api/core/asset';
+
 import { $t } from '#/locales';
+
+/** 与 GET /platform/asset/group（getAssetGroupApi）返回项一致，用于筛选下拉 */
+export type AccountPoolGroupOption = { id: string; suiteName: string };
+export type AccountPoolPlatformOption = { id: string; applicationName: string };
 
 export interface AccountPoolRow {
   id: string;
@@ -20,22 +26,88 @@ export interface AccountPoolRow {
   associatedAgents: string;
 }
 
+interface AccountAssetRecord {
+  platform?: string;
+  appId?: string;
+  inputTime?: string;
+  riskTips?: string;
+  account?: string;
+  accountId?: string;
+  userAccount?: string;
+  accountPassword?: string;
+  email?: string;
+  emailPassword?: string;
+  remark?: string;
+  accountGroup?: string;
+  proxy?: string;
+  [key: string]: any;
+}
+
 export async function getAccountPoolListApi(_params: {
   page: number;
   pageSize: number;
+  platform?: string[];
+  accountSearch?: string;
+  accountGroup?: string;
+  sortCondition?: string;
   [key: string]: any;
 }) {
-  const total = 0;
-  const list: AccountPoolRow[] = [];
+  const {
+    page,
+    pageSize,
+    platform,
+    accountSearch,
+    accountGroup,
+    sortCondition,
+  } = _params;
 
-  return new Promise<{ list: AccountPoolRow[]; total: number }>((resolve) => {
-    setTimeout(() => {
-      resolve({ list, total });
-    }, 300);
-  });
+  // 入参与接口文档保持一致：POST /asset/account/page
+  // - current/size：分页
+  // - accountName：账号（accountSearch）
+  // - suiteIds：分组（accountGroup）
+  // - appIds：应用（platform）
+  // - sortCondition：排序条件
+  const reqParams: Record<string, any> = {
+    current: page ?? 1,
+    size: pageSize ?? 10,
+  };
+
+  if (accountSearch) reqParams.accountName = accountSearch;
+  if (accountGroup) reqParams.suiteIds = [accountGroup];
+  if (platform?.length) reqParams.appIds = platform;
+  if (sortCondition) reqParams.sortCondition = sortCondition;
+
+  const data = await getAccountAssetPageApi<AccountAssetRecord>(reqParams);
+
+  const list: AccountPoolRow[] = (data.records || []).map((r, idx) => ({
+    id: r.accountId ?? r.account ?? r.userAccount ?? `${idx}`,
+    platform: r.platform ?? '',
+    entryTime: r.inputTime ?? '',
+    riskAlert: r.riskTips ?? '',
+    account: r.account ?? '',
+    accountId: r.accountId ?? '',
+    username: r.userAccount ?? '',
+    userAccount: r.userAccount ?? '',
+    accountPassword: r.accountPassword ?? '',
+    verificationEmail: r.email ?? '',
+    emailPassword: r.emailPassword ?? '',
+    remarks: r.remark ?? '',
+    accountGroup: r.accountGroup ?? '',
+    associatedDevices: '',
+    // 接口字段：proxy（关联代理）；表格列：associatedAgents（关联代理/代理）
+    associatedAgents: r.proxy ?? '',
+  }));
+
+  return {
+    list,
+    total: Number(data.total ?? 0),
+  };
 }
 
-export const getFormOptions = (): VbenFormProps => ({
+export const getFormOptions = (
+  groupOptions: AccountPoolGroupOption[] = [],
+  platformOptions: AccountPoolPlatformOption[] = [],
+): VbenFormProps => ({
   collapsed: false,
   schema: [
     {
@@ -44,9 +116,17 @@ export const getFormOptions = (): VbenFormProps => ({
       label: $t('accountPool.filter.platform'),
       componentProps: {
         placeholder: $t('accountPool.filter.platformPlaceholder'),
-        options: [
-          { value: 'social', label: $t('accountPool.filter.socialPlatform') },
-        ],
+        clearable: true,
+        filterable: true,
+        multiple: true,
+        collapseTags: true,
+        collapseTagsTooltip: true,
+        options: platformOptions
+          .filter((item) => item.id)
+          .map((item) => ({
+            value: item.id,
+            label: item.applicationName,
+          })),
       },
     },
     {
@@ -58,11 +138,17 @@ export const getFormOptions = (): VbenFormProps => ({
       },
     },
     {
-      component: 'Input',
+      component: 'Select',
       fieldName: 'accountGroup',
       label: $t('accountPool.filter.accountGroup'),
       componentProps: {
         placeholder: $t('accountPool.filter.accountGroupPlaceholder'),
+        clearable: true,
+        filterable: true,
+        options: groupOptions.map((item) => ({
+          label: item.suiteName,
+          value: item.id,
+        })),
       },
     },
     {

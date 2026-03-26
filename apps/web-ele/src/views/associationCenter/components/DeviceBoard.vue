@@ -345,6 +345,16 @@ function getDeviceBoardList() {
   return allMockRecords.value;
 }
 
+/** 获取当前已选设备 ID 列表（用于反向查询） */
+function getSelectedDeviceIds() {
+  const selectedKeys = selectedDeviceKeys.value;
+  return allMockRecords.value.reduce((ids, item) => {
+    const deviceId = getDeviceId(item);
+    if (selectedKeys.includes(getDeviceKey(item)) && deviceId) ids.push(deviceId);
+    return ids;
+  }, [] as string[]);
+}
+
 /** 构建正式启用接口所需的 deviceEnables 数组 */
 function getSelectedDeviceEnables() {
   const keySet = new Set(selectedDeviceKeys.value);
@@ -549,6 +559,7 @@ defineExpose({
   clearSelectedDevices,
   getSelectedDeviceEnables,
   getDeviceBoardList,
+  getSelectedDeviceIds,
 });
 
 /** 组件初始化：生成 mock 数据并加载第一页 */

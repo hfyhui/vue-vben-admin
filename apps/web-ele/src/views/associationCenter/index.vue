@@ -10,8 +10,10 @@ import {
   enableAssetApi,
   getAssetGroupApi,
   getAssetSummaryApi,
+  reverseQueryAssetApi,
 } from '#/api/core/asset';
 import { $t } from '#/locales';
+import { useAssetEnumsStore } from '#/store';
 
 import StatsOverview from './components/StatsOverview.vue';
 import AccountBoard from './components/AccountBoard.vue';
@@ -29,6 +31,8 @@ const overviewStats = ref([
   { key: 'userCount', current: 0, total: 0 },
 ]);
 const sharedGroupOptions = ref<Array<{ id: string; suiteName: string }>>([]);
+const sharedSortOptions = ref<Array<{ label: string; value: string }>>([]);
+const assetEnumsStore = useAssetEnumsStore();
 
 function toSafeNumber(value: unknown) {
   const num = Number(value ?? 0);
@@ -81,9 +85,27 @@ async function loadGroupOptions() {
   }
 }
 
+async function loadSortOptions() {
+  try {
+    const enums = await assetEnumsStore.ensureAssetEnumsLoaded();
+    const accountOrderChildren = (enums as any).ACCOUNT_ORDER.children as Array<{
+      content: string;
+      name: string;
+    }>;
+    sharedSortOptions.value = accountOrderChildren.map((item) => ({
+      label: item.content,
+      value: item.name,
+    }));
+  } catch (error) {
+    console.error('[associationCenter] 获取排序枚举失败:', error);
+    sharedSortOptions.value = [];
+  }
+}
+
 onMounted(() => {
   loadAssetSummary();
   loadGroupOptions();
+  loadSortOptions();
 });
 
 function onViewSwitch() {
@@ -148,6 +170,64 @@ async function onOfficialEnable() {
     ElMessage.error($t('associationCenter.officialEnableFailed'));
   }
 }
+
+function uniqueIds(values: unknown[]) {
+  const idSet = new Set(
+    values
+      .map((item) => String(item ?? '').trim())
+      .filter(Boolean),
+  );
+  return [...idSet];
+}
+
+async function onReverseQuery() {
+  const accounts = accountBoardRef.value?.getSelectedAccounts?.() || [];
+  const proxies = proxyBoardRef.value?.getSelectedProxies?.() || [];
+  const deviceIds = deviceBoardRef.value?.getSelectedDeviceIds?.() || [];
+
+  const accountIds = uniqueIds(
+    accounts.map((item: any) => item?.accountId),
+  );
+  const proxyIds = uniqueIds(
+    proxies.map((item: any) => item?.proxyId),
+  );
+  const finalDeviceIds = uniqueIds(deviceIds);
+
+  const selectedTypeCount = [accountIds, proxyIds, finalDeviceIds].filter(
+    (ids) => ids.length > 0,
+  ).length;
+
+  if (selectedTypeCount === 0) {
+    ElMessage.warning($t('associationCenter.selectOneTypeBeforeReverseQuery'));
+    return;
+  }
+  if (selectedTypeCount > 1) {
+    ElMessage.warning($t('associationCenter.selectOnlyOneTypeForReverseQuery'));
+    return;
+  }
+
+  try {
+    const payload: {
+      accountIds?: string[];
+      proxyIds?: string[];
+      deviceIds?: string[];
+    } = accountIds.length
+      ? { accountIds }
+      : proxyIds.length
+        ? { proxyIds }
+        : { deviceIds: finalDeviceIds };
+    console.log('[associationCenter] 反向查询基本信息:', payload);
+    const response = await reverseQueryAssetApi(payload);
+    if (response?.code === 100000) {
+      ElMessage.success(response?.msg);
+      return;
+    }
+    ElMessage.error(response?.msg);
+  } catch (error) {
+    console.error('[associationCenter] 反向查询失败:', error);
+    ElMessage.error($t('associationCenter.reverseQueryFailed'));
+  }
+}
 </script>
 
 <template>
@@ -165,7 +245,11 @@ async function onOfficialEnable() {
               </el-link>
             </div>
           </template>
-          <AccountBoard ref="accountBoardRef" :group-options="sharedGroupOptions" />
+          <AccountBoard
+            ref="accountBoardRef"
+            :group-options="sharedGroupOptions"
+            :sort-options="sharedSortOptions"
+          />
         </el-card>
       </el-col>
       <el-col :xs="24" :md="12">
@@ -178,7 +262,11 @@ async function onOfficialEnable() {
               </el-link>
             </div>
           </template>
-          <ProxyBoard ref="proxyBoardRef" :group-options="sharedGroupOptions" />
+          <ProxyBoard
+            ref="proxyBoardRef"
+            :group-options="sharedGroupOptions"
+            :sort-options="sharedSortOptions"
+          />
         </el-card>
       </el-col>
     </el-row>
@@ -192,7 +280,9 @@ async function onOfficialEnable() {
           {{ $t('associationCenter.officialEnable') }}
         </el-button>
         <el-button type="danger">{{ $t('associationCenter.containerReset') }}</el-button>
-        <el-button type="primary">{{ $t('associationCenter.reverseQuery') }}</el-button>
+        <el-button type="primary" @click="onReverseQuery">
+          {{ $t('associationCenter.reverseQuery') }}
+        </el-button>
       </div>
       <el-button type="primary" @click="onViewSwitch">
         {{ $t('associationCenter.viewSwitch') }}

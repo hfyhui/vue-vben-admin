@@ -36,12 +36,13 @@ const loading = ref(false);
 const finished = ref(false);
 const props = defineProps<{
   groupOptions?: Array<{ id: string; suiteName: string }>;
+  sortOptions?: Array<{ label: string; value: string }>;
 }>();
 const filterForm = reactive({
   platform: [] as string[],
   accountSearch: '',
   accountGroup: '',
-  sortCondition: '' as string,
+  sortType: '' as string,
 });
 
 const pagination = reactive({
@@ -111,8 +112,8 @@ function buildRequestParams() {
   if (filterForm.accountSearch) params.accountName = filterForm.accountSearch;
   if (filterForm.accountGroup) params.suiteIds = [filterForm.accountGroup];
   if (filterForm.platform.length) params.appIds = filterForm.platform;
-  if (filterForm.sortCondition) {
-    params.sortCondition = filterForm.sortCondition;
+  if (filterForm.sortType) {
+    params.sortType = filterForm.sortType;
   }
   return params;
 }
@@ -344,14 +345,16 @@ defineExpose({
       <div class="filter-item">
         <label class="filter-label">{{ $t('associationCenter.sortCondition') }}</label>
         <el-select
-          v-model="filterForm.sortCondition"
+          v-model="filterForm.sortType"
           :placeholder="$t('associationCenter.sortConditionPlaceholder')"
           class="filter-input"
           clearable
         >
           <el-option
-            :label="$t('associationCenter.defaultOption')"
-            value=""
+            v-for="item in props.sortOptions || []"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
           />
         </el-select>
       </div>

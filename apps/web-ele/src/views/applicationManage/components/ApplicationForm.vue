@@ -1,15 +1,9 @@
 <script lang="ts" setup>
 import { reactive, ref, watch } from 'vue';
 
-import { ElMessage } from 'element-plus';
-import { QuestionFilled } from '@element-plus/icons-vue';
-
-import {
-  getApplicationScriptListApi,
-  type ApplicationScriptItem,
-  type ApplicationUpsertPayload,
-} from '#/api/core/application';
+import { type ApplicationUpsertPayload } from '#/api/core/application';
 import ImageUpload from '#/components/ImageUpload.vue';
+import ScriptSelector from './ScriptSelector.vue';
 
 const props = defineProps<{
   modelValue?: Record<string, any> | null;
@@ -22,8 +16,6 @@ const emit = defineEmits<{
 }>();
 
 const submitFormRef = ref();
-const scriptLoading = ref(false);
-const scriptOptionsRaw = ref<ApplicationScriptItem[]>([]);
 const submitData = reactive<Record<string, any>>({
   activityName: '',
   applicationName: '',
@@ -38,25 +30,10 @@ const rules = {
   programType: [{ required: true, message: '请选择脚本清单', trigger: 'change' }],
 };
 
-async function fetchScriptOptions() {
-  if (scriptLoading.value) return;
-  scriptLoading.value = true;
-  try {
-    const res = await getApplicationScriptListApi();
-    scriptOptionsRaw.value = (res as any).data;
-  } catch {
-    scriptOptionsRaw.value = [];
-    ElMessage.warning('脚本清单加载失败，请稍后重试');
-  } finally {
-    scriptLoading.value = false;
-  }
-}
-
 watch(
   () => props.visible,
-  async (visible) => {
+  (visible) => {
     if (!visible) return;
-    await fetchScriptOptions();
     const row = props.modelValue;
     if (!row) {
       resetForm();
@@ -95,6 +72,10 @@ async function submitFn() {
   emit('submit', payload);
 }
 
+function onScriptChange() {
+  submitFormRef.value?.validateField?.('programType');
+}
+
 function resetForm() {
   submitData.id = undefined;
   submitData.applicationName = '';
@@ -115,7 +96,8 @@ defineExpose({
 </script>
 
 <template>
-  <el-form ref="submitFormRef" :model="submitData" :rules="rules" label-width="120px">
+  <div>
+    <el-form ref="submitFormRef" :model="submitData" :rules="rules" label-width="120px">
     <el-form-item label="应用名称" prop="applicationName">
       <el-input v-model="submitData.applicationName" maxlength="20" show-word-limit />
     </el-form-item>
@@ -125,7 +107,7 @@ defineExpose({
         <span class="logo-label">
           <span>上传logo</span>
           <el-tooltip content="建议logo尺寸为 16px * 16px" placement="top">
-            <el-icon class="logo-tip-icon"><QuestionFilled /></el-icon>
+            <span class="logo-tip-icon">?</span>
           </el-tooltip>
         </span>
       </template>
@@ -149,39 +131,24 @@ defineExpose({
       <el-input v-model="submitData.activityName" maxlength="1000" />
     </el-form-item>
 
-    <el-form-item label="脚本清单" prop="programType">
-      <el-select
-        v-model="submitData.programType"
-        multiple
-        filterable
-        clearable
-        collapse-tags
-        collapse-tags-tooltip
-        :loading="scriptLoading"
-        placeholder="请选择脚本"
-        style="width: 100%"
-      >
-        <el-option
-          v-for="op in scriptOptionsRaw"
-          :key="op.id"
-          :label="op.programName"
-          :value="String(op.id)"
-        />
-      </el-select>
-    </el-form-item>
+      <el-form-item label="脚本清单" prop="programType">
+        <ScriptSelector v-model="submitData.programType" @change="onScriptChange" />
+      </el-form-item>
 
-    <el-form-item label="序号" prop="orderNum">
-      <el-input-number
-        v-model="submitData.orderNum"
-        :min="0"
-        :max="999999"
-        :step="1"
-        :precision="0"
-        controls
-        style="width: 100%"
-      />
-    </el-form-item>
-  </el-form>
+      <el-form-item label="序号" prop="orderNum">
+        <el-input-number
+          v-model="submitData.orderNum"
+          :min="0"
+          :max="999999"
+          :step="1"
+          :precision="0"
+          controls
+          style="width: 100%"
+        />
+      </el-form-item>
+    </el-form>
+
+  </div>
 </template>
 
 <style scoped>
@@ -192,8 +159,17 @@ defineExpose({
 }
 
 .logo-tip-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border: 1px solid #f56c6c;
+  border-radius: 50%;
   color: #f56c6c;
-  font-size: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
   cursor: pointer;
 }
 </style>

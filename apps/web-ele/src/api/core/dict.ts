@@ -20,15 +20,14 @@ export interface DictDataItem {
 
 export interface DictResponse {
   code: number;
-  data: {
-    data: Record<string, DictDataItem | undefined>;
-  };
-  message: string;
+  data: Record<string, DictDataItem | undefined>;
+  msg?: string;
+  message?: string;
 }
 
 /**
- * 获取所有字典数据
+ * 获取所有枚举数据
  */
-export async function getDictApi(): Promise<DictResponse> {
-  return proxyClient.get('/dict/pull-array');
+export async function getDictApi(_keys?: string[]): Promise<DictResponse> {
+  return proxyClient.get('/asset/enums');
 }

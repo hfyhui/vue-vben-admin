@@ -39,6 +39,7 @@ const loading = ref(false);
 const finished = ref(false);
 const props = defineProps<{
   groupOptions?: Array<{ id: string; suiteName: string }>;
+  sortOptions?: Array<{ label: string; value: string }>;
 }>();
 
 const filterForm = reactive({
@@ -46,7 +47,7 @@ const filterForm = reactive({
   areaPath: [] as string[],
   proxySearch: '',
   proxyGroup: '',
-  sortCondition: '',
+  sortType: '',
 });
 
 const pagination = reactive({
@@ -114,7 +115,7 @@ function buildRequestParams() {
     area: filterForm.area,
     proxy: filterForm.proxySearch,
     groupId: filterForm.proxyGroup,
-    sortCondition: filterForm.sortCondition,
+    sortType: filterForm.sortType,
   };
 }
 
@@ -257,14 +258,24 @@ defineExpose({
       <div class="filter-item">
         <label class="filter-label">{{ $t('associationCenter.sortCondition') }}</label>
         <el-select
-          v-model="filterForm.sortCondition"
+          v-model="filterForm.sortType"
           :placeholder="$t('associationCenter.sortConditionPlaceholder')"
           class="filter-input"
           clearable
           @change="handleSearch"
         >
-          <el-option :label="$t('associationCenter.defaultOption')" value="" />
+          <el-option
+            v-for="item in props.sortOptions || []"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
         </el-select>
+      </div>
+      <div class="filter-actions">
+        <el-button type="primary" @click="handleSearch">
+          {{ $t('associationCenter.search') }}
+        </el-button>
       </div>
     </div>
 
@@ -365,6 +376,10 @@ defineExpose({
 .filter-input :deep(.el-input__wrapper),
 .filter-input :deep(.el-select__wrapper) {
   border-radius: 6px;
+}
+
+.filter-actions {
+  flex-shrink: 0;
 }
 
 .board-content {

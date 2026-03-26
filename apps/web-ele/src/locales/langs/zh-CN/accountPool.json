@@ -8,6 +8,7 @@
   "filter": {
     "platform": "平台筛选",
     "platformPlaceholder": "请选择平台",
+    "importPlatformPlaceholder": "请选择导入平台",
     "socialPlatform": "社媒平台",
     "accountSearch": "账号搜索",
     "accountSearchPlaceholder": "请输入账号关键词",
@@ -35,6 +36,46 @@
   "action": {
     "add": "新增",
     "import": "导入",
+    "downloadTemplate": "下载模板",
     "batchDelete": "批量删除"
+  },
+  "form": {
+    "addAccountTitle": "新增账号",
+    "appName": "应用名称",
+    "appNamePlaceholder": "请选择应用",
+    "userNickname": "用户昵称",
+    "userNicknamePlaceholder": "请输入用户昵称",
+    "accountIdOptional": "账号ID(非必填)",
+    "accountIdPlaceholder": "请输入账号ID",
+    "userAccount": "用户账号",
+    "userAccountPlaceholder": "请输入用户账号",
+    "accountPassword": "账号密码",
+    "accountPasswordPlaceholder": "请输入账号密码",
+    "email": "邮箱",
+    "emailPlaceholder": "请输入邮箱",
+    "riskLevel": "风险等级",
+    "riskLevelPlaceholder": "请选择风险等级",
+    "riskLow": "低风险",
+    "riskMedium": "中风险",
+    "riskHigh": "高风险",
+    "remarkOptional": "备注(非必填)",
+    "remarkPlaceholder": "请输入备注",
+    "accountGroup": "账号分组",
+    "accountGroupPlaceholder": "请选择账号分组"
+  },
+  "message": {
+    "selectBeforeDelete": "请先选择要删除的账号",
+    "selectIdFailed": "未获取到要删除的账号ID",
+    "selectImportPlatformFirst": "请先在导入平台下拉中选择平台",
+    "missingImportAppId": "缺少应用ID，请先选择导入平台",
+    "batchDeleteConfirm": "确定要删除选中的 {count} 个账号吗？",
+    "batchDeleteConfirmTitle": "批量删除确认",
+    "batchDeleteSuccess": "成功删除 {count} 个账号",
+    "batchDeleteFailed": "批量删除失败",
+    "importSuccess": "导入账号成功",
+    "importFailed": "导入账号失败",
+    "downloadFailed": "下载失败",
+    "addSuccess": "新增账号成功",
+    "addFailed": "新增账号失败"
   }
 }

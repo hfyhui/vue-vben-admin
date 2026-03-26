@@ -100,7 +100,7 @@ export const useColumns = () => [
   {
     field: 'action',
     title: $t('applicationManage.table.operation'),
-    width: 200,
+   width: 200,
     slots: { default: 'action' },
     fixed: 'right',
   },

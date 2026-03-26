@@ -5,7 +5,7 @@ import { defineStore } from 'pinia';
 
 import { getAssetEnumsApi } from '#/api/core/asset';
 
-const ASSET_ENUMS_CACHE_KEY = 'asset-enums-cache-v1';
+const ASSET_ENUMS_CACHE_KEY = 'asset-enums';
 
 type AssetEnumsData = Record<string, any>;
 

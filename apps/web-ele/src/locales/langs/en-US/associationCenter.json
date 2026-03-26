@@ -88,5 +88,8 @@
   "deviceAlreadyBoundAppId": "Device {deviceIp} already has an account bound for this appId",
   "autoAssociateSuccessDropped": "Auto association succeeded: {bindCount} pairs associated, {droppedProxyCount} extra proxies dropped",
   "autoAssociateSuccessReused": "Auto association succeeded: {bindCount} pairs associated, proxies reused {reusedProxyCount} times",
-  "autoAssociateSuccess": "Auto association succeeded: {bindCount} pairs associated"
+  "autoAssociateSuccess": "Auto association succeeded: {bindCount} pairs associated",
+  "selectOneTypeBeforeReverseQuery": "Please select one type among account, proxy, or device before reverse query",
+  "selectOnlyOneTypeForReverseQuery": "Only one type can be selected for reverse query: account, proxy, or device",
+  "reverseQueryFailed": "Reverse query failed"
 }

@@ -90,5 +90,8 @@
   "deviceAlreadyBoundAppId": "设备 {deviceIp} 已绑定该 appId 账号，无法重复绑定",
   "autoAssociateSuccessDropped": "自动关联成功，已关联 {bindCount} 组数据，已丢弃 {droppedProxyCount} 个多余代理",
   "autoAssociateSuccessReused": "自动关联成功，已关联 {bindCount} 组数据，代理已复用 {reusedProxyCount} 次",
-  "autoAssociateSuccess": "自动关联成功，已关联 {bindCount} 组数据"
+  "autoAssociateSuccess": "自动关联成功，已关联 {bindCount} 组数据",
+  "selectOneTypeBeforeReverseQuery": "请先选择账号、代理、设备中的一种后再执行反向查询",
+  "selectOnlyOneTypeForReverseQuery": "反向查询时账号、代理、设备只能选择一种",
+  "reverseQueryFailed": "反向查询失败"
 }

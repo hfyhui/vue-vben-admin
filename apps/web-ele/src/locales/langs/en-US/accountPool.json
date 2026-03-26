@@ -8,6 +8,7 @@
   "filter": {
     "platform": "Platform Filter",
     "platformPlaceholder": "Select platform",
+    "importPlatformPlaceholder": "Please select import platform",
     "socialPlatform": "Social Platform",
     "accountSearch": "Account Search",
     "accountSearchPlaceholder": "Enter account keyword",
@@ -35,6 +36,46 @@
   "action": {
     "add": "Add",
     "import": "Import",
+    "downloadTemplate": "Download Template",
     "batchDelete": "Batch Delete"
+  },
+  "form": {
+    "addAccountTitle": "Add Account",
+    "appName": "Application Name",
+    "appNamePlaceholder": "Please select an application",
+    "userNickname": "User Nickname",
+    "userNicknamePlaceholder": "Please enter user nickname",
+    "accountIdOptional": "Account ID (Optional)",
+    "accountIdPlaceholder": "Please enter account ID",
+    "userAccount": "User Account",
+    "userAccountPlaceholder": "Please enter user account",
+    "accountPassword": "Account Password",
+    "accountPasswordPlaceholder": "Please enter account password",
+    "email": "Email",
+    "emailPlaceholder": "Please enter email",
+    "riskLevel": "Risk Level",
+    "riskLevelPlaceholder": "Please select risk level",
+    "riskLow": "Low Risk",
+    "riskMedium": "Medium Risk",
+    "riskHigh": "High Risk",
+    "remarkOptional": "Remark (Optional)",
+    "remarkPlaceholder": "Please enter remark",
+    "accountGroup": "Account Group",
+    "accountGroupPlaceholder": "Please select account group"
+  },
+  "message": {
+    "selectBeforeDelete": "Please select the accounts to delete first",
+    "selectIdFailed": "Failed to get account IDs to delete",
+    "selectImportPlatformFirst": "Please select a platform from the import platform dropdown first",
+    "missingImportAppId": "Missing application ID, please select an import platform first",
+    "batchDeleteConfirm": "Are you sure you want to delete {count} selected accounts?",
+    "batchDeleteConfirmTitle": "Batch Delete Confirmation",
+    "batchDeleteSuccess": "Successfully deleted {count} accounts",
+    "batchDeleteFailed": "Batch delete failed",
+    "importSuccess": "Account import succeeded",
+    "importFailed": "Failed to import accounts",
+    "downloadFailed": "Download failed",
+    "addSuccess": "Account added successfully",
+    "addFailed": "Failed to add account"
   }
 }

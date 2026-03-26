@@ -3,22 +3,40 @@ import type { VxeTableGridOptions } from '#/adapter/vxe-table';
 
 import { onMounted, ref } from 'vue';
 
-import { Page } from '@vben/common-ui';
+import { Page, useVbenModal } from '@vben/common-ui';
 
-import { ElMessage } from 'element-plus';
+import { ElMessage, ElMessageBox } from 'element-plus';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import { $t } from '#/locales';
-import { getAccountPoolNumApi } from '#/api/core/asset';
+import {
+  batchDeleteAccountApi,
+  downloadAccountTemplateApi,
+  getAssetAppListApi,
+  getAccountPoolNumApi,
+  getAssetGroupApi,
+  importAccountApi,
+} from '#/api/core/asset';
 
 import {
+  type AccountPoolGroupOption,
+  type AccountPoolPlatformOption,
   getAccountPoolListApi,
   getFormOptions,
   useColumns,
 } from './account-pool-table-config';
+import AccountPoolFormModal from './form-modal.vue';
 
-const [Grid] = useVbenVxeGrid({
-  formOptions: getFormOptions(),
+const importFileInputRef = ref<HTMLInputElement>();
+const currentAppId = ref('');
+const selectedPlatformIds = ref<string[]>([]);
+const importAppId = ref('');
+const importing = ref(false);
+const groupOptions = ref<AccountPoolGroupOption[]>([]);
+const platformOptions = ref<AccountPoolPlatformOption[]>([]);
+
+const [Grid, gridApi] = useVbenVxeGrid({
+  formOptions: getFormOptions([]),
   gridOptions: {
     columns: useColumns(),
     height: 'auto',
@@ -35,6 +53,15 @@ const [Grid] = useVbenVxeGrid({
       },
       ajax: {
         query: async ({ page }, formValues) => {
+          const platform = (formValues?.platform ?? []) as string[];
+          selectedPlatformIds.value = platform.filter(Boolean);
+          currentAppId.value =
+            selectedPlatformIds.value.length === 1
+              ? (selectedPlatformIds.value[0] ?? '')
+              : '';
+          if (currentAppId.value) {
+            importAppId.value = currentAppId.value;
+          }
           return await getAccountPoolListApi({
             page: page.currentPage,
             pageSize: page.pageSize,
@@ -54,15 +81,98 @@ const [Grid] = useVbenVxeGrid({
 });
 
 function onCreate() {
-  ElMessage.info($t('accountPool.action.add'));
+  formModalApi
+    .setData({
+      defaultAppId: currentAppId.value || '',
+      groupOptions: groupOptions.value,
+      platformOptions: platformOptions.value,
+    })
+    .open();
 }
 
 function onImport() {
-  ElMessage.info($t('accountPool.action.import'));
+  if (importing.value) return;
+  if (!importAppId.value) {
+    ElMessage.warning($t('accountPool.message.selectImportPlatformFirst'));
+    return;
+  }
+  importFileInputRef.value?.click();
+}
+
+async function onImportFileChange(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  input.value = '';
+  if (!file) return;
+
+  const appId = importAppId.value.trim();
+  if (!appId) {
+    ElMessage.warning($t('accountPool.message.missingImportAppId'));
+    return;
+  }
+
+  importing.value = true;
+  try {
+    const res = await importAccountApi({ appId, file });
+    if (res?.code === 100000) {
+      ElMessage.success($t('accountPool.message.importSuccess'));
+      gridApi.reload();
+      loadAccountPoolNum();
+    } else {
+      ElMessage.error(res?.msg || $t('accountPool.message.importFailed'));
+    }
+  } catch (error) {
+    console.error('[accountPool] 导入账号失败:', error);
+    ElMessage.error($t('accountPool.message.importFailed'));
+  } finally {
+    importing.value = false;
+  }
 }
 
 function onBatchDelete() {
-  ElMessage.info($t('accountPool.action.batchDelete'));
+  const checkboxRecords = (gridApi as any).grid.getCheckboxRecords?.() || [];
+  if (checkboxRecords.length === 0) {
+    ElMessage.warning($t('accountPool.message.selectBeforeDelete'));
+    return;
+  }
+
+  const ids = checkboxRecords.map((item: any) => item.accountId);
+
+  if (!ids.length) {
+    ElMessage.warning($t('accountPool.message.selectIdFailed'));
+    return;
+  }
+
+  const count = ids.length;
+
+  ElMessageBox.confirm(
+    $t('accountPool.message.batchDeleteConfirm', { count }),
+    $t('accountPool.message.batchDeleteConfirmTitle'),
+    { type: 'warning' },
+  )
+    .then(async () => {
+      const res = await batchDeleteAccountApi(ids);
+      if (res?.code === 100000) {
+        ElMessage.success(
+          $t('accountPool.message.batchDeleteSuccess', { count }),
+        );
+        gridApi.reload();
+      } else {
+        ElMessage.error(res?.msg || $t('accountPool.message.batchDeleteFailed'));
+      }
+    })
+    .catch(() => {
+      // 用户取消
+    });
+}
+
+async function onDownloadTemplate() {
+  try {
+    await downloadAccountTemplateApi();
+  } catch (error) {
+    console.error('[accountPool] 下载账号模板失败:', error);
+    ElMessage.error($t('accountPool.message.downloadFailed'));
+  }
 }
 
 const statsData = ref([
@@ -92,8 +202,54 @@ async function loadAccountPoolNum() {
   }
 }
 
+async function loadGroupOptions() {
+  try {
+    const response = await getAssetGroupApi();
+    groupOptions.value = (response?.data ?? []) as AccountPoolGroupOption[];
+  } catch (error) {
+    console.error('[accountPool] 获取分组失败:', error);
+  }
+  applyFormOptions();
+}
+
+async function loadPlatformOptions() {
+  try {
+    const data = await getAssetAppListApi({
+      current: 1,
+      size: 200,
+      applicationStatus: 0,
+    });
+    platformOptions.value = (data.records ?? [])
+      .filter((item) => item.id)
+      .map((item) => ({
+        id: item.id ?? '',
+        applicationName: item.applicationName ?? '',
+      }));
+  } catch (error) {
+    console.error('[accountPool] 获取平台筛选项失败:', error);
+  }
+  applyFormOptions();
+}
+
+function applyFormOptions() {
+  gridApi.setState({
+    formOptions: getFormOptions(groupOptions.value, platformOptions.value),
+  });
+}
+
+function onCreateSuccess() {
+  gridApi.reload();
+  loadAccountPoolNum();
+}
+
+const [FormModal, formModalApi] = useVbenModal({
+  connectedComponent: AccountPoolFormModal,
+});
+
 onMounted(() => {
   loadAccountPoolNum();
+  loadGroupOptions();
+  loadPlatformOptions();
 });
 </script>
 
@@ -125,14 +281,44 @@ onMounted(() => {
           <ElButton class="mr-2" type="primary" @click="onCreate">
             {{ $t('accountPool.action.add') }}
           </ElButton>
-          <ElButton class="mr-2" type="primary" @click="onImport">
+          <el-select
+            v-model="importAppId"
+            class="mr-2 import-platform-select"
+            :placeholder="$t('accountPool.filter.importPlatformPlaceholder')"
+            clearable
+            filterable
+          >
+            <el-option
+              v-for="item in platformOptions"
+              :key="item.id"
+              :label="item.applicationName || item.id"
+              :value="item.id"
+            />
+          </el-select>
+          <ElButton
+            class="mr-2"
+            type="primary"
+            :loading="importing"
+            @click="onImport"
+          >
             {{ $t('accountPool.action.import') }}
+          </ElButton>
+          <input
+            ref="importFileInputRef"
+            type="file"
+            accept=".xlsx,.xls,.csv"
+            style="display: none"
+            @change="onImportFileChange"
+          />
+          <ElButton class="mr-2" type="primary" @click="onDownloadTemplate">
+            {{ $t('accountPool.action.downloadTemplate') }}
           </ElButton>
           <ElButton type="danger" @click="onBatchDelete">
             {{ $t('accountPool.action.batchDelete') }}
           </ElButton>
         </template>
       </Grid>
+      <FormModal @success-after="onCreateSuccess" />
     </div>
   </Page>
 </template>
@@ -164,5 +350,9 @@ onMounted(() => {
 
 .mr-2 {
   margin-right: 8px;
+}
+
+.import-platform-select {
+  width: 220px;
 }
 </style>
