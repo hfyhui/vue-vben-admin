@@ -1,5 +1,10 @@
 <script setup lang="ts">
+import { CircleClose } from '@element-plus/icons-vue';
+
+import { $t } from '#/locales';
+
 import {
+  canUnbindDeviceProxy,
   getDeviceVersion,
 } from '../composables/useDeviceDisplay';
 
@@ -11,6 +16,7 @@ type BoundAccount = {
   userAccount?: string;
   platform?: string;
   logoPath?: string;
+  fromServer?: boolean;
 };
 
 type BoundProxy = {
@@ -30,16 +36,34 @@ function getLogoUrl(logoPath?: string) {
 
 function getBoundAccounts(
   row: DeviceItem,
-): Array<{ id?: string; tooltip: string; logoPath?: string }> {
-  const result: Array<{ id?: string; tooltip: string; logoPath?: string }> = [];
+): Array<{
+  id?: string;
+  tooltip: string;
+  logoPath?: string;
+  color?: string;
+  fromServer?: boolean;
+}> {
+  const result: Array<{
+    id?: string;
+    tooltip: string;
+    logoPath?: string;
+    color?: string;
+    fromServer?: boolean;
+  }> = [];
   const accountInfos = (row.accountInfos as Array<Record<string, any>> | undefined) || [];
   const bound =
     accountInfos.length > 0
       ? accountInfos.map((it) => ({
           accountId: it.accountId,
           logoPath: it.appLogo,
+          color: it.color as string | undefined,
+          fromServer: it.fromServer === true,
         }))
-      : ((row.boundAccounts as BoundAccount[] | undefined) || []);
+      : ((row.boundAccounts as BoundAccount[] | undefined) || []).map((it) => ({
+          ...it,
+          color: row.color as string | undefined,
+          fromServer: it.fromServer === true,
+        }));
   for (const acc of bound) {
     const id = acc.accountId;
     if (!id) continue;
@@ -47,6 +71,8 @@ function getBoundAccounts(
       id,
       tooltip: id || '',
       logoPath: acc.logoPath,
+      color: acc.color || (row.color as string | undefined),
+      fromServer: acc.fromServer === true,
     });
   }
   return result;
@@ -87,7 +113,9 @@ const emit = defineEmits<{
   pageChange: [page: number];
   dragOver: [ev: DragEvent];
   drop: [ev: DragEvent];
-  toggleSelect: [item: DeviceItem];
+  deviceClick: [item: DeviceItem];
+  unbindAccount: [item: DeviceItem, accountId: string];
+  unbindProxy: [item: DeviceItem];
 }>();
 
 function onDragOver(ev: DragEvent) {
@@ -103,13 +131,24 @@ function handlePageChange(page: number) {
 }
 
 function handleRowClick(row: DeviceItem) {
-  emit('toggleSelect', row);
+  emit('deviceClick', row);
 }
 
 function getRowClassName({ row }: { row: DeviceItem }) {
   return props.selectedDeviceKeys.includes(row.deviceIp || '')
     ? 'selected-device-row'
     : '';
+}
+
+function onUnbindAccount(ev: Event, row: DeviceItem, accountId?: string) {
+  ev.stopPropagation();
+  if (!accountId) return;
+  emit('unbindAccount', row, accountId);
+}
+
+function onUnbindProxy(ev: Event, row: DeviceItem) {
+  ev.stopPropagation();
+  emit('unbindProxy', row);
 }
 </script>
 
@@ -149,9 +188,26 @@ function getRowClassName({ row }: { row: DeviceItem }) {
           {{ getGroupDisplay(row) }}
         </template>
       </el-table-column>
-      <el-table-column :label="$t('associationCenter.networkProxy')" min-width="180">
+      <el-table-column :label="$t('associationCenter.networkProxy')" min-width="200">
         <template #default="{ row }">
-          <span :title="getProxyDisplay(row)">{{ getProxyDisplay(row) }}</span>
+          <div class="table-proxy-cell">
+            <span class="table-proxy-text" :title="getProxyDisplay(row)">{{
+              getProxyDisplay(row)
+            }}</span>
+            <el-tooltip
+              v-if="canUnbindDeviceProxy(row)"
+              :content="$t('associationCenter.unbindProxy')"
+              placement="top"
+            >
+              <button
+                type="button"
+                class="table-unbind-proxy-btn"
+                @click="onUnbindProxy($event, row)"
+              >
+                <el-icon><CircleClose /></el-icon>
+              </button>
+            </el-tooltip>
+          </div>
         </template>
       </el-table-column>
       <el-table-column :label="$t('associationCenter.proxyIp')" min-width="150">
@@ -175,19 +231,38 @@ function getRowClassName({ row }: { row: DeviceItem }) {
             v-if="getBoundAccounts(row).length > 0"
             class="table-bound-accounts"
           >
-            <el-tooltip
+            <div
               v-for="(acc, i) in getBoundAccounts(row)"
               :key="`acc-${i}-${acc.id}`"
-              :content="acc.tooltip"
-              placement="top"
+              class="table-bound-account-row"
             >
-              <img
-                v-if="acc.logoPath"
-                :src="getLogoUrl(acc.logoPath)"
-                class="platform-logo-cell"
-                alt="account-logo"
+              <el-tooltip :content="acc.tooltip" placement="top">
+                <img
+                  v-if="acc.logoPath"
+                  :src="getLogoUrl(acc.logoPath)"
+                  class="platform-logo-cell"
+                  alt="account-logo"
+                />
+              </el-tooltip>
+              <span
+                class="table-account-color-pill"
+                :class="(acc.color || 'gray').toLowerCase()"
+                aria-hidden="true"
               />
-            </el-tooltip>
+              <el-tooltip
+                v-if="acc.fromServer"
+                :content="$t('associationCenter.unbindAccount')"
+                placement="top"
+              >
+                <button
+                  type="button"
+                  class="table-unbind-account-btn"
+                  @click="onUnbindAccount($event, row, acc.id)"
+                >
+                  <el-icon><CircleClose /></el-icon>
+                </button>
+              </el-tooltip>
+            </div>
           </div>
           <span v-else class="table-empty-status">-</span>
         </template>
@@ -252,11 +327,110 @@ function getRowClassName({ row }: { row: DeviceItem }) {
   background: #303133;
 }
 
+.table-proxy-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  width: 100%;
+}
+
+.table-proxy-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.table-unbind-proxy-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  color: var(--el-text-color-secondary);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.table-unbind-proxy-btn:hover {
+  color: var(--el-color-danger);
+  background: var(--el-fill-color-light);
+}
+
 .table-bound-accounts {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.table-bound-account-row {
+  display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+  min-width: 0;
+  width: 100%;
+}
+
+.table-unbind-account-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  margin: 0 0 0 auto;
+  border: none;
+  background: transparent;
+  color: var(--el-text-color-secondary);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.table-unbind-account-btn:hover {
+  color: var(--el-color-danger);
+  background: var(--el-fill-color-light);
+}
+
+.table-account-color-pill {
+  flex-shrink: 0;
+  width: 4px;
+  height: 26px;
+  border-radius: 4px;
+}
+
+.table-account-color-pill.gray {
+  background: var(--el-text-color-placeholder);
+}
+
+.table-account-color-pill.green {
+  background: var(--el-color-success);
+}
+
+.table-account-color-pill.yellow {
+  background: var(--el-color-warning);
+}
+
+.table-account-color-pill.orange {
+  background: #e6a23c;
+}
+
+.table-account-color-pill.red {
+  background: var(--el-color-danger);
+}
+
+.table-account-color-pill.black {
+  background: #303133;
 }
 
 .platform-logo-cell {

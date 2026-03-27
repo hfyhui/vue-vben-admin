@@ -76,6 +76,9 @@
   "unpin": "Unpin",
   "selectDeviceBeforePin": "Please select devices before pinning",
   "selectDeviceBeforeOfficialEnable": "Please select data to officially enable in the device board",
+  "selectDeviceBeforeContainerReset": "Please select devices to reset in the device board",
+  "containerResetSuccess": "Container reset succeeded",
+  "containerResetFailed": "Container reset failed",
   "officialEnableSuccess": "Official enable succeeded",
   "officialEnableFailed": "Official enable failed",
   "accountDragParseFailed": "Failed to parse dragged account data",
@@ -91,5 +94,14 @@
   "autoAssociateSuccess": "Auto association succeeded: {bindCount} pairs associated",
   "selectOneTypeBeforeReverseQuery": "Please select one type among account, proxy, or device before reverse query",
   "selectOnlyOneTypeForReverseQuery": "Only one type can be selected for reverse query: account, proxy, or device",
-  "reverseQueryFailed": "Reverse query failed"
+  "reverseQueryFailed": "Reverse query failed",
+  "unbindAccount": "Unbind account",
+  "unbindAccountSuccess": "Unbind request submitted",
+  "unbindAccountFailed": "Unbind failed",
+  "unbindMissingDeviceId": "Device has no deviceId; cannot unbind",
+  "unbindOnlyServerAccount": "Dragged associations can be unbound only after they are officially enabled",
+  "unbindProxy": "Unbind proxy",
+  "unbindProxyFailed": "Failed to unbind proxy",
+  "unbindOnlyServerProxy": "Only API-bound proxies can be unbound; drag-drop bindings must be officially enabled first",
+  "unbindProxyMissingIds": "Missing proxy or association id; cannot unbind"
 }

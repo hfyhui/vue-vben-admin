@@ -10,6 +10,7 @@ import {
   enableAssetApi,
   getAssetGroupApi,
   getAssetSummaryApi,
+  resetContainerApi,
   reverseQueryAssetApi,
 } from '#/api/core/asset';
 import { $t } from '#/locales';
@@ -125,6 +126,30 @@ function onAutoAssociate() {
   deviceBoardRef.value?.autoAssociateWithSelections?.(accounts, usedProxies);
 }
 
+async function onContainerReset() {
+  const rawIds = deviceBoardRef.value?.getSelectedDeviceIds?.() || [];
+  const deviceIds = uniqueIds(rawIds) as string[];
+  if (!deviceIds.length) {
+    ElMessage.warning($t('associationCenter.selectDeviceBeforeContainerReset'));
+    return;
+  }
+
+  try {
+    const response = await resetContainerApi({ deviceIds });
+    if (response?.code === 100000) {
+      ElMessage.success(
+        response.msg || $t('associationCenter.containerResetSuccess'),
+      );
+      await loadAssetSummary();
+      await deviceBoardRef.value?.refreshDeviceList?.();
+      return;
+    }
+  } catch (error) {
+    console.error('[associationCenter] 容器重置失败:', error);
+    ElMessage.error($t('associationCenter.containerResetFailed'));
+  }
+}
+
 async function onOfficialEnable() {
   const boardList = deviceBoardRef.value?.getDeviceBoardList?.() || [];
   console.log('[associationCenter] 设备看板列表数据:', boardList);
@@ -149,6 +174,8 @@ async function onOfficialEnable() {
       ElMessage.success(
         response.msg || $t('associationCenter.officialEnableSuccess'),
       );
+      await deviceBoardRef.value?.refreshDeviceList?.();
+      await loadAssetSummary();
       return;
     }
     if (!response?.msg) {
@@ -156,7 +183,7 @@ async function onOfficialEnable() {
     }
   } catch (error) {
     console.error(error);
-    ElMessage.error($t('associationCenter.officialEnableFailed'));
+    // ElMessage.error($t('associationCenter.officialEnableFailed'));
   }
 }
 
@@ -290,7 +317,9 @@ async function onReverseQuery() {
         <el-button type="primary" @click="onOfficialEnable">
           {{ $t('associationCenter.officialEnable') }}
         </el-button>
-        <el-button type="danger">{{ $t('associationCenter.containerReset') }}</el-button>
+        <el-button type="danger" @click="onContainerReset">
+          {{ $t('associationCenter.containerReset') }}
+        </el-button>
         <el-button type="primary" @click="onReverseQuery">
           {{ $t('associationCenter.reverseQuery') }}
         </el-button>

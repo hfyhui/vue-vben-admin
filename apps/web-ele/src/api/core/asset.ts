@@ -122,6 +122,19 @@ export interface BatchDelProxyParams {
   proxyIds?: string[];
 }
 
+/** 解绑账号 POST /asset/account/unbind */
+export interface AccountUnbindParams {
+  accountIds?: string[];
+  deviceId?: string;
+  bind?: string;
+}
+
+/** 解除绑定代理 POST /asset/proxy/unbind */
+export interface ProxyUnbindParams {
+  assId?: string;
+  proxyId?: string;
+}
+
 export interface ImportAccountParams {
   appId: string;
   file: File;
@@ -216,6 +229,17 @@ export async function getContainerAssetPageApi<T = DeviceItem>(
 // 兼容已有调用命名
 export const getDeviceAssetPageApi = getContainerAssetPageApi;
 
+export interface ContainerResetParams {
+  deviceIds?: string[];
+}
+
+/** 重置容器（设备） POST /asset/container/reset */
+export async function resetContainerApi(
+  params: ContainerResetParams = {},
+): Promise<ApiResponse<null>> {
+  return proxyClient.post<ApiResponse<null>>('/asset/container/reset', params);
+}
+
 /** 正式启用设备绑定关系 POST /asset/enable */
 export async function enableAssetApi(
   params: AssetEnableParams,
@@ -282,6 +306,20 @@ export async function batchDeleteProxyApi(
   return proxyClient.delete<ApiResponse<null>>('/asset/batch/del-proxy', {
     data: payload,
   });
+}
+
+/** 解绑账号 POST /asset/account/unbind */
+export async function unbindAccountApi(
+  params: AccountUnbindParams,
+): Promise<ApiResponse<null>> {
+  return proxyClient.post<ApiResponse<null>>('/asset/account/unbind', params);
+}
+
+/** 解除代理绑定 POST /asset/proxy/unbind */
+export async function unbindProxyApi(
+  params: ProxyUnbindParams,
+): Promise<ApiResponse<null>> {
+  return proxyClient.post<ApiResponse<null>>('/asset/proxy/unbind', params);
 }
 
 /** 导入账号 POST /asset/account/import */

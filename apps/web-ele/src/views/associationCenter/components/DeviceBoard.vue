@@ -9,8 +9,12 @@ import { $t } from '#/locales';
 
 import {
   getContainerAssetPageApi,
+  unbindAccountApi,
+  unbindProxyApi,
   type DeviceItem,
 } from '#/api/core/asset';
+
+import LargeScreen from '#/components/WebAdb/LargeScreen.vue';
 
 import DevicePinActions from './DevicePinActions.vue';
 import DeviceGrid from './DeviceGrid.vue';
@@ -19,6 +23,10 @@ import DeviceTable from './DeviceTable.vue';
 const router = useRouter();
 const props = defineProps<{
   groupOptions?: Array<{ id: string; suiteName: string }>;
+}>();
+
+const emit = defineEmits<{
+  refreshSummary: [];
 }>();
 const loading = ref(false);
 const finished = ref(false);
@@ -49,13 +57,17 @@ const pagination = reactive({
 
 const list = ref<DeviceItem[]>([]);
 const allMockRecords = ref<DeviceItem[]>([]);
+
+const largeScreenVisible = ref(false);
+const largeScreenDevice = ref<DeviceItem | null>(null);
 const selectedDeviceKeys = ref<string[]>([]);
 const pinnedDeviceKeys = ref<string[]>([]);
 const pinMode = ref(false);
 const pinnedRecords = computed(() => {
   if (!pinnedDeviceKeys.value.length) return [];
-  const pinnedKeySet = new Set(pinnedDeviceKeys.value);
-  return allMockRecords.value.filter((item) => pinnedKeySet.has(getDeviceKey(item)));
+  return allMockRecords.value.filter((item) =>
+    pinnedDeviceKeys.value.includes(getDeviceKey(item)),
+  );
 });
 const showPinnedOnly = computed(() => pinMode.value);
 const displayGridList = computed(() =>
@@ -69,17 +81,23 @@ type BoundAccount = {
   appId?: string;
   platform?: string;
   logoPath?: string;
+  /** true：列表接口带回，可解绑；false：拖拽/自动关联，未正式启用不可解绑 */
+  fromServer?: boolean;
 };
 
 type BoundProxy = {
   proxyId?: string;
   id?: string;
+  /** 设备-代理关联 id，解绑接口使用 */
+  assId?: string;
   accountId?: string;
   area?: string;
   ip?: string;
   proxy?: string;
   proxyArea?: string;
   proxyGroup?: string;
+  /** true：列表/接口带回，可解绑；false：拖拽/自动关联，未正式启用不可解绑 */
+  fromServer?: boolean;
 };
 
 function getProxyId(proxy: Partial<BoundProxy> & Record<string, any>) {
@@ -100,17 +118,17 @@ function getAccountAppId(
 
 /** 收集设备已绑定的 appId（含后端 accountInfos 与前端 boundAccounts） */
 function getDeviceBoundAppIds(item: DeviceItem) {
-  const appIds = new Set<string>();
+  const appIds: string[] = [];
   const boundAccounts = (item.boundAccounts as BoundAccount[] | undefined) || [];
   const accountInfos = (item.accountInfos as Record<string, any>[] | undefined) || [];
 
   boundAccounts.forEach((acc) => {
     const appId = getAccountAppId(acc as Record<string, any>);
-    if (appId) appIds.add(appId);
+    if (appId && !appIds.includes(appId)) appIds.push(appId);
   });
   accountInfos.forEach((acc) => {
     const appId = getAccountAppId(acc);
-    if (appId) appIds.add(appId);
+    if (appId && !appIds.includes(appId)) appIds.push(appId);
   });
   return appIds;
 }
@@ -121,18 +139,27 @@ function getMergedBoundAccounts(item: DeviceItem): BoundAccount[] {
   const fromBound = (item.boundAccounts as BoundAccount[] | undefined) || [];
   const byId = new Map<string, BoundAccount>();
   fromApi.forEach((a) => {
-    if (a.accountId) {
-      byId.set(a.accountId, {
-        accountId: a.accountId,
+    const accountId = a.accountId as string;
+    if (accountId) {
+      byId.set(accountId, {
+        accountId,
         appId: a.appId,
         userAccount: a.userAccount,
         account: a.accountNickname,
         logoPath: a.appLogo,
+        fromServer: a.fromServer === true,
       });
     }
   });
   fromBound.forEach((a) => {
-    if (a.accountId) byId.set(a.accountId, a);
+    const accountId = a.accountId;
+    if (!accountId) return;
+    byId.set(accountId, {
+      ...a,
+      accountId,
+      userAccount: a.userAccount,
+      account: a.account,
+    });
   });
   return [...byId.values()];
 }
@@ -141,29 +168,54 @@ function getMergedBoundAccounts(item: DeviceItem): BoundAccount[] {
 function syncAccountInfosFromBound(item: DeviceItem) {
   const accounts = (item.boundAccounts as BoundAccount[] | undefined) || [];
   item.accountInfos = accounts.map((acc) => ({
+    ...acc,
     appId: acc.appId,
     appLogo: acc.logoPath,
     accountId: acc.accountId,
     userAccount: acc.userAccount,
-    accountNickname: acc.account,
+    accountNickname: (() => {
+      const nickname = acc.account;
+      const userAccount = acc.userAccount;
+      return nickname && nickname !== userAccount ? nickname : '';
+    })(),
     color: item.color,
+    fromServer: acc.fromServer === true,
   }));
+}
+
+/** 列表接口写入后：当前 accountInfos 均视为服务端数据，可解绑 */
+function markAccountInfosFromServer(item: DeviceItem) {
+  const infos = (item.accountInfos as Record<string, any>[] | undefined) || [];
+  for (const a of infos) {
+    a.fromServer = true;
+  }
+}
+
+/** 列表接口写入后：boundProxies 视为服务端绑定 */
+function markProxyBindingsFromServer(item: DeviceItem) {
+  const r = item as Record<string, any>;
+  const list = (r.boundProxies as BoundProxy[] | undefined) || [];
+  for (const p of list) {
+    p.fromServer = true;
+  }
 }
 
 /** 收集设备已绑定的账号 ID（兼容后端 accountInfos 与前端 boundAccounts） */
 function getDeviceBoundAccountIds(item: DeviceItem) {
-  const accountIds = new Set<string>();
+  const accountIds: string[] = [];
   const boundAccounts = (item.boundAccounts as BoundAccount[] | undefined) || [];
   const accountInfos = (item.accountInfos as Record<string, any>[] | undefined) || [];
 
   boundAccounts.forEach((acc) => {
-    accountIds.add(acc.accountId as string);
+    const accountId = acc.accountId;
+    if (accountId && !accountIds.includes(accountId)) accountIds.push(accountId);
   });
   accountInfos.forEach((acc) => {
-    accountIds.add(acc.accountId as string);
+    const accountId = acc.accountId as string;
+    if (accountId && !accountIds.includes(accountId)) accountIds.push(accountId);
   });
 
-  return [...accountIds];
+  return accountIds;
 }
 
 /** 构建设备分页请求参数，与容器分页接口字段一致 */
@@ -188,6 +240,10 @@ async function fetchData() {
       await getContainerAssetPageApi<DeviceItem>(buildRequestParams());
     pagination.total = total;
     tablePagination.total = total;
+    for (const item of records) {
+      markAccountInfosFromServer(item);
+      markProxyBindingsFromServer(item);
+    }
     allMockRecords.value.push(...records);
     finished.value = records.length === 0 || allMockRecords.value.length >= total;
     if (!finished.value) pagination.current += 1;
@@ -213,6 +269,20 @@ function handleSearch() {
   pinnedDeviceKeys.value = [];
   pinMode.value = false;
   void fetchData();
+}
+
+/** 对外：刷新设备列表并拉取最新数据 */
+async function refreshDeviceList() {
+  pagination.current = 1;
+  tablePagination.current = 1;
+  tablePagination.total = 0;
+  list.value = [];
+  allMockRecords.value = [];
+  finished.value = false;
+  selectedDeviceKeys.value = [];
+  pinnedDeviceKeys.value = [];
+  pinMode.value = false;
+  await fetchData();
 }
 
 /** 无限滚动加载更多设备数据 */
@@ -269,8 +339,8 @@ function updateTableData() {
 }
 
 function normalizePinnedDeviceKeys() {
-  const existingKeys = new Set(allMockRecords.value.map((item) => getDeviceKey(item)));
-  pinnedDeviceKeys.value = pinnedDeviceKeys.value.filter((key) => existingKeys.has(key));
+  const existingKeys = allMockRecords.value.map((item) => getDeviceKey(item));
+  pinnedDeviceKeys.value = pinnedDeviceKeys.value.filter((key) => existingKeys.includes(key));
   if (!pinnedDeviceKeys.value.length) pinMode.value = false;
 }
 
@@ -292,7 +362,7 @@ async function handleTablePageChange(page: number) {
 
 /** 获取设备唯一 key（当前使用 deviceIp） */
 function getDeviceKey(item: DeviceItem) {
-  return item.deviceIp || '';
+  return item.deviceIp;
 }
 
 /** 从设备记录中提取可用于正式启用接口的设备 ID */
@@ -305,7 +375,22 @@ function getDeviceProxyId(item: DeviceItem) {
   const bound = (item.boundProxies as BoundProxy[] | undefined) || [];
   const fromBound = bound.length > 0 ? getProxyId(bound[0]!) : '';
   if (fromBound) return fromBound;
-  return String((item as Record<string, any>)?.proxyId || '');
+  return ((item as Record<string, any>)?.proxyId) as string;
+}
+
+/** 点击设备：打开 WebAdb 大屏并保持原有多选逻辑 */
+function handleDeviceClick(item: DeviceItem) {
+  largeScreenDevice.value = item;
+  largeScreenVisible.value = true;
+  toggleDeviceSelect(item);
+}
+
+function closeLargeScreen() {
+  largeScreenVisible.value = false;
+}
+
+function onLargeScreenDialogClosed() {
+  largeScreenDevice.value = null;
 }
 
 /** 切换设备选中状态（用于自动关联） */
@@ -358,6 +443,10 @@ function getSelectedDeviceIds() {
 /** 应用反向查询结果（有数据则覆盖渲染，无数据则展示空） */
 function applyReverseQueryDevices(devices: DeviceItem[] | null | undefined) {
   const nextList = Array.isArray(devices) ? devices : [];
+  for (const item of nextList) {
+    markAccountInfosFromServer(item);
+    markProxyBindingsFromServer(item);
+  }
   allMockRecords.value = [...nextList];
   list.value = [...nextList];
   selectedDeviceKeys.value = [];
@@ -374,16 +463,15 @@ function applyReverseQueryDevices(devices: DeviceItem[] | null | undefined) {
 
 /** 构建正式启用接口所需的 deviceEnables 数组 */
 function getSelectedDeviceEnables() {
-  const keySet = new Set(selectedDeviceKeys.value);
   const selectedRecords = allMockRecords.value.filter((item) =>
-    keySet.has(getDeviceKey(item)),
+    selectedDeviceKeys.value.includes(getDeviceKey(item)),
   );
   return selectedRecords
     .map((item) => {
       const accountIds = getDeviceBoundAccountIds(item);
       const proxyId = getDeviceProxyId(item);
-      const deviceId = getDeviceId(item) ;
-      const deviceIp = item.deviceIp;
+      const deviceId = getDeviceId(item);
+      const deviceIp = item.deviceIp ?? '';
       if (!deviceId) return null;
       const payload: {
         deviceId: string;
@@ -445,18 +533,21 @@ function onCardDrop(ev: DragEvent, item: DeviceItem) {
 
     const existing = getMergedBoundAccounts(target);
     const existingAppIds = getDeviceBoundAppIds(target);
-    const currentAppIds = new Set(existingAppIds);
+    const currentAppIds = [...existingAppIds];
 
     for (const acc of accounts) {
       const appId = getAccountAppId(acc as Record<string, any>);
-      if (appId && currentAppIds.has(appId)) {
+      if (appId && currentAppIds.includes(appId)) {
         ElMessage.error($t('associationCenter.oneAccountPerPlatformPerDevice'));
         return;
       }
-      if (appId) currentAppIds.add(appId);
+      if (appId) currentAppIds.push(appId);
     }
 
-    target.boundAccounts = [...existing, ...accounts];
+    target.boundAccounts = [
+      ...existing,
+      ...accounts.map((a) => ({ ...a, fromServer: false })),
+    ];
     syncAccountInfosFromBound(target);
     updateTableData();
     return;
@@ -472,7 +563,9 @@ function onCardDrop(ev: DragEvent, item: DeviceItem) {
     }
 
     const displayProxy = getProxyDisplayText(proxy);
-    target.boundProxies = [{ ...proxy, proxy: displayProxy, proxyArea: proxy.area }];
+    target.boundProxies = [
+      { ...proxy, proxy: displayProxy, proxyArea: proxy.area, fromServer: false },
+    ];
     target.proxy = displayProxy;
     target.proxyArea = proxy.area;
     updateTableData();
@@ -483,6 +576,88 @@ function onCardDrop(ev: DragEvent, item: DeviceItem) {
 /** 切换设备展示模式（卡片/表格） */
 function toggleViewMode() {
   viewMode.value = viewMode.value === 'grid' ? 'table' : 'grid';
+}
+
+/** 解绑成功后静默拉第一页列表：不触发全局 loading、不先清空列表，避免闪烁 */
+async function refreshDeviceListAfterUnbind() {
+  try {
+    const { records = [], total = 0 } =
+      await getContainerAssetPageApi<DeviceItem>({
+        ...buildRequestParams(),
+        current: 1,
+      });
+    pagination.total = total;
+    tablePagination.total = total;
+    for (const item of records) {
+      markAccountInfosFromServer(item);
+      markProxyBindingsFromServer(item);
+    }
+    allMockRecords.value = [...records];
+    finished.value =
+      records.length === 0 || allMockRecords.value.length >= total;
+    pagination.current = finished.value ? 1 : 2;
+    tablePagination.current = 1;
+    refreshDisplayedDeviceData();
+  } catch (error) {
+    console.error(error);
+    ElMessage.error($t('common.error.loadFailed'));
+  }
+}
+
+/** 解绑设备上的代理（仅列表/正式绑定可解绑） */
+async function handleUnbindProxy(item: DeviceItem) {
+  const proxyId = item?.proxyId
+  const assId = item?.assId
+
+  const payload: { assId: string; proxyId: string } = { assId, proxyId };
+  try {
+    const res = await unbindProxyApi(payload);
+    if (res?.code === 100000) {
+      if (res.msg) {
+        ElMessage.success(res.msg);
+      }
+      await refreshDeviceListAfterUnbind();
+      emit('refreshSummary');
+    }
+  } catch (e) {
+    console.error(e);
+    ElMessage.error($t('associationCenter.unbindProxyFailed'));
+  }
+}
+
+/** 解绑设备上的单个账号 */
+async function handleUnbindAccount(item: DeviceItem, accountId: string) {
+  if (!accountId) return;
+  const deviceId = getDeviceId(item);
+  if (!deviceId) {
+    ElMessage.warning($t('associationCenter.unbindMissingDeviceId'));
+    return;
+  }
+  const row = (item.accountInfos as Record<string, any>[] | undefined)?.find(
+    (a) => a.accountId === accountId,
+  );
+  if (!row?.fromServer) {
+    ElMessage.warning($t('associationCenter.unbindOnlyServerAccount'));
+    return;
+  }
+  try {
+    const res = await unbindAccountApi({
+      deviceId,
+      accountIds: [accountId],
+      bind: 'UNBINDING',
+    });
+    if (res?.code === 100000) {
+      if (res.msg) {
+        ElMessage.success(res.msg);
+      }
+      await refreshDeviceListAfterUnbind();
+    } else {
+      ElMessage.error(res?.msg || $t('associationCenter.unbindAccountFailed'));
+    }
+  } catch (e) {
+    console.error(e);
+    ElMessage.error($t('associationCenter.unbindAccountFailed'));
+  }
 }
 
 /** 自动关联：账号与设备按 1v1 绑定，代理支持复用到多个设备 */
@@ -528,19 +703,24 @@ function autoAssociateWithSelections(
     const existingAccounts = getMergedBoundAccounts(target);
     const existingAppIds = getDeviceBoundAppIds(target);
     const accountAppId = getAccountAppId(account as Record<string, any>);
-    if (accountAppId && existingAppIds.has(accountAppId)) {
+    if (accountAppId && existingAppIds.includes(accountAppId)) {
       ElMessage.error(
         $t('associationCenter.deviceAlreadyBoundAppId', {
-          deviceIp: target.deviceIp || '',
+          deviceIp: target.deviceIp,
         }),
       );
       return;
     }
 
-    target.boundAccounts = [...existingAccounts, account];
+    target.boundAccounts = [
+      ...existingAccounts,
+      { ...account, fromServer: false },
+    ];
     syncAccountInfosFromBound(target);
     const displayProxy = getProxyDisplayText(proxy);
-    target.boundProxies = [{ ...proxy, proxy: displayProxy, proxyArea: proxy.area }];
+    target.boundProxies = [
+      { ...proxy, proxy: displayProxy, proxyArea: proxy.area, fromServer: false },
+    ];
     target.proxy = displayProxy;
     target.proxyArea = proxy.area;
   }
@@ -574,6 +754,7 @@ defineExpose({
   toggleViewMode,
   autoAssociateWithSelections,
   clearSelectedDevices,
+  refreshDeviceList,
   getSelectedDeviceEnables,
   getDeviceBoardList,
   getSelectedDeviceIds,
@@ -664,7 +845,9 @@ onMounted(() => {
         @load-more="handleLoadMore"
         @drag-over="onCardDragOver"
         @drop="onCardDrop"
-        @toggle-select="toggleDeviceSelect"
+        @device-click="handleDeviceClick"
+        @unbind-account="handleUnbindAccount"
+        @unbind-proxy="handleUnbindProxy"
       />
       <DeviceTable
         v-else
@@ -674,9 +857,30 @@ onMounted(() => {
         @page-change="handleTablePageChange"
         @drag-over="onTableDragOver"
         @drop="onTableDrop"
-        @toggle-select="toggleDeviceSelect"
+        @device-click="handleDeviceClick"
+        @unbind-account="handleUnbindAccount"
+        @unbind-proxy="handleUnbindProxy"
       />
     </div>
+
+    <el-dialog
+      v-model="largeScreenVisible"
+      :show-close="false"
+      :modal="false"
+      width="auto"
+      align-center
+      destroy-on-close
+      class="device-board-large-screen-dialog"
+      append-to-body
+      @closed="onLargeScreenDialogClosed"
+    >
+      <LargeScreen
+        v-if="largeScreenDevice"
+        :device="largeScreenDevice"
+        :width="380"
+        @close="closeLargeScreen"
+      />
+    </el-dialog>
   </div>
 </template>
 
@@ -750,5 +954,24 @@ onMounted(() => {
 .board-content::-webkit-scrollbar-thumb {
   background: var(--el-border-color);
   border-radius: 3px;
+}
+</style>
+
+<style lang="less">
+.device-board-large-screen-dialog {
+  padding: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+  overflow: visible;
+
+  .el-dialog__header {
+    display: none;
+  }
+
+  .el-dialog__body {
+    padding: 0 !important;
+  }
 }
 </style>
