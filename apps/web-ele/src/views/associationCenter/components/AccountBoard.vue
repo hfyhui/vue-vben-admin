@@ -29,7 +29,7 @@ interface AccountItem {
 
 /** 统一读取账号 appId（用于拖拽批次去重） */
 function getAccountAppId(item: AccountItem) {
-  return String(item.appId || '').trim();
+  return item.appId 
 }
 
 const loading = ref(false);

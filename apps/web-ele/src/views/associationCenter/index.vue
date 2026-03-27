@@ -75,11 +75,6 @@ async function loadGroupOptions() {
     const response = await getAssetGroupApi();
     const groups = Array.isArray(response?.data) ? response.data : [];
     sharedGroupOptions.value = groups
-      .map((item) => ({
-        id: String(item?.id ?? ''),
-        suiteName: String(item?.suiteName ?? ''),
-      }))
-      .filter((item) => item.id && item.suiteName);
   } catch (error) {
     console.error('[associationCenter] 获取分组失败:', error);
   }
@@ -87,15 +82,9 @@ async function loadGroupOptions() {
 
 async function loadSortOptions() {
   try {
-    const enums = await assetEnumsStore.ensureAssetEnumsLoaded();
-    const accountOrderChildren = (enums as any).ACCOUNT_ORDER.children as Array<{
-      content: string;
-      name: string;
-    }>;
-    sharedSortOptions.value = accountOrderChildren.map((item) => ({
-      label: item.content,
-      value: item.name,
-    }));
+    sharedSortOptions.value = await assetEnumsStore.getEnumOptionsAsync(
+      'ACCOUNT_ORDER',
+    );
   } catch (error) {
     console.error('[associationCenter] 获取排序枚举失败:', error);
     sharedSortOptions.value = [];
@@ -172,11 +161,7 @@ async function onOfficialEnable() {
 }
 
 function uniqueIds(values: unknown[]) {
-  const idSet = new Set(
-    values
-      .map((item) => String(item ?? '').trim())
-      .filter(Boolean),
-  );
+  const idSet = new Set(values);
   return [...idSet];
 }
 

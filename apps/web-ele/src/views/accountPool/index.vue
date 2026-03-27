@@ -9,6 +9,7 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import { $t } from '#/locales';
+import { useAssetEnumsStore } from '#/store';
 import {
   batchDeleteAccountApi,
   downloadAccountTemplateApi,
@@ -21,6 +22,7 @@ import {
 import {
   type AccountPoolGroupOption,
   type AccountPoolPlatformOption,
+  type AccountPoolSortOption,
   getAccountPoolListApi,
   getFormOptions,
   useColumns,
@@ -34,6 +36,8 @@ const importAppId = ref('');
 const importing = ref(false);
 const groupOptions = ref<AccountPoolGroupOption[]>([]);
 const platformOptions = ref<AccountPoolPlatformOption[]>([]);
+const sortOptions = ref<AccountPoolSortOption[]>([]);
+const assetEnumsStore = useAssetEnumsStore();
 
 const [Grid, gridApi] = useVbenVxeGrid({
   formOptions: getFormOptions([]),
@@ -233,8 +237,24 @@ async function loadPlatformOptions() {
 
 function applyFormOptions() {
   gridApi.setState({
-    formOptions: getFormOptions(groupOptions.value, platformOptions.value),
+    formOptions: getFormOptions(
+      groupOptions.value,
+      platformOptions.value,
+      sortOptions.value,
+    ),
   });
+}
+
+async function loadSortOptions() {
+  try {
+    sortOptions.value = await assetEnumsStore.getEnumOptionsAsync(
+      'ACCOUNT_ORDER',
+    );
+  } catch (error) {
+    console.error('[accountPool] 获取排序枚举失败:', error);
+    sortOptions.value = [];
+  }
+  applyFormOptions();
 }
 
 function onCreateSuccess() {
@@ -250,6 +270,7 @@ onMounted(() => {
   loadAccountPoolNum();
   loadGroupOptions();
   loadPlatformOptions();
+  loadSortOptions();
 });
 </script>
 

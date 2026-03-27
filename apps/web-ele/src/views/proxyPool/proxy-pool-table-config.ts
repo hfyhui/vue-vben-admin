@@ -4,8 +4,17 @@ import { getProxyAssetPageApi } from '#/api/core/asset';
 
 import { $t } from '#/locales';
 
+export type ProxyPoolSortOption = { label: string; value: string };
+export type ProxyPoolGroupOption = { id: string; suiteName: string };
+export type ProxyPoolRegionOption = {
+  label: string;
+  value: string;
+  children?: ProxyPoolRegionOption[];
+};
+
 export interface ProxyPoolRow {
   id: string;
+  proxyId: string;
   region: string;
   loginTime: string;
   protocol: string;
@@ -25,13 +34,13 @@ export interface ProxyPoolRow {
 export async function getProxyPoolListApi(_params: {
   page: number;
   pageSize: number;
-  regionFilter?: string;
+  regionPath?: string;
   proxySearch?: string;
   proxyGroup?: string;
   sortCondition?: string;
   [key: string]: any;
 }) {
-  const { page, pageSize, regionFilter, proxySearch, proxyGroup, sortCondition } =
+  const { page, pageSize, regionPath, proxySearch, proxyGroup, sortCondition } =
     _params;
 
   const reqParams: Record<string, any> = {
@@ -39,21 +48,17 @@ export async function getProxyPoolListApi(_params: {
     size: pageSize ?? 10,
   };
 
-  if (proxySearch) {
-    if (regionFilter === 'region') {
-      reqParams.area = proxySearch;
-    } else {
-      reqParams.proxy = proxySearch;
-    }
-  }
+  if (regionPath) reqParams.area = regionPath.split('/').at(-1);
+  if (proxySearch) reqParams.proxy = proxySearch;
   if (proxyGroup) reqParams.suiteIds = [proxyGroup];
   if (sortCondition) reqParams.sortType = sortCondition;
 
   const data = await getProxyAssetPageApi(reqParams);
-  const list: ProxyPoolRow[] = (data.records ?? []).map((item: any, index) => {
+  const list: ProxyPoolRow[] = (data.records ?? []).map((item: any) => {
     const proxyIp = item.ip 
     return {
       id: item.proxyId,
+      proxyId: item.proxyId,
       region: item.area,
       loginTime: item.inputTime,
       protocol: item.protocol,
@@ -77,20 +82,24 @@ export async function getProxyPoolListApi(_params: {
   };
 }
 
-export const getFormOptions = (): VbenFormProps => ({
+export const getFormOptions = (
+  sortOptions: ProxyPoolSortOption[] = [],
+  groupOptions: ProxyPoolGroupOption[] = [],
+  regionOptions: ProxyPoolRegionOption[] = [],
+): VbenFormProps => ({
   collapsed: false,
   schema: [
     {
-      component: 'Select',
-      fieldName: 'regionFilter',
+      component: 'TreeSelect',
+      fieldName: 'regionPath',
       label: $t('proxyPool.filter.regionFilter'),
       componentProps: {
         placeholder: $t('proxyPool.filter.regionFilterPlaceholder'),
-        options: [
-          { value: 'region', label: $t('proxyPool.filter.region') },
-          { value: 'ip', label: $t('proxyPool.filter.ip') },
-        ],
-        virtualized: false,
+        data: regionOptions,
+        checkStrictly: false,
+        clearable: true,
+        filterable: true,
+        renderAfterExpand: false,
       },
     },
     {
@@ -102,11 +111,16 @@ export const getFormOptions = (): VbenFormProps => ({
       },
     },
     {
-      component: 'Input',
+      component: 'Select',
       fieldName: 'proxyGroup',
       label: $t('proxyPool.filter.proxyGroup'),
       componentProps: {
         placeholder: $t('proxyPool.filter.proxyGroupPlaceholder'),
+        options: groupOptions.map((item) => ({
+          label: item.suiteName,
+          value: item.id,
+        })),
+        virtualized: false,
       },
     },
     {
@@ -115,10 +129,7 @@ export const getFormOptions = (): VbenFormProps => ({
       label: $t('proxyPool.filter.sortCondition'),
       componentProps: {
         placeholder: $t('proxyPool.filter.sortConditionPlaceholder'),
-        options: [
-          { value: '1', label: $t('proxyPool.filter.sortByRisk') },
-          { value: '2', label: $t('proxyPool.filter.sortByInputTime') },
-        ],
+        options: sortOptions,
         virtualized: false,
       },
     },

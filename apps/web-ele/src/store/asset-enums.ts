@@ -8,6 +8,7 @@ import { getAssetEnumsApi } from '#/api/core/asset';
 const ASSET_ENUMS_CACHE_KEY = 'asset-enums';
 
 type AssetEnumsData = Record<string, any>;
+type AssetEnumOption = { label: string; value: string };
 
 function readAssetEnumsCache(): AssetEnumsData {
   if (typeof window === 'undefined') return {};
@@ -63,6 +64,42 @@ export const useAssetEnumsStore = defineStore('asset-enums', () => {
     return ((enums.value?.[key] ?? []) as T);
   }
 
+  function getEnumOptions(
+    key: string,
+    {
+      childrenKey = 'children',
+      labelKey = 'content',
+      valueKey = 'name',
+    }: {
+      childrenKey?: string;
+      labelKey?: string;
+      valueKey?: string;
+    } = {},
+  ): AssetEnumOption[] {
+    const enumNode = enums.value?.[key];
+    const children = Array.isArray(enumNode?.[childrenKey])
+      ? enumNode[childrenKey]
+      : [];
+    return children
+      .map((item: Record<string, unknown>) => ({
+        label: String(item?.[labelKey] ?? ''),
+        value: String(item?.[valueKey] ?? ''),
+      }))
+      .filter((item) => item.label && item.value);
+  }
+
+  async function getEnumOptionsAsync(
+    key: string,
+    config?: {
+      childrenKey?: string;
+      labelKey?: string;
+      valueKey?: string;
+    },
+  ): Promise<AssetEnumOption[]> {
+    await ensureAssetEnumsLoaded();
+    return getEnumOptions(key, config);
+  }
+
   function $reset() {
     enums.value = {};
     loaded.value = false;
@@ -77,6 +114,8 @@ export const useAssetEnumsStore = defineStore('asset-enums', () => {
     loading,
     ensureAssetEnumsLoaded,
     getEnumByKey,
+    getEnumOptions,
+    getEnumOptionsAsync,
   };
 });
 

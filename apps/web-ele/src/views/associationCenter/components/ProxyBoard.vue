@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 
 import { ElMessage } from 'element-plus';
 import { Box, Loading } from '@element-plus/icons-vue';
 
 import { $t } from '#/locales';
+import { useAssetEnumsStore } from '#/store';
 
 import {
   getProxyAssetPageApi,
@@ -34,6 +35,10 @@ interface RegionOption {
   value: string;
   children?: RegionOption[];
 }
+interface RegionTreeNode {
+  name?: string;
+  children?: RegionTreeNode[] | null;
+}
 
 const loading = ref(false);
 const finished = ref(false);
@@ -59,6 +64,11 @@ const pagination = reactive({
 const list = ref<ProxyItem[]>([]);
 const selectedIds = ref<string[]>([]);
 const regionOptions = ref<RegionOption[]>([]);
+const localSortOptions = ref<Array<{ label: string; value: string }>>([]);
+const assetEnumsStore = useAssetEnumsStore();
+const resolvedSortOptions = computed(() =>
+  props.sortOptions?.length ? props.sortOptions : localSortOptions.value,
+);
 
 const regionCascaderProps = {
   value: 'value',
@@ -67,6 +77,17 @@ const regionCascaderProps = {
   emitPath: true,
   checkStrictly: false,
 };
+
+function mapRegionTree(nodes: RegionTreeNode[] | null | undefined): RegionOption[] {
+  if (!Array.isArray(nodes)) return [];
+  return nodes
+    .filter((node) => Boolean(node?.name))
+    .map((node) => ({
+      label: node.name as string,
+      value: node.name as string,
+      children: mapRegionTree(node.children),
+    }));
+}
 
 /** 生成列表项稳定 key（优先 id，其次 proxy，再次 index） */
 function getKey(item: ProxyItem, index: number) {
@@ -130,23 +151,25 @@ function buildRequestParams() {
   };
 }
 
-function mapRegionOptions(nodes: any[] = []): RegionOption[] {
-  return nodes.map((node) => ({
-    label: String(node?.name ?? ''),
-    value: String(node?.name ?? ''),
-    children: Array.isArray(node?.children)
-      ? mapRegionOptions(node.children)
-      : undefined,
-  }));
-}
-
 async function loadRegionTree() {
   try {
     const response = await getProxyRegionTreeApi();
-    regionOptions.value = mapRegionOptions(response?.data ?? []);
+    regionOptions.value = mapRegionTree(response.data);
   } catch (error) {
     console.error(error);
     ElMessage.error($t('common.error.loadFailed'));
+  }
+}
+
+async function loadSortOptions() {
+  if (props.sortOptions?.length) return;
+  try {
+    localSortOptions.value = await assetEnumsStore.getEnumOptionsAsync(
+      'ACCOUNT_ORDER',
+    );
+  } catch (error) {
+    console.error('[proxyBoard] 获取排序枚举失败:', error);
+    localSortOptions.value = [];
   }
 }
 
@@ -213,6 +236,7 @@ function onProxyDragStart(ev: DragEvent, item: ProxyItem) {
 /** 组件初始化时加载第一页代理数据 */
 onMounted(() => {
   loadRegionTree();
+  loadSortOptions();
   fetchData();
 });
 
@@ -277,7 +301,7 @@ defineExpose({
           @change="handleSearch"
         >
           <el-option
-            v-for="item in props.sortOptions || []"
+            v-for="item in resolvedSortOptions"
             :key="item.value"
             :label="item.label"
             :value="item.value"

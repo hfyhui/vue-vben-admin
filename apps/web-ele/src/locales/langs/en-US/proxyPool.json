@@ -42,7 +42,10 @@
     "batchDelete": "Batch Delete"
   },
   "message": {
-    "downloadFailed": "Download failed"
+    "downloadFailed": "Download failed",
+    "selectBeforeDelete": "Please select proxies to delete",
+    "batchDeleteSuccess": "Batch delete succeeded",
+    "batchDeleteFailed": "Batch delete failed"
   }
 }
 

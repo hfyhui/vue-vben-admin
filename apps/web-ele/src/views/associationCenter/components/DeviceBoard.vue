@@ -382,8 +382,8 @@ function getSelectedDeviceEnables() {
     .map((item) => {
       const accountIds = getDeviceBoundAccountIds(item);
       const proxyId = getDeviceProxyId(item);
-      const deviceId = String(getDeviceId(item) || '');
-      const deviceIp = String(item.deviceIp || '');
+      const deviceId = getDeviceId(item) ;
+      const deviceIp = item.deviceIp;
       if (!deviceId) return null;
       const payload: {
         deviceId: string;

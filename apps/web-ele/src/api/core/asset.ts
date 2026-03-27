@@ -118,6 +118,10 @@ export interface BatchDelAccountParams {
   accountIds?: string[];
 }
 
+export interface BatchDelProxyParams {
+  proxyIds?: string[];
+}
+
 export interface ImportAccountParams {
   appId: string;
   file: File;
@@ -266,6 +270,16 @@ export async function batchDeleteAccountApi(
 ): Promise<ApiResponse<null>> {
   const payload: BatchDelAccountParams = { accountIds };
   return proxyClient.delete<ApiResponse<null>>('/asset/batch/del-account', {
+    data: payload,
+  });
+}
+
+/** 批量删除代理 DELETE /asset/batch/del-proxy */
+export async function batchDeleteProxyApi(
+  proxyIds: string[],
+): Promise<ApiResponse<null>> {
+  const payload: BatchDelProxyParams = { proxyIds };
+  return proxyClient.delete<ApiResponse<null>>('/asset/batch/del-proxy', {
     data: payload,
   });
 }

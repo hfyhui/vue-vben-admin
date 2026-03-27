@@ -42,7 +42,10 @@
     "batchDelete": "批量删除"
   },
   "message": {
-    "downloadFailed": "下载失败"
+    "downloadFailed": "下载失败",
+    "selectBeforeDelete": "请先选择要删除的代理",
+    "batchDeleteSuccess": "批量删除成功",
+    "batchDeleteFailed": "批量删除失败"
   }
 }
 
