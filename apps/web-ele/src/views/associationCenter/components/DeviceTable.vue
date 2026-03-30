@@ -250,6 +250,7 @@ function onUnbindProxy(ev: Event, row: DeviceItem) {
                 />
               </el-tooltip>
               <span
+                v-if="acc.fromServer"
                 class="table-account-color-pill"
                 :class="(acc.color || 'gray').toLowerCase()"
                 aria-hidden="true"
