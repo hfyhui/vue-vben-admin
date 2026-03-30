@@ -5,6 +5,7 @@ import { ElMessage } from 'element-plus';
 import { Box, Loading } from '@element-plus/icons-vue';
 
 import { $t } from '#/locales';
+import { formatProcessUrl } from '#/utils/asset-url';
 
 import { getAccountAssetPageApi, getAssetAppListApi } from '#/api/core/asset';
 
@@ -54,13 +55,9 @@ const pagination = reactive({
 const list = ref<AccountItem[]>([]);
 const selectedIds = ref<string[]>([]);
 const platformOptions = ref<Array<{ label: string; value: string }>>([]);
-/** OSS 访问前缀（用于把接口返回的 logoPath 拼成可访问 URL） */
-const logoPrefix = import.meta.env.VITE_OSS_BASE_URL
-
 /** 根据接口的 logoPath 拼出完整图片 URL */
 function getLogoUrl(logoPath?: string) {
-  if (!logoPath) return '';
-  return `${logoPrefix}/${logoPath}`;
+  return formatProcessUrl(logoPath);
 }
 
 /** 生成列表项的稳定 key用 accountId */
