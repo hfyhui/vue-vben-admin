@@ -58,7 +58,7 @@ export async function getProxyPoolListApi(_params: {
   pageSize: number;
   areaPath?: string[];
   proxySearch?: string;
-  proxyGroup?: string;
+  proxyGroup?: string[];
   sortCondition?: string;
   [key: string]: any;
 }) {
@@ -72,7 +72,7 @@ export async function getProxyPoolListApi(_params: {
 
   if (areaPath?.length) reqParams.area = areaPath[areaPath.length - 1];
   if (proxySearch) reqParams.proxy = proxySearch;
-  if (proxyGroup) reqParams.suiteIds = [proxyGroup];
+  if (proxyGroup?.length) reqParams.suiteIds = proxyGroup;
   if (sortCondition) reqParams.sortType = sortCondition;
 
   const data = await getProxyAssetPageApi(reqParams);
@@ -124,6 +124,11 @@ export const getFormOptions = (
       label: $t('proxyPool.filter.proxyGroup'),
       componentProps: {
         placeholder: $t('proxyPool.filter.proxyGroupPlaceholder'),
+        clearable: true,
+        filterable: true,
+        multiple: true,
+        collapseTags: true,
+        collapseTagsTooltip: true,
         options: groupOptions.map((item) => ({
           label: item.suiteName,
           value: item.id,

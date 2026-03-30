@@ -249,6 +249,7 @@ export async function getContainerAssetPageApi<T = DeviceItem>(
     search: params.search,
     suiteName: params.suiteName,
     groupId: params.groupId,
+    suiteIds: params.suiteIds,
     sortType: params.sortType,
     relationStatus: params.relationStatus,
   };

@@ -51,7 +51,7 @@ const filterForm = reactive({
   area: '',
   areaPath: [] as string[],
   proxySearch: '',
-  proxyGroup: '',
+  proxyGroup: [] as string[],
   sortType: '',
 });
 
@@ -141,14 +141,15 @@ function getRiskColor(color?: string): string {
 
 /** 构建代理分页查询参数，与接口字段保持一致 */
 function buildRequestParams() {
-  return {
+  const params: Record<string, any> = {
     current: pagination.current,
     size: pagination.size,
     area: filterForm.area,
     proxy: filterForm.proxySearch,
-    groupId: filterForm.proxyGroup,
     sortType: filterForm.sortType,
   };
+  if (filterForm.proxyGroup.length) params.suiteIds = filterForm.proxyGroup;
+  return params;
 }
 
 async function loadRegionTree() {
@@ -291,6 +292,9 @@ defineExpose({
           v-model="filterForm.proxyGroup"
           :placeholder="$t('associationCenter.proxyGroupPlaceholder')"
           class="filter-input"
+          multiple
+          collapse-tags
+          collapse-tags-tooltip
           clearable
           @change="handleSearch"
         >

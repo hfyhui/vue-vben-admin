@@ -34,7 +34,7 @@ const finished = ref(false);
 const filterForm = reactive({
   screening: '',
   search: '',
-  groupId: '',
+  suiteIds: [] as string[],
   associationStatus: '',
   sort: '',
 });
@@ -220,14 +220,17 @@ function getDeviceBoundAccountIds(item: DeviceItem) {
 
 /** 构建设备分页请求参数，与容器分页接口字段一致 */
 function buildRequestParams() {
-  return {
+  const params: Record<string, any> = {
     current: pagination.current,
     size: pagination.size,
     screening: filterForm.screening,
     search: filterForm.search,
-    groupId: filterForm.groupId,
     relationStatus: filterForm.associationStatus,
   };
+  if (filterForm.suiteIds.length) {
+    params.suiteIds = filterForm.suiteIds;
+  }
+  return params;
 }
 
 /** 拉取并追加设备列表数据，同时维护分页与完成状态 */
@@ -804,9 +807,12 @@ onMounted(() => {
       <div class="filter-item">
         <label class="filter-label">{{ $t('associationCenter.deviceGroup') }}</label>
         <el-select
-          v-model="filterForm.groupId"
+          v-model="filterForm.suiteIds"
           :placeholder="$t('associationCenter.deviceGroup')"
           class="filter-input"
+          multiple
+          collapse-tags
+          collapse-tags-tooltip
           clearable
           @change="handleSearch"
         >

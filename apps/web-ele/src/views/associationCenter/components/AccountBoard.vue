@@ -42,7 +42,7 @@ const props = defineProps<{
 const filterForm = reactive({
   platform: [] as string[],
   accountSearch: '',
-  accountGroup: '',
+  accountGroup: [] as string[],
   sortType: '' as string,
 });
 
@@ -118,7 +118,7 @@ function buildRequestParams() {
     size: pagination.size,
   };
   if (filterForm.accountSearch) params.accountName = filterForm.accountSearch;
-  if (filterForm.accountGroup) params.suiteIds = [filterForm.accountGroup];
+  if (filterForm.accountGroup.length) params.suiteIds = filterForm.accountGroup;
   if (filterForm.platform.length) params.appIds = filterForm.platform;
   if (filterForm.sortType) {
     params.sortType = filterForm.sortType;
@@ -340,6 +340,9 @@ defineExpose({
           v-model="filterForm.accountGroup"
           :placeholder="$t('associationCenter.accountGroupPlaceholder')"
           class="filter-input"
+          multiple
+          collapse-tags
+          collapse-tags-tooltip
           clearable
           @change="handleSearch"
         >
