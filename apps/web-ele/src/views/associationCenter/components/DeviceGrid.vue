@@ -208,6 +208,7 @@ function getBoundAccounts(item: DeviceItem): BoundAccountRow[] {
                     </div>
                   </div>
                   <span
+                    v-if="acc.fromServer"
                     class="account-color-pill"
                     :class="(acc.color || 'gray').toLowerCase()"
                     aria-hidden="true"
