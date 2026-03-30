@@ -24,12 +24,28 @@ export default defineConfig(async () => {
             changeOrigin: true,
             rewrite: (path) => path.replace(/^\/platform/, 'platform'),
             // 后端接口代理地址
-            // target: 'http://10.0.2.212:8899',
-            target: 'http://172.25.1.213:8899',
+            // target: 'http://10.0.2.212:8899',  // 开
+            target: 'http://172.25.1.213:8899', // 测试
             ws: true,
           },
+          '/auth': {
+            changeOrigin: true,
+            rewrite: (path) => path.replace(/^\/auth/, ''),
+            // 登录/用户信息接口代理，测试环境
+            target: 'https://test.callfansai.cn',
+            secure: false,
+            ws: true,
+          },
+          '/social': {
+            changeOrigin: true,
+            // 应用管理 MCC 接口代理，测试环境
+            target: 'https://test.callfansai.cn',
+            secure: false,
+            rewrite: (path) => path.replace(/^\/social/, ''),
+            ws: true,
+          }
         },
-      },
+      }
     },
   };
 });

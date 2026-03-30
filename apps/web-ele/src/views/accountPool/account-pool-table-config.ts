@@ -1,0 +1,216 @@
+import type { VbenFormProps } from '#/adapter/form';
+
+import { getAccountAssetPageApi } from '#/api/core/asset';
+
+import { $t } from '#/locales';
+
+/** 与 GET /platform/asset/group（getAssetGroupApi）返回项一致，用于筛选下拉 */
+export type AccountPoolGroupOption = { id: string; suiteName: string };
+export type AccountPoolPlatformOption = { id: string; applicationName: string };
+export type AccountPoolSortOption = { label: string; value: string };
+
+export interface AccountPoolRow {
+  id: string;
+  platform: string;
+  entryTime: string;
+  riskAlert: string;
+  account: string;
+  accountId: string;
+  username: string;
+  userAccount: string;
+  accountPassword: string;
+  verificationEmail: string;
+  emailPassword: string;
+  remarks: string;
+  accountGroup: string;
+  associatedDevices: string;
+  associatedAgents: string;
+}
+
+interface AccountAssetRecord {
+  platform?: string;
+  appId?: string;
+  inputTime?: string;
+  riskTips?: string;
+  account?: string;
+  accountId?: string;
+  userAccount?: string;
+  accountPassword?: string;
+  email?: string;
+  emailPassword?: string;
+  remark?: string;
+  accountGroup?: string;
+  proxy?: string;
+  [key: string]: any;
+}
+
+export async function getAccountPoolListApi(_params: {
+  page: number;
+  pageSize: number;
+  platform?: string[];
+  accountSearch?: string;
+  accountGroup?: string;
+  sortCondition?: string;
+  [key: string]: any;
+}) {
+  const {
+    page,
+    pageSize,
+    platform,
+    accountSearch,
+    accountGroup,
+    sortCondition,
+  } = _params;
+
+  // 入参与接口文档保持一致：POST /asset/account/page
+  // - current/size：分页
+  // - accountName：账号（accountSearch）
+  // - suiteIds：分组（accountGroup）
+  // - appIds：应用（platform）
+  // - sortCondition：排序条件
+  const reqParams: Record<string, any> = {
+    current: page ?? 1,
+    size: pageSize ?? 10,
+  };
+
+  if (accountSearch) reqParams.accountName = accountSearch;
+  if (accountGroup) reqParams.suiteIds = [accountGroup];
+  if (platform?.length) reqParams.appIds = platform;
+  if (sortCondition) reqParams.sortCondition = sortCondition;
+
+  const data = await getAccountAssetPageApi<AccountAssetRecord>(reqParams);
+
+  const list: AccountPoolRow[] = (data.records || []).map((r, idx) => ({
+    id: r.accountId ?? r.account ?? r.userAccount ?? `${idx}`,
+    platform: r.platform ?? '',
+    entryTime: r.inputTime ?? '',
+    riskAlert: r.riskTips ?? '',
+    account: r.account ?? '',
+    accountId: r.accountId ?? '',
+    username: r.userAccount ?? '',
+    userAccount: r.userAccount ?? '',
+    accountPassword: r.accountPassword ?? '',
+    verificationEmail: r.email ?? '',
+    emailPassword: r.emailPassword ?? '',
+    remarks: r.remark ?? '',
+    accountGroup: r.accountGroup ?? '',
+    associatedDevices: '',
+    // 接口字段：proxy（关联代理）；表格列：associatedAgents（关联代理/代理）
+    associatedAgents: r.proxy ?? '',
+  }));
+
+  return {
+    list,
+    total: Number(data.total ?? 0),
+  };
+}
+
+export const getFormOptions = (
+  groupOptions: AccountPoolGroupOption[] = [],
+  platformOptions: AccountPoolPlatformOption[] = [],
+  sortOptions: AccountPoolSortOption[] = [],
+): VbenFormProps => ({
+  collapsed: false,
+  schema: [
+    {
+      component: 'Select',
+      fieldName: 'platform',
+      label: $t('accountPool.filter.platform'),
+      componentProps: {
+        placeholder: $t('accountPool.filter.platformPlaceholder'),
+        clearable: true,
+        filterable: true,
+        multiple: true,
+        collapseTags: true,
+        collapseTagsTooltip: true,
+        options: platformOptions
+          .filter((item) => item.id)
+          .map((item) => ({
+            value: item.id,
+            label: item.applicationName,
+          })),
+      },
+    },
+    {
+      component: 'Input',
+      fieldName: 'accountSearch',
+      label: $t('accountPool.filter.accountSearch'),
+      componentProps: {
+        placeholder: $t('accountPool.filter.accountSearchPlaceholder'),
+      },
+    },
+    {
+      component: 'Select',
+      fieldName: 'accountGroup',
+      label: $t('accountPool.filter.accountGroup'),
+      componentProps: {
+        placeholder: $t('accountPool.filter.accountGroupPlaceholder'),
+        clearable: true,
+        filterable: true,
+        options: groupOptions.map((item) => ({
+          label: item.suiteName,
+          value: item.id,
+        })),
+      },
+    },
+    {
+      component: 'Select',
+      fieldName: 'sortCondition',
+      label: $t('accountPool.filter.sortCondition'),
+      componentProps: {
+        placeholder: $t('accountPool.filter.sortConditionPlaceholder'),
+        clearable: true,
+        options: sortOptions,
+      },
+    },
+  ],
+  showCollapseButton: true,
+  submitOnChange: false,
+  submitOnEnter: true,
+});
+
+export const useColumns = () => [
+  { type: 'checkbox', width: 50, align: 'center' },
+  { field: 'platform', title: $t('accountPool.table.platform'), minWidth: 120 },
+  { field: 'entryTime', title: $t('accountPool.table.entryTime'), minWidth: 160 },
+  { field: 'riskAlert', title: $t('accountPool.table.riskAlert'), minWidth: 100 },
+  { field: 'account', title: $t('accountPool.table.account'), minWidth: 120 },
+  { field: 'accountId', title: $t('accountPool.table.accountId'), minWidth: 120 },
+  { field: 'username', title: $t('accountPool.table.username'), minWidth: 120 },
+  {
+    field: 'userAccount',
+    title: $t('accountPool.table.userAccount'),
+    minWidth: 120,
+  },
+  {
+    field: 'accountPassword',
+    title: $t('accountPool.table.accountPassword'),
+    minWidth: 120,
+  },
+  {
+    field: 'verificationEmail',
+    title: $t('accountPool.table.verificationEmail'),
+    minWidth: 150,
+  },
+  {
+    field: 'emailPassword',
+    title: $t('accountPool.table.emailPassword'),
+    minWidth: 120,
+  },
+  { field: 'remarks', title: $t('accountPool.table.remarks'), minWidth: 120 },
+  {
+    field: 'accountGroup',
+    title: $t('accountPool.table.accountGroup'),
+    minWidth: 120,
+  },
+  {
+    field: 'associatedDevices',
+    title: $t('accountPool.table.associatedDevices'),
+    minWidth: 120,
+  },
+  {
+    field: 'associatedAgents',
+    title: $t('accountPool.table.associatedAgents'),
+    minWidth: 120,
+  },
+];

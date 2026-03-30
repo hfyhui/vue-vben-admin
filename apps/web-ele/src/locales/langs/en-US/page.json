@@ -8,8 +8,13 @@
   },
   "dashboard": {
     "title": "Dashboard",
+    "applicationManage": "Application Management",
     "customerManage": "CustomerManage",
     "licenseManage": "LicenseManage",
-    "productList": "ProductList"
+    "productList": "ProductList",
+    "associationCenter": "Association Center",
+    "accountPool": "Account Pool",
+    "containerPool": "Container Pool",
+    "proxyPool": "Proxy Pool"
   }
 }

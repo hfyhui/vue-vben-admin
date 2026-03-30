@@ -1,0 +1,31 @@
+{
+  "title": "Application Management",
+  "stats": {
+    "totalApplications": "Total Applications",
+    "enabledApplications": "Enabled",
+    "disabledApplications": "Disabled"
+  },
+  "search": {
+    "applicationName": "Application Name",
+    "applicationNamePlaceholder": "Please enter",
+    "status": "Status",
+    "statusPlaceholder": "Please select"
+  },
+  "action": {
+    "add": "Add",
+    "batchDelete": "Batch Delete"
+  },
+  "table": {
+    "applicationName": "Application Name",
+    "scriptList": "Script List",
+    "index": "Index",
+    "status": "Status",
+    "operation": "Operation"
+  },
+  "message": {
+    "selectBeforeDelete": "Please select applications to delete first",
+    "batchDeleteConfirm": "Are you sure to delete {count} selected applications?",
+    "deleteConfirm": "Are you sure to delete 「{name}」?",
+    "deleteSuccess": "Deleted successfully"
+  }
+}

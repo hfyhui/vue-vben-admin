@@ -41,6 +41,69 @@ const routes: RouteRecordRaw[] = [
       order: 9999,
     },
   },
+  {
+    name: 'AssociationCenter',
+    path: '/associationCenter',
+    component: () => import('#/views/associationCenter/index.vue'),
+    meta: {
+      icon: 'lucide:copyright',
+      title: $t('page.dashboard.associationCenter'),
+      order: 9999,
+    },
+  },
+  {
+    name: 'ContainerPool',
+    path: '/containerPool',
+    component: () => import('#/views/containerPool/index.vue'),
+    meta: {
+      icon: 'lucide:copyright',
+      title: $t('page.dashboard.containerPool'),
+      order: 9999,
+      hideInMenu: true,
+    },
+  },
+  {
+    name: 'AccountPool',
+    path: '/accountPool',
+    component: () => import('#/views/accountPool/index.vue'),
+    meta: {
+      icon: 'lucide:copyright',
+      title: $t('page.dashboard.accountPool'),
+      order: 9999,
+      hideInMenu: true,
+    },
+  },
+  {
+    name: 'ProxyPool',
+    path: '/proxyPool',
+    component: () => import('#/views/proxyPool/index.vue'),
+    meta: {
+      icon: 'lucide:copyright',
+      title: $t('page.dashboard.proxyPool'),
+      order: 9999,
+      hideInMenu: true,
+    },
+  },
+  {
+    name: 'ApplicationManage',
+    path: '/applicationManage',
+    component: () => import('#/views/applicationManage/index.vue'),
+    meta: {
+      icon: 'lucide:copyright',
+      title: $t('page.dashboard.applicationManage'),
+      order: 9999,
+    }
+  },
+  {
+    name: 'DemosPage',
+    path: '/demos/page',
+    component: () => import('#/views/demos/page/index.vue'),
+    meta: {
+      icon: 'lucide:file-code',
+      title: 'Demo',
+      order: 9999,
+    },
+  },
 ];
 
 export default routes;

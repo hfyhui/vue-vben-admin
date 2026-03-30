@@ -1,0 +1,667 @@
+<script setup lang="ts">
+import { onMounted, reactive, ref } from 'vue';
+
+import { ElMessage } from 'element-plus';
+import { Box, Loading } from '@element-plus/icons-vue';
+
+import { $t } from '#/locales';
+
+import { getAccountAssetPageApi, getAssetAppListApi } from '#/api/core/asset';
+
+/** 账号资产项，与接口 POST /asset/account/page 返回的 records 结构一致 */
+interface AccountItem {
+  accountId?: string;
+  account?: string;
+  userAccount?: string;
+  platform?: string;
+  appId?: string;
+  appCode?: string;
+  appName?: string;
+  logoPath?: string;
+  color?: string;
+  riskTips?: string;
+  accountGroup?: string;
+  proxy?: string;
+  inputTime?: string;
+  remark?: string;
+  [key: string]: any;
+}
+
+/** 统一读取账号 appId（用于拖拽批次去重） */
+function getAccountAppId(item: AccountItem) {
+  return item.appId 
+}
+
+const loading = ref(false);
+const finished = ref(false);
+const props = defineProps<{
+  groupOptions?: Array<{ id: string; suiteName: string }>;
+  sortOptions?: Array<{ label: string; value: string }>;
+}>();
+const filterForm = reactive({
+  platform: [] as string[],
+  accountSearch: '',
+  accountGroup: '',
+  sortType: '' as string,
+});
+
+const pagination = reactive({
+  current: 1,
+  size: 20,
+  total: 0,
+});
+
+const list = ref<AccountItem[]>([]);
+const selectedIds = ref<string[]>([]);
+const platformOptions = ref<Array<{ label: string; value: string }>>([]);
+/** OSS 访问前缀（用于把接口返回的 logoPath 拼成可访问 URL） */
+const logoPrefix = import.meta.env.VITE_OSS_BASE_URL
+
+/** 根据接口的 logoPath 拼出完整图片 URL */
+function getLogoUrl(logoPath?: string) {
+  if (!logoPath) return '';
+  return `${logoPrefix}/${logoPath}`;
+}
+
+/** 生成列表项的稳定 key用 accountId */
+function getKey(item: AccountItem, index: number) {
+  return item.accountId
+}
+
+/** 判断某个列表项是否处于选中状态 */
+function isSelected(item: AccountItem, index: number) {
+  const key = getKey(item, index);
+  return selectedIds.value.includes(key);
+}
+
+/** 切换某个列表项的选中状态（多选） */
+function toggleSelect(item: AccountItem, index: number) {
+  const key = getKey(item, index);
+  const idx = selectedIds.value.indexOf(key);
+  if (idx > -1) selectedIds.value.splice(idx, 1);
+  else selectedIds.value.push(key);
+}
+
+/** 获取当前已选中的账号列表（按选择顺序返回，用于自动关联的一一配对） */
+function getSelectedAccounts() {
+  const map = new Map<string, AccountItem>();
+  list.value.forEach((item, index) => {
+    map.set(getKey(item, index), item);
+  });
+  return selectedIds.value
+    .map((key) => map.get(key))
+    .filter((item): item is AccountItem => Boolean(item));
+}
+
+/** 清空当前选择（对外暴露给父组件调用） */
+function clearSelectedAccounts() {
+  selectedIds.value = [];
+}
+
+/** 应用反向查询结果（有数据则覆盖渲染，无数据则展示空） */
+function applyReverseQueryAccounts(accounts: AccountItem[] | null | undefined) {
+  const nextList = Array.isArray(accounts) ? accounts : [];
+  list.value = nextList;
+  selectedIds.value = [];
+  pagination.current = 1;
+  pagination.total = nextList.length;
+  finished.value = true;
+  loading.value = false;
+}
+
+/** 右侧色条颜色，直接使用接口返回的 color，无则默认 gray */
+function getRiskColor(color?: string): string {
+  return color || 'gray';
+}
+
+/** 构建请求参数，与接口文档一致 */
+function buildRequestParams() {
+  const params: Record<string, any> = {
+    current: pagination.current,
+    size: pagination.size,
+  };
+  if (filterForm.accountSearch) params.accountName = filterForm.accountSearch;
+  if (filterForm.accountGroup) params.suiteIds = [filterForm.accountGroup];
+  if (filterForm.platform.length) params.appIds = filterForm.platform;
+  if (filterForm.sortType) {
+    params.sortType = filterForm.sortType;
+  }
+  return params;
+}
+
+/** 拉取账号分页数据（内部做追加、分页推进、结束判断） */
+async function fetchData() {
+  if (loading.value || finished.value) return;
+
+  loading.value = true;
+  try {
+    const data = await getAccountAssetPageApi<AccountItem>(buildRequestParams());
+
+    list.value.push(...data.records);
+    pagination.total = data.total ?? pagination.total;
+
+    const loaded = list.value.length;
+    if (loaded >= pagination.total || data.records.length === 0) {
+      finished.value = true;
+    } else {
+      pagination.current += 1;
+    }
+  } catch (error) {
+    console.error(error);
+    ElMessage.error($t('common.error.loadFailed'));
+    finished.value = true;
+  } finally {
+    loading.value = false;
+  }
+}
+
+/** 拉取平台筛选项（应用列表接口） */
+async function fetchPlatformOptions() {
+  try {
+    const data = await getAssetAppListApi({
+      current: 1,
+      size: 200,
+      applicationStatus: 0,
+    });
+    platformOptions.value = (data.records || [])
+      .map((item) => ({
+        label: item.applicationName ?? '',
+        value: item.id ?? '',
+      }));
+  } catch (error) {
+    console.error(error);
+    ElMessage.error($t('associationCenter.platformOptionsLoadFailed'));
+  }
+}
+
+/** 执行查询：重置列表与分页，并重新加载第一页 */
+function handleSearch() {
+  list.value = [];
+  pagination.current = 1;
+  finished.value = false;
+  selectedIds.value = [];
+  fetchData();
+}
+
+/** 无限滚动加载更多 */
+function handleLoadMore() {
+  if (loading.value || finished.value) return;
+  fetchData();
+}
+
+/** 显示账号名称account */
+function getAccountDisplayName(item: AccountItem) {
+  return item.account 
+}
+
+/** 生成拖拽预览 DOM：多选时把本次拖拽的账号都展示在影子里 */
+function createDragPreviewElement(items: AccountItem[]) {
+  const root = document.createElement('div');
+  root.style.position = 'fixed';
+  root.style.top = '-9999px';
+  root.style.left = '-9999px';
+  root.style.minWidth = '180px';
+  root.style.maxWidth = '260px';
+  root.style.maxHeight = '220px';
+  root.style.overflowY = 'auto';
+  root.style.padding = '6px 8px';
+  root.style.borderRadius = '8px';
+  root.style.background = 'rgba(48, 49, 51, 0.92)';
+  root.style.color = '#fff';
+  root.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.25)';
+  root.style.fontSize = '12px';
+
+  items.forEach((item) => {
+    const row = document.createElement('div');
+    row.style.display = 'flex';
+    row.style.alignItems = 'center';
+    row.style.gap = '6px';
+    row.style.padding = '2px 0';
+
+    const img = document.createElement('img');
+    img.src = getLogoUrl(item.logoPath);
+    img.style.width = '16px';
+    img.style.height = '16px';
+    img.style.borderRadius = '4px';
+    img.style.objectFit = 'cover';
+    row.appendChild(img);
+
+    const text = document.createElement('span');
+    text.textContent = item.accountId ?? '-';
+    text.style.whiteSpace = 'nowrap';
+    text.style.overflow = 'hidden';
+    text.style.textOverflow = 'ellipsis';
+    row.appendChild(text);
+    root.appendChild(row);
+  });
+
+  document.body.appendChild(root);
+  return root;
+}
+
+/** 拖拽开始：把“已选账号 + 当前拖拽账号”打包到 dataTransfer（并校验同平台唯一） */
+function onAccountDragStart(ev: DragEvent, item: AccountItem, index: number) {
+  const dt = ev.dataTransfer;
+  if (!dt) return;
+
+  // 如果已有多选，则拖拽时把「已选中的账号 + 当前拖拽的账号」一起带上
+  const dragKey = getKey(item, index);
+  const keysSet = new Set(selectedIds.value);
+  keysSet.add(dragKey);
+  const keys = Array.from(keysSet);
+  const dragItems = list.value.filter((row, i) =>
+    keys.includes(getKey(row, i)),
+  );
+
+  const appIdMap: Record<string, number> = {};
+  for (const it of dragItems) {
+    const appId = getAccountAppId(it);
+    if (!appId) continue;
+    appIdMap[appId] = (appIdMap[appId] || 0) + 1;
+    if (appIdMap[appId] > 1) {
+      ElMessage.error('同一批拖拽中，每个社媒平台只能选择一个账号');
+      ev.preventDefault();
+      return;
+    }
+  }
+
+  dt.effectAllowed = 'copy';
+  dt.setData(
+    'application/x-account-items',
+    JSON.stringify(
+      dragItems.map((it) => ({
+        accountId: it.accountId,
+        account: it.account,
+        userAccount: it.userAccount,
+        platform: it.platform,
+        appId: it.appId,
+        appCode: it.appCode,
+        appName: it.appName,
+        logoPath: it.logoPath,
+      })),
+    ),
+  );
+
+  // 使用自定义拖拽预览，保证拖拽影子展示本次拖拽的全部账号
+  const previewEl = createDragPreviewElement(dragItems);
+  dt.setDragImage(previewEl, 20, 16);
+  // 不能立即 remove，否则部分浏览器会退回默认单条影子
+  setTimeout(() => {
+    previewEl.remove();
+  }, 100);
+}
+
+/** 组件初始化时加载第一页账号数据 */
+onMounted(() => {
+  fetchData();
+  fetchPlatformOptions();
+});
+
+/** 向父组件暴露：读取已选账号、清空已选账号 */
+defineExpose({
+  getSelectedAccounts,
+  clearSelectedAccounts,
+  applyReverseQueryAccounts,
+});
+</script>
+
+<template>
+  <div class="board">
+    <div class="filter-bar">
+      <div class="filter-item">
+        <label class="filter-label">{{ $t('associationCenter.platformFilter') }}</label>
+        <el-select
+          v-model="filterForm.platform"
+          :placeholder="$t('associationCenter.platformPlaceholder')"
+          class="filter-input"
+          multiple
+          collapse-tags
+          collapse-tags-tooltip
+          clearable
+        >
+          <el-option
+            v-for="item in platformOptions"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
+        </el-select>
+      </div>
+      <div class="filter-item">
+        <label class="filter-label">{{ $t('associationCenter.accountSearch') }}</label>
+        <el-input
+          v-model="filterForm.accountSearch"
+          :placeholder="$t('associationCenter.accountSearchPlaceholder')"
+          class="filter-input"
+          clearable
+          @keyup.enter="handleSearch"
+        />
+      </div>
+      <div class="filter-item">
+        <label class="filter-label">{{ $t('associationCenter.accountGroup') }}</label>
+        <el-select
+          v-model="filterForm.accountGroup"
+          :placeholder="$t('associationCenter.accountGroupPlaceholder')"
+          class="filter-input"
+          clearable
+          @change="handleSearch"
+        >
+          <el-option
+            v-for="item in props.groupOptions || []"
+            :key="item.id"
+            :label="item.suiteName"
+            :value="item.id"
+          />
+        </el-select>
+      </div>
+      <div class="filter-item">
+        <label class="filter-label">{{ $t('associationCenter.sortCondition') }}</label>
+        <el-select
+          v-model="filterForm.sortType"
+          :placeholder="$t('associationCenter.sortConditionPlaceholder')"
+          class="filter-input"
+          clearable
+        >
+          <el-option
+            v-for="item in props.sortOptions || []"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
+        </el-select>
+      </div>
+      <div class="filter-actions">
+        <el-button type="primary" @click="handleSearch">
+          {{ $t('associationCenter.search') }}
+        </el-button>
+      </div>
+    </div>
+
+    <div
+      v-infinite-scroll="handleLoadMore"
+      class="board-content"
+      :infinite-scroll-distance="200"
+      :infinite-scroll-disabled="loading || finished"
+    >
+      <template v-if="list.length">
+        <div class="account-list">
+          <div
+            v-for="(item, index) in list"
+            :key="item.accountId || `account-${index}`"
+            class="account-row"
+            :class="{ selected: isSelected(item, index) }"
+            draggable="true"
+            @click.stop="toggleSelect(item, index)"
+            @dragstart="onAccountDragStart($event, item, index)"
+          >
+            <div class="account-info">
+              <div class="platform-icon">
+                <img
+                  v-if="item.logoPath"
+                  :src="getLogoUrl(item.logoPath)"
+                  class="platform-logo"
+                  alt="logo"
+                />
+              </div>
+              <div class="account-main">
+                <div class="account-id">
+                  {{ item.accountId || '-' }}
+                </div>
+                <div class="account-name">
+                  {{ getAccountDisplayName(item) }}
+                  <span
+                    v-if="item.riskTips"
+                    class="risk-warning"
+                  >
+                    {{ item.riskTips }}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div
+              class="status-bar"
+              :class="getRiskColor(item.color)"
+            />
+          </div>
+        </div>
+      </template>
+
+      <el-empty
+        v-else-if="!loading && finished"
+        :description="$t('associationCenter.emptyAccountBoard')"
+        :image-size="120"
+      >
+        <template #image>
+          <el-icon :size="80" color="var(--el-border-color)">
+            <Box />
+          </el-icon>
+        </template>
+      </el-empty>
+
+      <div v-if="loading" class="board-loading">
+        <el-icon class="is-loading">
+          <Loading />
+        </el-icon>
+        <span>{{ $t('associationCenter.loadingMore') }}</span>
+      </div>
+
+      <div v-else-if="finished && list.length" class="board-finished">
+        {{ $t('associationCenter.noMoreData') }}
+      </div>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.board {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.board-subtitle {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+
+.filter-bar {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.filter-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.filter-label {
+  font-size: 14px;
+  color: var(--el-text-color-regular);
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.filter-input {
+  flex: 1;
+}
+
+.filter-input :deep(.el-input__wrapper),
+.filter-input :deep(.el-select__wrapper) {
+  border-radius: 6px;
+}
+
+.filter-actions {
+  flex-shrink: 0;
+}
+
+.board-content {
+  max-height: 200px;
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--el-border-color) transparent;
+}
+
+.board-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.board-content::-webkit-scrollbar-thumb {
+  background: var(--el-border-color);
+  border-radius: 3px;
+}
+
+.board-content::-webkit-scrollbar-thumb:hover {
+  background: var(--el-text-color-placeholder);
+}
+
+.board-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.account-list {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+}
+
+@media (max-width: 1400px) {
+  .account-list {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 992px) {
+  .account-list {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .account-list {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.account-row {
+  display: flex;
+  align-items: stretch;
+  background: var(--el-fill-color-blank);
+  border-radius: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--el-border-color-lighter);
+  position: relative;
+  height: 46px;
+  min-height: 44px;
+  cursor: grab;
+  user-select: none;
+}
+
+.account-row.selected {
+  border-color: var(--el-color-primary);
+  box-shadow: 0 0 0 1px var(--el-color-primary-light-5);
+}
+
+.account-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.platform-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: #fff;
+  flex-shrink: 0;
+  background: var(--el-fill-color-light);
+  overflow: hidden;
+}
+
+.platform-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.account-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.account-id {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+}
+
+.account-name {
+  font-size: 11px;
+  color: var(--el-text-color-secondary);
+  margin-top: 1px;
+}
+
+.risk-warning {
+  color: var(--el-color-danger);
+  margin-left: 4px;
+}
+
+.growth-rate {
+  font-size: 12px;
+  color: var(--el-color-danger);
+  margin-left: 8px;
+}
+
+.status-bar {
+  width: 4px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+/* 风险等级颜色：灰色=未使用/待使用，绿色=无风险，黄色=低风险，红色=高风险，黑色=已禁用 */
+.status-bar.gray {
+  background: var(--el-text-color-placeholder);
+}
+
+.status-bar.green {
+  background: var(--el-color-success);
+}
+
+.status-bar.yellow {
+  background: var(--el-color-warning);
+}
+
+.status-bar.red {
+  background: var(--el-color-danger);
+}
+
+.status-bar.black {
+  background: linear-gradient(135deg, #303133 0%, #606266 100%);
+}
+
+.board-loading,
+.board-finished {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 0;
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+
+.board-loading .el-icon {
+  margin-right: 6px;
+}
+</style>

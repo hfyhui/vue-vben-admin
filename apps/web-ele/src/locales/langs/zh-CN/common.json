@@ -1,4 +1,7 @@
 {
+  "error": {
+    "loadFailed": "加载失败"
+  },
   "add": "新增",
   "edit": "编辑",
   "editBatch": "批量编辑",

@@ -11,6 +11,7 @@ import { useTitle } from '@vueuse/core';
 import ElementPlus, { ElLoading } from 'element-plus';
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import { $t, setupI18n } from '#/locales';
+import { useAssetEnumsStore } from '#/store';
 
 import { initComponentAdapter } from './adapter/component';
 import { initSetupVbenForm } from './adapter/form';
@@ -18,6 +19,7 @@ import App from './app.vue';
 import { router } from './router';
 
 import 'element-plus/dist/index.css';
+import '#/assets/font/iconfont.css';
 
 async function bootstrap(namespace: string) {
   // 初始化组件适配器
@@ -50,6 +52,9 @@ async function bootstrap(namespace: string) {
 
   // 配置 pinia-tore
   await initStores(app, { namespace });
+
+  // 进入项目后预加载资产枚举，后续业务直接从缓存读取
+  void useAssetEnumsStore().ensureAssetEnumsLoaded();
 
   // 安装权限指令
   registerAccessDirective(app);

@@ -1,0 +1,100 @@
+{
+  "scrcpy": {
+    "noConnIp": "No connIp",
+    "deviceOffline": "Offline",
+    "connectingDevice": "Connecting device...",
+    "castFailed": "Cast failed",
+    "casting": "Casting...",
+    "reconnecting": "Reconnecting...",
+    "refreshReconnect": "Reconnect",
+    "operating": "Operating",
+    "shutdown": "Shutdown",
+    "powerOn": "Power On",
+    "restart": "Restart",
+    "refresh": "Refresh",
+    "limitCharacters": "Limited to 10 characters!",
+    "close": "Close",
+    "serialNumber": "Serial Number",
+    "deviceId": "Device ID",
+    "alias": "Alias",
+    "deviceModel": "Device Model",
+    "deviceSystem": "Device System",
+    "deviceOfflineForRefresh": "The device is offline, please restart and try again!",
+    "goBack": "Back",
+    "goHome": "Home",
+    "multitask": "Multitask",
+    "menu": "Menu",
+    "reconnect": "Reconnect",
+    "clearSpeed": "Clear",
+    "setUp": "Settings",
+    "qrCodeTip1": "Scan with your phone and open in default browser",
+    "qrCodeTip2": "For direct access on the current computer, click",
+    "qrCodeTip3": "here",
+    "getQrCodeError": "Failed to get QR code information, please try again later!",
+    "goUrlQrCodeError": "Failed to get information, please try again later!"
+  },
+  "fileManager": {
+    "connectionError": {
+      "title": "Device Connection Failed",
+      "description": "Please check device connection status and try again",
+      "retry": "Retry"
+    },
+    "toolbar": {
+      "upload": "Upload File",
+      "createFolder": "Create Folder",
+      "download": "Download",
+      "delete": "Delete"
+    },
+    "breadcrumb": {
+      "device": "Device"
+    },
+    "fileList": {
+      "name": "Name",
+      "owner": "Owner",
+      "size": "Size",
+      "modified": "Modified"
+    },
+    "createFolder": {
+      "title": "Create Folder",
+      "folderName": "Folder Name",
+      "placeholder": "Please enter folder name"
+    },
+    "deleteConfirm": {
+      "title": "Delete Confirmation",
+      "message": "Are you sure you want to delete the selected {count} files/folders?",
+      "warning": "This operation cannot be undone, please proceed with caution."
+    },
+    "messages": {
+      "uploadSuccess": "File {fileName} uploaded successfully",
+      "uploadFailed": "File upload failed: {error}",
+      "downloadFailed": "Download failed: {error}",
+      "readImageFailed": "Failed to read image file: {error}",
+      "directoryDownloadError": "Cannot download folders temporarily, please cancel selection and try again"
+    },
+    "fileTypes": {
+      "image": "Image",
+      "video": "Video",
+      "document": "Document",
+      "spreadsheet": "Spreadsheet",
+      "archive": "Archive",
+      "file": "File",
+      "folder": "Folder"
+    },
+    "drawer": {
+      "title": "File Manager",
+      "tooltip": "File Manager"
+    }
+  },
+  "mediaPreview": {
+    "image": "Image",
+    "videoNotSupported": "Your browser does not support video playback",
+    "loading": "Loading...",
+    "loadFailed": "Load failed",
+    "rotateLeft": "Rotate left",
+    "rotateRight": "Rotate right",
+    "nonOriginalSizeMode": "Fit window",
+    "originalSizeMode": "Original size",
+    "zoomOut": "Zoom out",
+    "zoomIn": "Zoom in"
+  }
+}
