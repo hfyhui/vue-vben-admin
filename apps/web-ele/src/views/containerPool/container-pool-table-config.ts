@@ -33,7 +33,7 @@ export async function getContainerPoolListApi(_params: {
   pageSize: number;
   containerFilter?: string;
   containerSearch?: string;
-  containerGroup?: string;
+  containerGroup?: string[];
   sortCondition?: string;
   [key: string]: any;
 }) {
@@ -51,8 +51,7 @@ export async function getContainerPoolListApi(_params: {
     size: pageSize ?? 10,
     screening: containerFilter,
     search: containerSearch,
-    suiteName: containerGroup,
-    groupId: containerGroup,
+    suiteIds: containerGroup,
     sortType: sortCondition,
   });
 
@@ -94,6 +93,9 @@ export const getFormOptions = (
         placeholder: $t('containerPool.filter.containerGroupPlaceholder'),
         clearable: true,
         filterable: true,
+        multiple: true,
+        collapseTags: true,
+        collapseTagsTooltip: true,
         options: groupOptions.map((item) => ({
           label: item.suiteName,
           value: item.id,

@@ -49,7 +49,7 @@ export async function getAccountPoolListApi(_params: {
   pageSize: number;
   platform?: string[];
   accountSearch?: string;
-  accountGroup?: string;
+  accountGroup?: string[];
   sortCondition?: string;
   [key: string]: any;
 }) {
@@ -74,7 +74,7 @@ export async function getAccountPoolListApi(_params: {
   };
 
   if (accountSearch) reqParams.accountName = accountSearch;
-  if (accountGroup) reqParams.suiteIds = [accountGroup];
+  if (accountGroup?.length) reqParams.suiteIds = accountGroup;
   if (platform?.length) reqParams.appIds = platform;
   if (sortCondition) reqParams.sortCondition = sortCondition;
 
@@ -130,6 +130,9 @@ export const getFormOptions = (
         placeholder: $t('accountPool.filter.accountGroupPlaceholder'),
         clearable: true,
         filterable: true,
+        multiple: true,
+        collapseTags: true,
+        collapseTagsTooltip: true,
         options: groupOptions.map((item) => ({
           label: item.suiteName,
           value: item.id,
