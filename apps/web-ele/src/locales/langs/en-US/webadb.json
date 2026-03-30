@@ -23,6 +23,8 @@
     "goBack": "Back",
     "goHome": "Home",
     "multitask": "Multitask",
+    "menu": "Menu",
+    "reconnect": "Reconnect",
     "clearSpeed": "Clear",
     "setUp": "Settings",
     "qrCodeTip1": "Scan with your phone and open in default browser",

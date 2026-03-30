@@ -40,6 +40,7 @@ const emit = defineEmits<{
   dragOver: [ev: DragEvent];
   drop: [ev: DragEvent, item: DeviceItem];
   deviceClick: [item: DeviceItem];
+  deviceDblclick: [item: DeviceItem];
   unbindAccount: [item: DeviceItem, accountId: string];
   unbindProxy: [item: DeviceItem];
 }>();
@@ -58,6 +59,10 @@ function onDrop(ev: DragEvent, item: DeviceItem) {
 
 function onDeviceClick(item: DeviceItem) {
   emit('deviceClick', item);
+}
+
+function onDeviceDblClick(item: DeviceItem) {
+  emit('deviceDblclick', item);
 }
 
 function onUnbindClick(ev: Event, item: DeviceItem, accountId?: string) {
@@ -129,6 +134,7 @@ function getBoundAccounts(item: DeviceItem): BoundAccountRow[] {
           class="device-card"
           :class="{ selected: selectedDeviceKeys.includes(getDeviceKey(item)) }"
           @click.stop="onDeviceClick(item)"
+          @dblclick.stop="onDeviceDblClick(item)"
           @dragover="onDragOver"
           @drop="onDrop($event, item)"
         >

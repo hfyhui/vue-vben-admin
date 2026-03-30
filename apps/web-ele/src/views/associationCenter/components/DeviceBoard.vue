@@ -378,11 +378,15 @@ function getDeviceProxyId(item: DeviceItem) {
   return ((item as Record<string, any>)?.proxyId) as string;
 }
 
-/** 点击设备：打开 WebAdb 大屏并保持原有多选逻辑 */
+/** 点击设备：仅切换选中状态（用于自动关联） */
 function handleDeviceClick(item: DeviceItem) {
+  toggleDeviceSelect(item);
+}
+
+/** 双击设备：打开 WebAdb 大屏 */
+function handleDeviceDblClick(item: DeviceItem) {
   largeScreenDevice.value = item;
   largeScreenVisible.value = true;
-  toggleDeviceSelect(item);
 }
 
 function closeLargeScreen() {
@@ -846,6 +850,7 @@ onMounted(() => {
         @drag-over="onCardDragOver"
         @drop="onCardDrop"
         @device-click="handleDeviceClick"
+        @device-dblclick="handleDeviceDblClick"
         @unbind-account="handleUnbindAccount"
         @unbind-proxy="handleUnbindProxy"
       />
@@ -858,6 +863,7 @@ onMounted(() => {
         @drag-over="onTableDragOver"
         @drop="onTableDrop"
         @device-click="handleDeviceClick"
+        @device-dblclick="handleDeviceDblClick"
         @unbind-account="handleUnbindAccount"
         @unbind-proxy="handleUnbindProxy"
       />

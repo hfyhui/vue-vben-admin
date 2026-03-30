@@ -114,6 +114,7 @@ const emit = defineEmits<{
   dragOver: [ev: DragEvent];
   drop: [ev: DragEvent];
   deviceClick: [item: DeviceItem];
+  deviceDblclick: [item: DeviceItem];
   unbindAccount: [item: DeviceItem, accountId: string];
   unbindProxy: [item: DeviceItem];
 }>();
@@ -132,6 +133,10 @@ function handlePageChange(page: number) {
 
 function handleRowClick(row: DeviceItem) {
   emit('deviceClick', row);
+}
+
+function handleRowDblClick(row: DeviceItem) {
+  emit('deviceDblclick', row);
 }
 
 function getRowClassName({ row }: { row: DeviceItem }) {
@@ -167,6 +172,7 @@ function onUnbindProxy(ev: Event, row: DeviceItem) {
       row-key="deviceIp"
       :row-class-name="getRowClassName"
       @row-click="handleRowClick"
+      @row-dblclick="handleRowDblClick"
     >
       <el-table-column
         label=""

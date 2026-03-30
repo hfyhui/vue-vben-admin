@@ -15,15 +15,19 @@
 </template>
 
 <script setup>
+import { computed } from 'vue';
+
+import { $t } from '#/locales';
+
 defineOptions({ name: 'DeviceOperateButton' });
 
-const buttons = [
-  { key: 'AndroidBack', content: '返回', icon: 'icon-back' },
-  { key: 'AndroidHome', content: '主页', icon: 'icon-home' },
-  { key: 'AndroidAppSwitch', content: '多任务', icon: 'icon-multitask' },
-  { key: 'ContextMenu', content: '菜单', icon: 'icon-clear-speed' },
-  { key: 'reconnect', content: '重连', icon: 'icon-shezhi' },
-];
+const buttons = computed(() => [
+  { key: 'AndroidBack', content: $t('webadb.scrcpy.goBack'), icon: 'icon-back' },
+  { key: 'AndroidHome', content: $t('webadb.scrcpy.goHome'), icon: 'icon-home' },
+  { key: 'AndroidAppSwitch', content: $t('webadb.scrcpy.multitask'), icon: 'icon-multitask' },
+  { key: 'ContextMenu', content: $t('webadb.scrcpy.menu'), icon: 'icon-clear-speed' },
+  { key: 'reconnect', content: $t('webadb.scrcpy.reconnect'), icon: 'icon-shezhi' },
+]);
 
 const emit = defineEmits(['reconnect', 'pressKey']);
 

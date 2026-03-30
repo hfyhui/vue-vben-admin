@@ -11,7 +11,15 @@ import {
   ScrcpyPointerId,
   ScrcpyVideoCodecId,
 } from '@yume-chan/scrcpy';
-import { computed, onBeforeUnmount, onMounted, ref, toRef, watch } from 'vue';
+import {
+  computed,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  shallowRef,
+  toRef,
+  watch,
+} from 'vue';
 
 import { clamp, trailingThrottle } from '#/utils/webadb';
 
@@ -52,7 +60,8 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
   const lastKeyframe = ref(0n);
   const width = ref(0);
   const height = ref(0);
-  const decoder = ref(null);
+  // 必须用 shallowRef：WebCodecsVideoDecoder 含私有字段，经 ref→reactive 的 Proxy 包装后会报 Cannot read from private field
+  const decoder = shallowRef(null);
   const client = ref(null);
   const rotation = ref(0);
   const aspectRatio = ref(null);
@@ -1085,12 +1094,8 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
   );
 
   onMounted(() => {
-    const hostname =
-      import.meta.env.MODE === 'local' ? 'test.callfansai.cn' : window.location.hostname;
-    const connIp =
-      props.device.chipCode === 'AIBOX_L02'
-        ? `https://${hostname}/${props.device.connIp}/3333`
-        : `https://${hostname}/${hostname}/3333`;
+    const hostname =  import.meta.env.MODE === 'development' ? 'test.callfansai.cn' : window.location.hostname;
+    const connIp = `https://${hostname}/${hostname}/3333`;
     httpPath.value = connIp;
     initWs();
     window.addEventListener('resize', handleResize, { signal: abortController.signal });
