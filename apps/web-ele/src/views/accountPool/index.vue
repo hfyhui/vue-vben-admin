@@ -9,7 +9,7 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import { $t } from '#/locales';
-import { useAssetEnumsStore } from '#/store';
+import { ASSET_ENUMS_CACHE_KEY, useAssetEnumsStore } from '#/store';
 import {
   batchDeleteAccountApi,
   downloadAccountTemplateApi,
@@ -38,7 +38,7 @@ const importing = ref(false);
 const groupOptions = ref<AccountPoolGroupOption[]>([]);
 const platformOptions = ref<AccountPoolPlatformOption[]>([]);
 const sortOptions = ref<AccountPoolSortOption[]>([]);
-const riskLevelMap = ref<Record<string, string>>({});
+const riskLevelMap = ref<Record<string, string>>(readRiskLevelMapFromLocalCache());
 const assetEnumsStore = useAssetEnumsStore();
 
 const [Grid, gridApi] = useVbenVxeGrid({
@@ -72,9 +72,6 @@ const [Grid, gridApi] = useVbenVxeGrid({
             pageSize: page.pageSize,
             ...formValues,
           });
-          if (Object.keys(riskLevelMap.value).length === 0) {
-            await loadRiskLevelOptions();
-          }
           const list = (response?.list ?? []).map((item: AccountPoolRow) => ({
             ...item,
             riskAlert: mapRiskLevelLabel(item.riskAlert),
@@ -257,10 +254,8 @@ function applyFormOptions() {
   });
 }
 
-function mapRiskLevelLabel(riskLevel: unknown) {
-  const value = String(riskLevel ?? '').trim();
-  if (!value) return '';
-  return riskLevelMap.value[value] ?? value;
+function mapRiskLevelLabel(riskLevel: string) {
+  return riskLevelMap.value[riskLevel] ?? '';
 }
 
 async function loadSortOptions() {
@@ -275,20 +270,23 @@ async function loadSortOptions() {
   applyFormOptions();
 }
 
-async function loadRiskLevelOptions() {
+function readRiskLevelMapFromLocalCache() {
+  if (typeof window === 'undefined') return {};
   try {
-    const options = await assetEnumsStore.getEnumOptionsAsync('ACCOUNT_RISK_LEVEL');
-    riskLevelMap.value = options.reduce<Record<string, string>>((acc, item) => {
-      const value = String(item.value ?? '').trim();
-      const label = String(item.label ?? '').trim();
-      if (value && label) {
-        acc[value] = label;
-      }
+    const parsed = JSON.parse(
+      window.localStorage.getItem(ASSET_ENUMS_CACHE_KEY) || '{}',
+    );
+    const children = parsed.ACCOUNT_RISK_LEVEL.children as Array<{
+      name: string;
+      content: string;
+    }>;
+    return children.reduce<Record<string, string>>((acc, item) => {
+      acc[item.name] = item.content;
       return acc;
     }, {});
   } catch (error) {
-    console.error('[accountPool] 获取风险等级枚举失败:', error);
-    riskLevelMap.value = {};
+    console.error('[accountPool] 读取本地风险等级枚举失败:', error);
+    return {};
   }
 }
 
@@ -306,7 +304,7 @@ onMounted(() => {
   loadGroupOptions();
   loadPlatformOptions();
   loadSortOptions();
-  loadRiskLevelOptions();
+  riskLevelMap.value = readRiskLevelMapFromLocalCache();
 });
 </script>
 

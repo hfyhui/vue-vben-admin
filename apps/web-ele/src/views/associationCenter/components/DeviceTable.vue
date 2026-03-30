@@ -2,6 +2,7 @@
 import { CircleClose } from '@element-plus/icons-vue';
 
 import { $t } from '#/locales';
+import { formatProcessUrl } from '#/utils/asset-url';
 
 import {
   canUnbindDeviceProxy,
@@ -28,10 +29,8 @@ type BoundProxy = {
 };
 
 /** 仅展示有明确平台图标的关联（抖/快/书等），无平台信息的不展示 */
-const logoPrefix = import.meta.env.VITE_OSS_BASE_URL
 function getLogoUrl(logoPath?: string) {
-  if (!logoPath) return '';
-  return `${logoPrefix}/${logoPath}`;
+  return formatProcessUrl(logoPath);
 }
 
 function getBoundAccounts(

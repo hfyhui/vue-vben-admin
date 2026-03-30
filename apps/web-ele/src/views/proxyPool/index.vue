@@ -11,6 +11,7 @@ import {
   batchDeleteProxyApi,
   downloadProxyTemplateApi,
   getAssetGroupApi,
+  importProxyApi,
   getProxyRegionTreeApi,
 } from '#/api/core/asset';
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
@@ -34,6 +35,8 @@ interface RegionTreeNode {
 const sortOptions = ref<ProxyPoolSortOption[]>([]);
 const groupOptions = ref<ProxyPoolGroupOption[]>([]);
 const regionOptions = ref<ProxyPoolRegionOption[]>([]);
+const importFileInputRef = ref<HTMLInputElement>();
+const importing = ref(false);
 const assetEnumsStore = useAssetEnumsStore();
 
 function mapRegionTree(
@@ -139,7 +142,31 @@ function onCreate() {
 }
 
 function onImport() {
-  ElMessage.info($t('proxyPool.action.import'));
+  if (importing.value) return;
+  importFileInputRef.value?.click();
+}
+
+async function onImportFileChange(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  input.value = '';
+  if (!file) return;
+
+  importing.value = true;
+  try {
+    const res = await importProxyApi({ file });
+    if (res?.code === 100000) {
+      ElMessage.success($t('proxyPool.message.importSuccess'));
+      gridApi.reload();
+    } else {
+      ElMessage.error(res?.msg || $t('proxyPool.message.importFailed'));
+    }
+  } catch (error) {
+    console.error('[proxyPool] 导入代理失败:', error);
+    ElMessage.error($t('proxyPool.message.importFailed'));
+  } finally {
+    importing.value = false;
+  }
 }
 
 async function onDownloadTemplate() {
@@ -211,9 +238,21 @@ onMounted(() => {
           <ElButton class="mr-2" type="primary" @click="onCreate">
             {{ $t('proxyPool.action.add') }}
           </ElButton>
-          <ElButton class="mr-2" type="primary" @click="onImport">
+          <ElButton
+            class="mr-2"
+            type="primary"
+            :loading="importing"
+            @click="onImport"
+          >
             {{ $t('proxyPool.action.import') }}
           </ElButton>
+          <input
+            ref="importFileInputRef"
+            type="file"
+            accept=".csv"
+            style="display: none"
+            @change="onImportFileChange"
+          />
           <ElButton class="mr-2" type="primary" @click="onDownloadTemplate">
             {{ $t('proxyPool.action.downloadTemplate') }}
           </ElButton>

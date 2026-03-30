@@ -10,6 +10,7 @@ import { ElMessage } from 'element-plus';
 import { useVbenForm } from '#/adapter/form';
 import { addAccountApi } from '#/api/core/asset';
 import { $t } from '#/locales';
+import { useAssetEnumsStore } from '#/store';
 
 import type {
   AccountPoolGroupOption,
@@ -29,6 +30,7 @@ const emit = defineEmits<{
 const creating = ref(false);
 const groupOptions = ref<AccountPoolGroupOption[]>([]);
 const platformOptions = ref<AccountPoolPlatformOption[]>([]);
+const assetEnumsStore = useAssetEnumsStore();
 
 const platformSelectOptions = computed(() =>
   platformOptions.value
@@ -46,10 +48,14 @@ const groupSelectOptions = computed(() =>
   })),
 );
 
+const riskLevelSelectOptions = computed(() => {
+  return assetEnumsStore.getEnumOptions('ACCOUNT_RISK_LEVEL');
+});
+
 function getDefaultValues(defaultAppId = ''): AddAccountParams {
   return {
     appId: defaultAppId,
-    riskLevel: '低风险',
+    riskLevel: '',
     appAccount: '',
     userName: '',
     userAccount: '',
@@ -144,11 +150,7 @@ const [Form, formApi] = useVbenForm({
       componentProps: {
         placeholder: $t('accountPool.form.riskLevelPlaceholder'),
         clearable: true,
-        options: [
-          { label: $t('accountPool.form.riskLow'), value: '低风险' },
-          { label: $t('accountPool.form.riskMedium'), value: '中风险' },
-          { label: $t('accountPool.form.riskHigh'), value: '高风险' },
-        ],
+        options: riskLevelSelectOptions,
       },
     },
     {

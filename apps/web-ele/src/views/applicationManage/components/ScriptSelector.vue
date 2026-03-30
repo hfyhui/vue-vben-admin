@@ -11,6 +11,7 @@ import {
 import ImageUpload from '#/components/ImageUpload.vue';
 import SubmitForm from '#/components/SubmitForm/index.vue';
 import { useAssetEnumsStore } from '#/store';
+import { formatAssetImageUrl } from '#/utils/asset-url';
 import CurrentForm from './currentForm/index.vue';
 
 type ScriptCard = {
@@ -270,7 +271,7 @@ function removeFn(row: ScriptCard) {
         :content="item.programName"
       >
         <div class="file-item">
-          <el-avatar v-if="item.logoPath" :src="item.logoPath" :size="28" />
+          <el-avatar v-if="item.logoPath" :src="formatAssetImageUrl(item.logoPath)" :size="28" />
           <el-avatar v-else :size="28">
             {{ item.programName && item.programName.slice(0, 1) ? item.programName.slice(0, 1) : 'S' }}
           </el-avatar>

@@ -2,6 +2,7 @@
 import { Box, CircleClose, Iphone, Loading } from '@element-plus/icons-vue';
 
 import { $t } from '#/locales';
+import { formatProcessUrl } from '#/utils/asset-url';
 
 import type { DeviceItem } from '#/api/core/asset';
 
@@ -21,11 +22,8 @@ type BoundAccountRow = {
   fromServer?: boolean;
 };
 
-const logoPrefix = import.meta.env.VITE_OSS_BASE_URL
-
 function getLogoUrl(logoPath?: string) {
-  if (!logoPath) return '';
-  return `${logoPrefix}/${logoPath}`;
+  return formatProcessUrl(logoPath);
 }
 
 defineProps<{

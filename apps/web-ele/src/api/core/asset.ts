@@ -140,6 +140,10 @@ export interface ImportAccountParams {
   file: File;
 }
 
+export interface ImportProxyParams {
+  file: File;
+}
+
 export interface AddAccountParams {
   appId?: string;
   riskLevel?: string;
@@ -152,6 +156,25 @@ export interface AddAccountParams {
   suiteId?: string;
   suiteName?: string;
   suiteDesc?: string;
+}
+
+export interface AddProxyPhoneItem {
+  phoneId?: string;
+  phoneIp?: string;
+}
+
+export interface AddProxyParams {
+  ip?: string;
+  area?: string;
+  agreement?: string;
+  networkStatus?: string;
+  expirationTime?: string;
+  networkLink?: string;
+  phones?: AddProxyPhoneItem[];
+  proxyLinkIp?: string;
+  proxyLinkPort?: number;
+  username?: string;
+  password?: string;
 }
 
 function resolvePageResult<T>(
@@ -338,11 +361,31 @@ export async function importAccountApi(
   });
 }
 
+/** 导入代理 POST /asset/proxy/import */
+export async function importProxyApi(
+  params: ImportProxyParams,
+): Promise<ApiResponse<null>> {
+  const formData = new FormData();
+  formData.append('file', params.file);
+  return proxyClient.post<ApiResponse<null>>('/asset/proxy/import', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+}
+
 /** 新增账号 POST /asset/add/account */
 export async function addAccountApi(
   params: AddAccountParams,
 ): Promise<ApiResponse<null>> {
   return proxyClient.post<ApiResponse<null>>('/asset/add/account', params);
+}
+
+/** 新增代理 POST /asset/add/proxy */
+export async function addProxyApi(
+  params: AddProxyParams,
+): Promise<ApiResponse<null>> {
+  return proxyClient.post<ApiResponse<null>>('/asset/add/proxy', params);
 }
 
 /** 获取平台应用列表 POST /asset/app/list */

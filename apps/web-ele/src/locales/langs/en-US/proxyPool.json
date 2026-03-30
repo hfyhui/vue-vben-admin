@@ -41,11 +41,38 @@
     "downloadTemplate": "Download Template",
     "batchDelete": "Batch Delete"
   },
+  "form": {
+    "addProxyTitle": "Add Network Configuration",
+    "smartRecognition": "Smart Recognition",
+    "smartRecognitionPlaceholder": "Enter link as ip:port:username:password",
+    "ip": "IP",
+    "ipPlaceholder": "Enter IP",
+    "area": "Area",
+    "areaPlaceholder": "Enter area",
+    "phoneIp": "Node IP",
+    "phoneIpPlaceholder": "Enter node IP",
+    "agreement": "Agreement",
+    "agreementPlaceholder": "Enter agreement",
+    "networkLink": "Link",
+    "networkLinkPlaceholder": "Enter link",
+    "networkStatus": "Network Status",
+    "networkStatusPlaceholder": "Select network status",
+    "statusLeisure": "Leisure",
+    "statusBinding": "Binding",
+    "statusArrearage": "Arrearage",
+    "statusInvalid": "Invalid",
+    "expirationTime": "Expiration Time",
+    "expirationTimePlaceholder": "Select date"
+  },
   "message": {
     "downloadFailed": "Download failed",
     "selectBeforeDelete": "Please select proxies to delete",
     "batchDeleteSuccess": "Batch delete succeeded",
-    "batchDeleteFailed": "Batch delete failed"
+    "batchDeleteFailed": "Batch delete failed",
+    "importSuccess": "Proxy import succeeded",
+    "importFailed": "Proxy import failed",
+    "addSuccess": "Proxy added successfully",
+    "addFailed": "Failed to add proxy"
   }
 }
 

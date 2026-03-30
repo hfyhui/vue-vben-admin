@@ -1,5 +1,9 @@
 import type { VbenFormProps } from '#/adapter/form';
 
+import { h } from 'vue';
+
+import { ElCascader } from 'element-plus';
+
 import { getProxyAssetPageApi } from '#/api/core/asset';
 
 import { $t } from '#/locales';
@@ -34,13 +38,13 @@ export interface ProxyPoolRow {
 export async function getProxyPoolListApi(_params: {
   page: number;
   pageSize: number;
-  regionPath?: string;
+  areaPath?: string[];
   proxySearch?: string;
   proxyGroup?: string;
   sortCondition?: string;
   [key: string]: any;
 }) {
-  const { page, pageSize, regionPath, proxySearch, proxyGroup, sortCondition } =
+  const { page, pageSize, areaPath, proxySearch, proxyGroup, sortCondition } =
     _params;
 
   const reqParams: Record<string, any> = {
@@ -48,7 +52,7 @@ export async function getProxyPoolListApi(_params: {
     size: pageSize ?? 10,
   };
 
-  if (regionPath) reqParams.area = regionPath.split('/').at(-1);
+  if (areaPath?.length) reqParams.area = areaPath[areaPath.length - 1];
   if (proxySearch) reqParams.proxy = proxySearch;
   if (proxyGroup) reqParams.suiteIds = [proxyGroup];
   if (sortCondition) reqParams.sortType = sortCondition;
@@ -90,16 +94,22 @@ export const getFormOptions = (
   collapsed: false,
   schema: [
     {
-      component: 'TreeSelect',
-      fieldName: 'regionPath',
+      component: h(ElCascader),
+      fieldName: 'areaPath',
       label: $t('proxyPool.filter.regionFilter'),
       componentProps: {
         placeholder: $t('proxyPool.filter.regionFilterPlaceholder'),
-        data: regionOptions,
-        checkStrictly: false,
+        options: regionOptions,
+        props: {
+          value: 'value',
+          label: 'label',
+          children: 'children',
+          emitPath: true,
+          checkStrictly: false,
+        },
+        showAllLevels: false,
         clearable: true,
         filterable: true,
-        renderAfterExpand: false,
       },
     },
     {
