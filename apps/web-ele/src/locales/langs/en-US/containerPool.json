@@ -7,7 +7,7 @@
   },
   "filter": {
     "containerFilter": "Container Filter",
-    "containerFilterPlaceholder": "Select platform",
+    "containerFilterPlaceholder": "Enter container filter keyword",
     "socialPlatform": "Social Platform",
     "containerSearch": "Container Search",
     "containerSearchPlaceholder": "Enter container keyword",
@@ -21,26 +21,35 @@
     "sortConditionPlaceholder": "Select sort"
   },
   "table": {
-    "server": "Server",
-    "entryTime": "Entry Time",
-    "chip": "Chip",
+    "deviceId": "Device ID",
     "deviceIp": "Device IP",
-    "romVersion": "ROM Version",
-    "phoneBrand": "Phone Brand",
-    "phoneModel": "Phone Model",
-    "operator": "Operator",
-    "phoneNumber": "Phone Number",
-    "deviceGroup": "Device Group",
-    "remarks": "Remarks",
-    "associatedAccounts": "Associated Accounts",
-    "associatedAgents": "Associated Agents",
-    "status": "Status"
+    "deviceStatus": "Device Status",
+    "deviceVersion": "Device Version",
+    "brand": "Brand",
+    "deviceAliases": "Device Alias",
+    "deviceNum": "Device Number",
+    "deviceIdx": "Device Index",
+    "connIp": "Connection IP",
+    "connPort": "Connection Port",
+    "proxy": "Proxy",
+    "proxyIp": "Proxy IP",
+    "proxyId": "Proxy ID",
+    "assId": "Proxy Association ID",
+    "devicePrompt": "Device Prompt"
   },
   "action": {
     "add": "Add",
     "import": "Import",
     "batchDelete": "Batch Delete",
+    "disableLock": "Disable Lock",
+    "quickNewDevice": "Quick New Device",
+    "deviceGroup": "Device Group",
     "deviceReset": "Device Reset",
     "placeholder": "???"
+  },
+  "message": {
+    "selectDeviceBeforeReset": "Please select devices to reset first",
+    "resetSuccess": "Container reset successful",
+    "resetFailed": "Container reset failed"
   }
 }

@@ -3,7 +3,7 @@ import type { VxeTableGridOptions } from '#/adapter/vxe-table';
 
 import { onMounted, ref } from 'vue';
 
-import { Page } from '@vben/common-ui';
+import { Page, useVbenModal } from '@vben/common-ui';
 
 import { ElMessage } from 'element-plus';
 
@@ -26,6 +26,7 @@ import {
   getFormOptions,
   useColumns,
 } from './proxy-pool-table-config';
+import ProxyPoolFormModal from './proxy-form-modal.vue';
 
 interface RegionTreeNode {
   name?: string;
@@ -138,7 +139,7 @@ async function loadGroupOptions() {
 }
 
 function onCreate() {
-  ElMessage.info($t('proxyPool.action.add'));
+  formModalApi.open();
 }
 
 function onImport() {
@@ -209,6 +210,14 @@ onMounted(() => {
   loadGroupOptions();
   loadSortOptions();
 });
+
+function onCreateSuccess() {
+  gridApi.reload();
+}
+
+const [FormModal, formModalApi] = useVbenModal({
+  connectedComponent: ProxyPoolFormModal,
+});
 </script>
 
 <template>
@@ -261,6 +270,7 @@ onMounted(() => {
           </ElButton>
         </template>
       </Grid>
+      <FormModal @success-after="onCreateSuccess" />
     </div>
   </Page>
 </template>

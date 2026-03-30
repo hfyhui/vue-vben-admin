@@ -177,6 +177,17 @@ export interface AddProxyParams {
   password?: string;
 }
 
+export interface IntelligentRecognitionParams {
+  networkLink?: string;
+}
+
+export interface IntelligentRecognitionData {
+  proxyLinkIp?: string;
+  proxyLinkPort?: string;
+  username?: string;
+  password?: string;
+}
+
 function resolvePageResult<T>(
   response: any,
   fallback: { current: number; size: number },
@@ -236,7 +247,9 @@ export async function getContainerAssetPageApi<T = DeviceItem>(
     size: params.size ?? 20,
     screening: params.screening,
     search: params.search,
+    suiteName: params.suiteName,
     groupId: params.groupId,
+    sortType: params.sortType,
     relationStatus: params.relationStatus,
   };
   const response = await proxyClient.post<PageResult<T>>(
@@ -386,6 +399,16 @@ export async function addProxyApi(
   params: AddProxyParams,
 ): Promise<ApiResponse<null>> {
   return proxyClient.post<ApiResponse<null>>('/asset/add/proxy', params);
+}
+
+/** 智能识别 POST /asset/intelligent/recognition */
+export async function intelligentRecognitionApi(
+  params: IntelligentRecognitionParams,
+): Promise<ApiResponse<IntelligentRecognitionData>> {
+  return proxyClient.post<ApiResponse<IntelligentRecognitionData>>(
+    '/asset/intelligent/recognition',
+    params,
+  );
 }
 
 /** 获取平台应用列表 POST /asset/app/list */

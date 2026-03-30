@@ -96,7 +96,7 @@ const [Grid, gridApi] = useVbenVxeGrid({
 function onCreate() {
   formModalApi
     .setData({
-      defaultAppId: currentAppId.value || '',
+      defaultAppId: currentAppId.value,
       groupOptions: groupOptions.value,
       platformOptions: platformOptions.value,
     })

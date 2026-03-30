@@ -208,6 +208,16 @@ function handleSearch() {
   fetchData();
 }
 
+/** 对外：刷新代理列表并拉取最新数据 */
+async function refreshProxyList() {
+  list.value = [];
+  pagination.current = 1;
+  pagination.total = 0;
+  finished.value = false;
+  selectedIds.value = [];
+  await fetchData();
+}
+
 /** 无限滚动加载更多代理数据 */
 function handleLoadMore() {
   if (loading.value) return;
@@ -245,6 +255,7 @@ defineExpose({
   getSelectedProxies,
   clearSelectedProxies,
   applyReverseQueryProxies,
+  refreshProxyList,
 });
 </script>
 
@@ -337,7 +348,9 @@ defineExpose({
                 {{ item.surplusDays ?? '-' }}{{ $t('associationCenter.daySuffix') }}
               </span>
               <span class="card-area">{{ item.area || '-' }}</span>
-              <span class="card-ip">{{ item.ip || item.proxy || '-' }}</span>
+              <span class="card-ip" :title="item.ip">
+                {{ item.ip }}
+              </span>
               <span class="card-count" :class="getRiskColor(item.color)">{{
                 item.bandingCount ?? 0
               }}</span>

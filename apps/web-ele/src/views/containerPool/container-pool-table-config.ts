@@ -1,53 +1,81 @@
 import type { VbenFormProps } from '#/adapter/form';
 
+import { getContainerAssetPageApi } from '#/api/core/asset';
+
 import { $t } from '#/locales';
 
+export type ContainerPoolSortOption = { label: string; value: string };
+export type ContainerPoolGroupOption = { id: string; suiteName: string };
+
 export interface ContainerPoolRow {
-  id: string;
-  server: string;
-  entryTime: string;
-  chip: string;
-  deviceIp: string;
-  romVersion: string;
-  phoneBrand: string;
-  phoneModel: string;
-  operator: string;
-  phoneNumber: string;
-  deviceGroup: string;
-  remarks: string;
-  associatedAccounts: string;
-  associatedAgents: string;
-  status: string;
+  deviceId?: string;
+  deviceIp?: string;
+  deviceStatus?: string;
+  deviceVersion?: string;
+  brand?: string;
+  deviceAliases?: string;
+  deviceNum?: string;
+  deviceIdx?: string;
+  connIp?: string;
+  connPort?: string;
+  proxy?: string;
+  proxyIp?: string;
+  proxyId?: string;
+  assId?: string;
+  devicePrompt?: string;
+  groups?: string[];
+  accountInfos?: Array<Record<string, any>>;
+  [key: string]: any;
 }
 
 export async function getContainerPoolListApi(_params: {
   page: number;
   pageSize: number;
+  containerFilter?: string;
+  containerSearch?: string;
+  containerGroup?: string;
+  sortCondition?: string;
   [key: string]: any;
 }) {
-  const total = 0;
-  const list: ContainerPoolRow[] = [];
+  const {
+    page,
+    pageSize,
+    containerFilter,
+    containerSearch,
+    containerGroup,
+    sortCondition,
+  } = _params;
 
-  return new Promise<{ list: ContainerPoolRow[]; total: number }>((resolve) => {
-    setTimeout(() => {
-      resolve({ list, total });
-    }, 300);
+  const data = await getContainerAssetPageApi({
+    current: page ?? 1,
+    size: pageSize ?? 10,
+    screening: containerFilter,
+    search: containerSearch,
+    suiteName: containerGroup,
+    groupId: containerGroup,
+    sortType: sortCondition,
   });
+
+  const list = (data.records || []) as ContainerPoolRow[];
+
+  return {
+    list,
+    total: Number(data.total ?? 0),
+  };
 }
 
-export const getFormOptions = (): VbenFormProps => ({
+export const getFormOptions = (
+  sortOptions: ContainerPoolSortOption[] = [],
+  groupOptions: ContainerPoolGroupOption[] = [],
+): VbenFormProps => ({
   collapsed: false,
   schema: [
     {
-      component: 'Select',
+      component: 'Input',
       fieldName: 'containerFilter',
       label: $t('containerPool.filter.containerFilter'),
       componentProps: {
         placeholder: $t('containerPool.filter.containerFilterPlaceholder'),
-        options: [
-          { value: 'social', label: $t('containerPool.filter.socialPlatform') },
-        ],
-        virtualized: false,
       },
     },
     {
@@ -59,11 +87,17 @@ export const getFormOptions = (): VbenFormProps => ({
       },
     },
     {
-      component: 'Input',
+      component: 'Select',
       fieldName: 'containerGroup',
       label: $t('containerPool.filter.containerGroup'),
       componentProps: {
         placeholder: $t('containerPool.filter.containerGroupPlaceholder'),
+        clearable: true,
+        filterable: true,
+        options: groupOptions.map((item) => ({
+          label: item.suiteName,
+          value: item.id,
+        })),
       },
     },
     {
@@ -72,10 +106,8 @@ export const getFormOptions = (): VbenFormProps => ({
       label: $t('containerPool.filter.sortCondition'),
       componentProps: {
         placeholder: $t('containerPool.filter.sortConditionPlaceholder'),
-        options: [
-          { value: 'accountGroup', label: $t('containerPool.filter.accountGroup') },
-        ],
-        virtualized: false,
+        clearable: true,
+        options: sortOptions,
       },
     },
   ],
@@ -86,27 +118,20 @@ export const getFormOptions = (): VbenFormProps => ({
 
 export const useColumns = () => [
   { type: 'checkbox', width: 50, align: 'center' },
-  { field: 'server', title: $t('containerPool.table.server'), minWidth: 120 },
-  { field: 'entryTime', title: $t('containerPool.table.entryTime'), minWidth: 160 },
-  { field: 'chip', title: $t('containerPool.table.chip'), minWidth: 120 },
+  { field: 'deviceId', title: $t('containerPool.table.deviceId'), minWidth: 200 },
   { field: 'deviceIp', title: $t('containerPool.table.deviceIp'), minWidth: 120 },
-  { field: 'romVersion', title: $t('containerPool.table.romVersion'), minWidth: 120 },
-  { field: 'phoneBrand', title: $t('containerPool.table.phoneBrand'), minWidth: 120 },
-  { field: 'phoneModel', title: $t('containerPool.table.phoneModel'), minWidth: 120 },
-  { field: 'operator', title: $t('containerPool.table.operator'), minWidth: 100 },
-  { field: 'phoneNumber', title: $t('containerPool.table.phoneNumber'), minWidth: 120 },
-  { field: 'deviceGroup', title: $t('containerPool.table.deviceGroup'), minWidth: 120 },
-  { field: 'remarks', title: $t('containerPool.table.remarks'), minWidth: 120 },
-  {
-    field: 'associatedAccounts',
-    title: $t('containerPool.table.associatedAccounts'),
-    minWidth: 120,
-  },
-  {
-    field: 'associatedAgents',
-    title: $t('containerPool.table.associatedAgents'),
-    minWidth: 120,
-  },
-  { field: 'status', title: $t('containerPool.table.status'), minWidth: 100 },
+  { field: 'deviceStatus', title: $t('containerPool.table.deviceStatus'), minWidth: 120 },
+  { field: 'deviceVersion', title: $t('containerPool.table.deviceVersion'), minWidth: 120 },
+  { field: 'brand', title: $t('containerPool.table.brand'), minWidth: 120 },
+  { field: 'deviceAliases', title: $t('containerPool.table.deviceAliases'), minWidth: 120 },
+  { field: 'deviceNum', title: $t('containerPool.table.deviceNum'), minWidth: 120 },
+  { field: 'deviceIdx', title: $t('containerPool.table.deviceIdx'), minWidth: 120 },
+  { field: 'connIp', title: $t('containerPool.table.connIp'), minWidth: 120 },
+  { field: 'connPort', title: $t('containerPool.table.connPort'), minWidth: 100 },
+  { field: 'proxy', title: $t('containerPool.table.proxy'), minWidth: 160 },
+  { field: 'proxyIp', title: $t('containerPool.table.proxyIp'), minWidth: 120 },
+  { field: 'proxyId', title: $t('containerPool.table.proxyId'), minWidth: 140 },
+  { field: 'assId', title: $t('containerPool.table.assId'), minWidth: 140 },
+  { field: 'devicePrompt', title: $t('containerPool.table.devicePrompt'), minWidth: 160 },
 ];
 

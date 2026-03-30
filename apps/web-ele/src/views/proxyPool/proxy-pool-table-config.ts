@@ -2,7 +2,7 @@ import type { VbenFormProps } from '#/adapter/form';
 
 import { h } from 'vue';
 
-import { ElCascader } from 'element-plus';
+import { ElCascader, ElMessage } from 'element-plus';
 
 import { getProxyAssetPageApi } from '#/api/core/asset';
 
@@ -35,6 +35,24 @@ export interface ProxyPoolRow {
   riskAlert: string;
 }
 
+async function copyText(text: string) {
+  if (!text) return;
+  try {
+    await navigator.clipboard.writeText(text);
+    ElMessage.success('复制成功');
+  } catch {
+    const input = document.createElement('textarea');
+    input.value = text;
+    input.style.position = 'fixed';
+    input.style.opacity = '0';
+    document.body.appendChild(input);
+    input.select();
+    document.execCommand('copy');
+    document.body.removeChild(input);
+    ElMessage.success('复制成功');
+  }
+}
+
 export async function getProxyPoolListApi(_params: {
   page: number;
   pageSize: number;
@@ -58,27 +76,7 @@ export async function getProxyPoolListApi(_params: {
   if (sortCondition) reqParams.sortType = sortCondition;
 
   const data = await getProxyAssetPageApi(reqParams);
-  const list: ProxyPoolRow[] = (data.records ?? []).map((item: any) => {
-    const proxyIp = item.ip 
-    return {
-      id: item.proxyId,
-      proxyId: item.proxyId,
-      region: item.area,
-      loginTime: item.inputTime,
-      protocol: item.protocol,
-      deviceIp: proxyIp,
-      port: item.proxyLinkPort,
-      username: item.username,
-      password: item.password,
-      link: item.link,
-      expireTime: item.expireTime,
-      proxyGroup: item.proxyGroup,
-      remarks: item.remark,
-      associatedDevices: item.deviceIp,
-      associatedAccounts: item.accountId,
-      riskAlert: item.riskTips,
-    };
-  });
+  const list = (data.records || []) as ProxyPoolRow[];
 
   return {
     list,
@@ -158,7 +156,27 @@ export const useColumns = () => [
   { field: 'port', title: $t('proxyPool.table.port'), minWidth: 100 },
   { field: 'username', title: $t('proxyPool.table.username'), minWidth: 120 },
   { field: 'password', title: $t('proxyPool.table.password'), minWidth: 120 },
-  { field: 'link', title: $t('proxyPool.table.link'), minWidth: 120 },
+  {
+    field: 'link',
+    title: $t('proxyPool.table.link'),
+    minWidth: 180,
+    slots: {
+      default: ({ row }: { row: ProxyPoolRow }) =>
+        h(
+          'span',
+          {
+            style:
+              'display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;color:var(--el-color-primary);',
+            title: row.link || '',
+            onClick: (event: Event) => {
+              event.stopPropagation();
+              void copyText(row.link || '');
+            },
+          },
+          row.link || '-',
+        ),
+    },
+  },
   { field: 'expireTime', title: $t('proxyPool.table.expireTime'), minWidth: 160 },
   { field: 'proxyGroup', title: $t('proxyPool.table.proxyGroup'), minWidth: 120 },
   { field: 'remarks', title: $t('proxyPool.table.remarks'), minWidth: 120 },

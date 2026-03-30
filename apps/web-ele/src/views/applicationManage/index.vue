@@ -12,6 +12,7 @@ import {
   deleteApplicationApi,
   getApplicationDetailApi,
   updateApplicationApi,
+  updateApplicationStatusByProxyApi,
   updateApplicationStatusApi,
   type ApplicationUpsertPayload,
 } from '#/api/core/application';
@@ -108,6 +109,14 @@ async function onUpdateStatus(row: ApplicationItem, status: 0 | 1) {
       type: status === 1 ? 'warning' : 'info',
     });
     await updateApplicationStatusApi(String(row.id), status);
+    // 正式启用成功后，同步触发一次平台代理接口
+    if (status === 0) {
+      try {
+        await updateApplicationStatusByProxyApi(String(row.id), status);
+      } catch (error) {
+        console.error('[applicationManage] 启用后调用平台代理接口失败:', error);
+      }
+    }
     ElMessage.success(status === 1 ? '禁用成功' : '启用成功');
     gridApi.reload();
   } catch {
