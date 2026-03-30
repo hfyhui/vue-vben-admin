@@ -13,7 +13,7 @@ interface BackendUserInfoResponse {
  * 获取用户信息
  */
 export async function getUserInfoApi() {
-  const response = await authClient.get<BackendUserInfoResponse>('/auth/getInfo');
+  const response = await authClient.get<BackendUserInfoResponse>('/getInfo');
   const rawUser = (response?.user ?? {}) as Record<string, any>;
 
   const mappedUser: UserInfo = {
