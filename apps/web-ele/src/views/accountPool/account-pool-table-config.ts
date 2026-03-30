@@ -80,24 +80,7 @@ export async function getAccountPoolListApi(_params: {
 
   const data = await getAccountAssetPageApi<AccountAssetRecord>(reqParams);
 
-  const list: AccountPoolRow[] = (data.records || []).map((r, idx) => ({
-    id: r.accountId ?? r.account ?? r.userAccount ?? `${idx}`,
-    platform: r.platform ?? '',
-    entryTime: r.inputTime ?? '',
-    riskAlert: r.riskTips ?? '',
-    account: r.account ?? '',
-    accountId: r.accountId ?? '',
-    username: r.userAccount ?? '',
-    userAccount: r.userAccount ?? '',
-    accountPassword: r.accountPassword ?? '',
-    verificationEmail: r.email ?? '',
-    emailPassword: r.emailPassword ?? '',
-    remarks: r.remark ?? '',
-    accountGroup: r.accountGroup ?? '',
-    associatedDevices: '',
-    // 接口字段：proxy（关联代理）；表格列：associatedAgents（关联代理/代理）
-    associatedAgents: r.proxy ?? '',
-  }));
+  const list = (data.records || []) as AccountPoolRow[];
 
   return {
     list,

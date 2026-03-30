@@ -1,25 +1,34 @@
 <script lang="ts" setup>
 import type { VxeTableGridOptions } from '#/adapter/vxe-table';
 
+import { onMounted, ref } from 'vue';
+
 import { Page } from '@vben/common-ui';
 
 import { ElMessage } from 'element-plus';
 
+import { getAssetGroupApi, resetContainerApi } from '#/api/core/asset';
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import { $t } from '#/locales';
+import { useAssetEnumsStore } from '#/store';
 
 import {
+  type ContainerPoolGroupOption,
+  type ContainerPoolSortOption,
   getContainerPoolListApi,
   getFormOptions,
   useColumns,
 } from './container-pool-table-config';
 
-const [Grid] = useVbenVxeGrid({
-  formOptions: getFormOptions(),
+const sortOptions = ref<ContainerPoolSortOption[]>([]);
+const groupOptions = ref<ContainerPoolGroupOption[]>([]);
+const assetEnumsStore = useAssetEnumsStore();
+
+const [Grid, gridApi] = useVbenVxeGrid({
+  formOptions: getFormOptions([], []),
   showSearchForm: true,
   gridOptions: {
     columns: useColumns(),
-    height: 'auto',
     pagerConfig: {
       enabled: true,
       pageSize: 10,
@@ -51,24 +60,82 @@ const [Grid] = useVbenVxeGrid({
   } as VxeTableGridOptions,
 });
 
-function onCreate() {
-  ElMessage.info($t('containerPool.action.add'));
+function applyFormOptions() {
+  gridApi.setState({
+    formOptions: getFormOptions(sortOptions.value, groupOptions.value),
+  });
 }
 
-function onImport() {
-  ElMessage.info($t('containerPool.action.import'));
+async function loadSortOptions() {
+  try {
+    sortOptions.value = await assetEnumsStore.getEnumOptionsAsync(
+      'ACCOUNT_ORDER',
+    );
+  } catch (error) {
+    console.error('[containerPool] 获取排序枚举失败:', error);
+    sortOptions.value = [];
+  }
+  applyFormOptions();
 }
 
-function onBatchDelete() {
-  ElMessage.info($t('containerPool.action.batchDelete'));
+async function loadGroupOptions() {
+  try {
+    const response = await getAssetGroupApi();
+    const groups = Array.isArray(response?.data) ? response.data : [];
+    groupOptions.value = groups
+      .filter((item) => Boolean(item?.id))
+      .map((item) => ({
+        id: item.id as string,
+        suiteName: item.suiteName ?? '',
+      }));
+  } catch (error) {
+    console.error('[containerPool] 获取分组失败:', error);
+    groupOptions.value = [];
+  }
+  applyFormOptions();
 }
 
-function onDeviceReset() {
-  ElMessage.info($t('containerPool.action.deviceReset'));
+function onDisableLock() {
+  ElMessage.info($t('containerPool.action.disableLock'));
 }
 
-function onPlaceholder() {
-  ElMessage.info($t('containerPool.action.placeholder'));
+function uniqueIds(values: string[]) {
+  return [...new Set(values)];
+}
+
+async function onDeviceReset() {
+  const records = ((gridApi as any).grid.getCheckboxRecords?.() || []) as Array<
+    Record<string, any>
+  >;
+  const deviceIds = uniqueIds(
+    records.map((item) => item?.deviceId).filter((id): id is string => Boolean(id)),
+  );
+
+  if (!deviceIds.length) {
+    ElMessage.warning($t('containerPool.message.selectDeviceBeforeReset'));
+    return;
+  }
+
+  try {
+    const response = await resetContainerApi({ deviceIds });
+    if (response?.code === 100000) {
+      ElMessage.success(response.msg || $t('containerPool.message.resetSuccess'));
+      gridApi.reload();
+      return;
+    }
+    ElMessage.error(response?.msg || $t('containerPool.message.resetFailed'));
+  } catch (error) {
+    console.error('[containerPool] 容器重置失败:', error);
+    ElMessage.error($t('containerPool.message.resetFailed'));
+  }
+}
+
+function onQuickNewDevice() {
+  ElMessage.info($t('containerPool.action.quickNewDevice'));
+}
+
+function onDeviceGroup() {
+  ElMessage.info($t('containerPool.action.deviceGroup'));
 }
 
 const statsData = [
@@ -77,6 +144,11 @@ const statsData = [
   { key: 'pendingDevices', value: 39 },
   { key: 'other', value: 3 },
 ];
+
+onMounted(() => {
+  loadGroupOptions();
+  loadSortOptions();
+});
 </script>
 
 <template>
@@ -103,20 +175,17 @@ const statsData = [
 
       <Grid>
         <template #toolbar-actions>
-          <ElButton class="mr-2" type="primary" @click="onCreate">
-            {{ $t('containerPool.action.add') }}
-          </ElButton>
-          <ElButton class="mr-2" type="primary" @click="onImport">
-            {{ $t('containerPool.action.import') }}
-          </ElButton>
-          <ElButton type="danger" @click="onBatchDelete">
-            {{ $t('containerPool.action.batchDelete') }}
-          </ElButton>
           <ElButton class="mr-2" type="primary" @click="onDeviceReset">
             {{ $t('containerPool.action.deviceReset') }}
           </ElButton>
-          <ElButton type="primary" @click="onPlaceholder">
-            {{ $t('containerPool.action.placeholder') }}
+          <ElButton class="mr-2" type="primary" @click="onDisableLock">
+            {{ $t('containerPool.action.disableLock') }}
+          </ElButton>
+          <ElButton class="mr-2" type="primary" @click="onQuickNewDevice">
+            {{ $t('containerPool.action.quickNewDevice') }}
+          </ElButton>
+          <ElButton type="primary" @click="onDeviceGroup">
+            {{ $t('containerPool.action.deviceGroup') }}
           </ElButton>
         </template>
       </Grid>

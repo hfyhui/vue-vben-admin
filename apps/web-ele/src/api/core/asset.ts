@@ -247,7 +247,9 @@ export async function getContainerAssetPageApi<T = DeviceItem>(
     size: params.size ?? 20,
     screening: params.screening,
     search: params.search,
+    suiteName: params.suiteName,
     groupId: params.groupId,
+    sortType: params.sortType,
     relationStatus: params.relationStatus,
   };
   const response = await proxyClient.post<PageResult<T>>(

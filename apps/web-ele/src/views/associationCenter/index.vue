@@ -175,6 +175,7 @@ async function onOfficialEnable() {
         response.msg || $t('associationCenter.officialEnableSuccess'),
       );
       await deviceBoardRef.value?.refreshDeviceList?.();
+      await proxyBoardRef.value?.refreshProxyList?.();
       await loadAssetSummary();
       return;
     }

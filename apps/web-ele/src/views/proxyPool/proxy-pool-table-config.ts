@@ -76,27 +76,7 @@ export async function getProxyPoolListApi(_params: {
   if (sortCondition) reqParams.sortType = sortCondition;
 
   const data = await getProxyAssetPageApi(reqParams);
-  const list: ProxyPoolRow[] = (data.records ?? []).map((item: any) => {
-    const proxyIp = item.ip 
-    return {
-      id: item.proxyId,
-      proxyId: item.proxyId,
-      region: item.area,
-      loginTime: item.inputTime,
-      protocol: item.protocol,
-      deviceIp: proxyIp,
-      port: item.proxyLinkPort,
-      username: item.username,
-      password: item.password,
-      link: item.link,
-      expireTime: item.expireTime,
-      proxyGroup: item.proxyGroup,
-      remarks: item.remark,
-      associatedDevices: item.deviceIp,
-      associatedAccounts: item.accountId,
-      riskAlert: item.riskTips,
-    };
-  });
+  const list = (data.records || []) as ProxyPoolRow[];
 
   return {
     list,
