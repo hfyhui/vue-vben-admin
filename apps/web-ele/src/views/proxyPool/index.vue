@@ -53,7 +53,6 @@ const [Grid, gridApi] = useVbenVxeGrid({
   formOptions: getFormOptions([], [], []),
   gridOptions: {
     columns: useColumns(),
-    height: 'auto',
     pagerConfig: {
       enabled: true,
       pageSize: 10,

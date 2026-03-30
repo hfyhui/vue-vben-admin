@@ -20,6 +20,7 @@ import {
 } from '#/api/core/asset';
 
 import {
+  type AccountPoolRow,
   type AccountPoolGroupOption,
   type AccountPoolPlatformOption,
   type AccountPoolSortOption,
@@ -37,13 +38,13 @@ const importing = ref(false);
 const groupOptions = ref<AccountPoolGroupOption[]>([]);
 const platformOptions = ref<AccountPoolPlatformOption[]>([]);
 const sortOptions = ref<AccountPoolSortOption[]>([]);
+const riskLevelMap = ref<Record<string, string>>({});
 const assetEnumsStore = useAssetEnumsStore();
 
 const [Grid, gridApi] = useVbenVxeGrid({
   formOptions: getFormOptions([]),
   gridOptions: {
     columns: useColumns(),
-    height: 'auto',
     pagerConfig: {
       enabled: true,
       pageSize: 10,
@@ -66,11 +67,22 @@ const [Grid, gridApi] = useVbenVxeGrid({
           if (currentAppId.value) {
             importAppId.value = currentAppId.value;
           }
-          return await getAccountPoolListApi({
+          const response = await getAccountPoolListApi({
             page: page.currentPage,
             pageSize: page.pageSize,
             ...formValues,
           });
+          if (Object.keys(riskLevelMap.value).length === 0) {
+            await loadRiskLevelOptions();
+          }
+          const list = (response?.list ?? []).map((item: AccountPoolRow) => ({
+            ...item,
+            riskAlert: mapRiskLevelLabel(item.riskAlert),
+          }));
+          return {
+            ...response,
+            list,
+          };
         },
       },
     },
@@ -245,6 +257,12 @@ function applyFormOptions() {
   });
 }
 
+function mapRiskLevelLabel(riskLevel: unknown) {
+  const value = String(riskLevel ?? '').trim();
+  if (!value) return '';
+  return riskLevelMap.value[value] ?? value;
+}
+
 async function loadSortOptions() {
   try {
     sortOptions.value = await assetEnumsStore.getEnumOptionsAsync(
@@ -255,6 +273,23 @@ async function loadSortOptions() {
     sortOptions.value = [];
   }
   applyFormOptions();
+}
+
+async function loadRiskLevelOptions() {
+  try {
+    const options = await assetEnumsStore.getEnumOptionsAsync('ACCOUNT_RISK_LEVEL');
+    riskLevelMap.value = options.reduce<Record<string, string>>((acc, item) => {
+      const value = String(item.value ?? '').trim();
+      const label = String(item.label ?? '').trim();
+      if (value && label) {
+        acc[value] = label;
+      }
+      return acc;
+    }, {});
+  } catch (error) {
+    console.error('[accountPool] 获取风险等级枚举失败:', error);
+    riskLevelMap.value = {};
+  }
 }
 
 function onCreateSuccess() {
@@ -271,6 +306,7 @@ onMounted(() => {
   loadGroupOptions();
   loadPlatformOptions();
   loadSortOptions();
+  loadRiskLevelOptions();
 });
 </script>
 
