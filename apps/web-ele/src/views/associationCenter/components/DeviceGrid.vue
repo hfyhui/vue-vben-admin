@@ -173,10 +173,6 @@ function getBoundAccounts(item: DeviceItem): BoundAccountRow[] {
               <span class="card-label">{{ $t('associationCenter.deviceVersion') }}:</span>
               <span>{{ getDeviceVersion(item) }}</span>
             </div>
-            <div class="card-row card-phone">
-              <el-icon><Iphone /></el-icon>
-              <span>{{ getPhoneDisplay(item) }}</span>
-            </div>
             <div
               v-if="getBoundAccounts(item).length"
               class="card-row card-account"

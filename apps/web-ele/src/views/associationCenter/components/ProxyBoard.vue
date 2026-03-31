@@ -352,9 +352,16 @@ defineExpose({
                 {{ item.surplusDays ?? '-' }}{{ $t('associationCenter.daySuffix') }}
               </span>
               <span class="card-area">{{ item.area || '-' }}</span>
-              <span class="card-ip" :title="item.ip">
-                {{ item.ip }}
-              </span>
+              <el-tooltip
+                v-if="item.ip"
+                :content="item.ip"
+                placement="top"
+              >
+                <span class="card-ip">
+                  {{ item.ip }}
+                </span>
+              </el-tooltip>
+              <span v-else class="card-ip">-</span>
               <span class="card-count" :class="getRiskColor(item.color)">{{
                 item.bandingCount ?? 0
               }}</span>

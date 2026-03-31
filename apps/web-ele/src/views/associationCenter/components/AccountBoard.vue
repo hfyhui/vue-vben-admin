@@ -14,6 +14,7 @@ interface AccountItem {
   accountId?: string;
   account?: string;
   userAccount?: string;
+  nickName?: string;
   platform?: string;
   appId?: string;
   appCode?: string;
@@ -184,11 +185,6 @@ function handleSearch() {
 function handleLoadMore() {
   if (loading.value || finished.value) return;
   fetchData();
-}
-
-/** 显示账号名称account */
-function getAccountDisplayName(item: AccountItem) {
-  return item.account 
 }
 
 /** 生成拖拽预览 DOM：多选时把本次拖拽的账号都展示在影子里 */
@@ -405,10 +401,10 @@ defineExpose({
               </div>
               <div class="account-main">
                 <div class="account-id">
-                  {{ item.accountId || '-' }}
+                  {{ item.userAccount || '-' }}
                 </div>
                 <div class="account-name">
-                  {{ getAccountDisplayName(item) }}
+                  {{ item.nickName || '-' }}
                   <span
                     v-if="item.riskTips"
                     class="risk-warning"

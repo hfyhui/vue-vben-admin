@@ -31,7 +31,7 @@ const currentValue = computed<Record<string, any>[]>({
 });
 
 const displayText = computed(() => {
-  return currentValue.value.length ? String(currentValue.value) : '';
+  return currentValue.value.length ? JSON.stringify(currentValue.value, null, 2) : '';
 });
 
 function openEditEvent(type: boolean) {
@@ -113,7 +113,7 @@ function formatJSON(type: 'format' | 'save') {
     </template>
     <template v-else>
       <el-button type="primary" @click="openEditEvent(true)">编辑</el-button>
-      <div class="text-box">{{ displayText }}</div>
+      <pre class="text-box">{{ displayText }}</pre>
     </template>
   </div>
 </template>
@@ -148,5 +148,7 @@ function formatJSON(type: 'format' | 'save') {
   border: 1px solid var(--el-border-color);
   line-height: 1.5;
   min-height: 320px;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 </style>
