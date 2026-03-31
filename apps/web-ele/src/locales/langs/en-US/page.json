@@ -13,6 +13,8 @@
     "licenseManage": "LicenseManage",
     "productList": "ProductList",
     "associationCenter": "Association Center",
+    "associationConfig": "Association Config",
+    "assetManage": "Asset Management",
     "accountPool": "Account Pool",
     "containerPool": "Container Pool",
     "proxyPool": "Proxy Pool"

@@ -2,7 +2,7 @@
  * @Author: 小妹 cuiling.liu@callfanai.com
  * @Date: 2025-08-12 15:23:19
  * @LastEditors: 小妹 cuiling.liu@callfanai.com
- * @LastEditTime: 2025-08-14 14:27:01
+ * @LastEditTime: 2026-03-31 15:29:02
  * @FilePath: \workSpace\callfans-platform-admin\apps\web-ele\src\router\routes\modules\customerManage.ts
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -44,44 +44,96 @@ const routes: RouteRecordRaw[] = [
   {
     name: 'AssociationCenter',
     path: '/associationCenter',
-    component: () => import('#/views/associationCenter/index.vue'),
+    redirect: '/associationCenter/associationConfig',
+    component: () => import('#/views/associationCenter/layout.vue'),
     meta: {
       icon: 'lucide:copyright',
       title: $t('page.dashboard.associationCenter'),
       order: 9999,
     },
+    children: [
+      {
+        name: 'AssociationConfig',
+        path: 'associationConfig',
+        component: () => import('#/views/associationCenter/index.vue'),
+        meta: {
+          title: $t('page.dashboard.associationConfig'),
+          order: 1,
+        },
+      },
+    ],
   },
   {
-    name: 'ContainerPool',
-    path: '/containerPool',
-    component: () => import('#/views/containerPool/index.vue'),
+    name: 'AssetManage',
+    path: '/assetManage',
+    redirect: '/assetManage/accountPool',
+    component: () => import('#/views/assetManage/index.vue'),
     meta: {
       icon: 'lucide:copyright',
-      title: $t('page.dashboard.containerPool'),
+      title: $t('page.dashboard.assetManage'),
       order: 9999,
-      hideInMenu: true,
     },
+    children: [
+      {
+        name: 'AccountPool',
+        path: 'accountPool',
+        component: () => import('#/views/accountPool/index.vue'),
+        meta: {
+          title: $t('page.dashboard.accountPool'),
+          order: 1,
+        },
+      },
+      {
+        name: 'ProxyPool',
+        path: 'proxyPool',
+        component: () => import('#/views/proxyPool/index.vue'),
+        meta: {
+          title: $t('page.dashboard.proxyPool'),
+          order: 2,
+        },
+      },
+      {
+        name: 'ContainerPool',
+        path: 'containerPool',
+        component: () => import('#/views/containerPool/index.vue'),
+        meta: {
+          title: $t('page.dashboard.containerPool'),
+          order: 3,
+        },
+      },
+    ],
   },
   {
-    name: 'AccountPool',
+    name: 'AccountPoolLegacy',
     path: '/accountPool',
-    component: () => import('#/views/accountPool/index.vue'),
+    redirect: '/assetManage/accountPool',
     meta: {
-      icon: 'lucide:copyright',
-      title: $t('page.dashboard.accountPool'),
-      order: 9999,
+      hideInBreadcrumb: true,
       hideInMenu: true,
+      hideInTab: true,
+      title: $t('page.dashboard.accountPool'),
     },
   },
   {
-    name: 'ProxyPool',
+    name: 'ProxyPoolLegacy',
     path: '/proxyPool',
-    component: () => import('#/views/proxyPool/index.vue'),
+    redirect: '/assetManage/proxyPool',
     meta: {
-      icon: 'lucide:copyright',
-      title: $t('page.dashboard.proxyPool'),
-      order: 9999,
+      hideInBreadcrumb: true,
       hideInMenu: true,
+      hideInTab: true,
+      title: $t('page.dashboard.proxyPool'),
+    },
+  },
+  {
+    name: 'ContainerPoolLegacy',
+    path: '/containerPool',
+    redirect: '/assetManage/containerPool',
+    meta: {
+      hideInBreadcrumb: true,
+      hideInMenu: true,
+      hideInTab: true,
+      title: $t('page.dashboard.containerPool'),
     },
   },
   {

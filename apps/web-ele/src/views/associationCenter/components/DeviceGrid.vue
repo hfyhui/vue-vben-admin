@@ -136,7 +136,7 @@ function getBoundAccounts(item: DeviceItem): BoundAccountRow[] {
           @dragover="onDragOver"
           @drop="onDrop($event, item)"
         >
-          <div class="card-status" :class="(item.color || 'gray').toLowerCase()" />
+          <div class="card-status" :class="item.color" />
           <div class="card-body">
             <div class="card-ip">{{ item.deviceIp }}</div>
             <div class="card-row">
@@ -187,7 +187,7 @@ function getBoundAccounts(item: DeviceItem): BoundAccountRow[] {
                     <div class="bound-account-logo-slot">
                       <el-tooltip
                         v-if="acc.logoPath"
-                        :content="String(acc.accountId || '')"
+                        :content="acc.accountId"
                         placement="top"
                       >
                         <img
@@ -206,7 +206,7 @@ function getBoundAccounts(item: DeviceItem): BoundAccountRow[] {
                   <span
                     v-if="acc.fromServer"
                     class="account-color-pill"
-                    :class="(acc.color || 'gray').toLowerCase()"
+                    :class="acc.color"
                     aria-hidden="true"
                   />
                   <div class="bound-account-actions">
