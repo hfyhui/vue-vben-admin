@@ -29,6 +29,7 @@ type ScriptCard = {
 
 const props = defineProps<{
   modelValue?: string[];
+  detailList?: Record<string, any>[];
 }>();
 
 const emit = defineEmits<{
@@ -56,8 +57,16 @@ const drawerForm = reactive<ScriptCard>({
 });
 
 const modelIds = computed<string[]>(() => {
-  return (props.modelValue || []).filter(Boolean);
+  return props.modelValue || [];
 });
+
+const detailMap = computed<Record<string, Record<string, any>>>(
+  () =>
+    (props.detailList || []).reduce((acc, item: Record<string, any>) => {
+      acc[item.programIds] = item;
+      return acc;
+    }, {} as Record<string, Record<string, any>>),
+);
 
 const scriptSelectOptions = computed(() =>
   scriptOptionsRaw.value.map((item: any) => ({
@@ -82,19 +91,21 @@ const scriptCategoryOptions = computed(() => {
 const selectedScriptList = computed<ScriptCard[]>(() =>
   modelIds.value.map((id) => {
     const local = localScriptMap.value[id];
-    const sourceScriptId = local?.scriptId || id;
-    const fromApi = scriptOptionsRaw.value.find(
-      (op: any) => String(op.id) === String(sourceScriptId),
-    );
+    const fromDetail = detailMap.value[id];
+    const sourceScriptId = local?.scriptId || fromDetail?.scriptId || id;
+    const fromApi = scriptOptionsRaw.value.find((op: any) => op.id === sourceScriptId);
     const apiMeta = buildApiScriptMeta(fromApi);
-    const source = local ? local : apiMeta;
+    const source: Record<string, any> = (local || fromDetail || apiMeta) as Record<string, any>;
+    const dynamicFormId = local?.dynamicFormId || source.programIds || source.id || id;
     return {
       id,
       scriptId: sourceScriptId,
+      dynamicFormId,
+      programIds: source.programIds || source.id || dynamicFormId,
       programName: source.programName,
       logoPath: source.logoPath,
       programCategory: source.programCategory,
-      currentForm: source.currentForm,
+      currentForm: source.currentForm || source.form,
       extendedColumn: source.extendedColumn,
     };
   }),
@@ -148,48 +159,37 @@ const drawerRules = {
   scriptId: [{ required: true, message: '请选择脚本', trigger: 'change' }],
 };
 
-function normalizeColumnList(value: any) {
-  if (Array.isArray(value)) return value;
-  if (typeof value === 'string' && value.trim()) {
-    try {
-      const parsed = JSON.parse(value);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
-    }
-  }
-  return [];
-}
-
 function buildApiScriptMeta(item?: any) {
-  const formSource = item && item.form !== undefined ? item.form : item?.currentForm;
   return {
-    programName:  item.name,
-    logoPath: item.logoPath,
-    programCategory: item.programCategory,
-    currentForm: normalizeColumnList(formSource),
-    extendedColumn: normalizeColumnList(item?.extendedColumn),
+    programName: item?.name,
+    logoPath: item?.logoPath,
+    programCategory: item?.programCategory,
+    currentForm: item?.form || item?.currentForm,
+    extendedColumn: item?.extendedColumn,
   };
 }
 
 function buildProgramTypeList(ids: string[]) {
   return ids.map((id) => {
     const local = localScriptMap.value[id];
+    const fromDetail = detailMap.value[id];
     const sourceScriptId = local?.scriptId;
-    const fromApi = scriptOptionsRaw.value.find(
-      (op: any) => String(op.id) === String(sourceScriptId),
-    );
+    const fallbackScriptId = sourceScriptId || fromDetail?.scriptId || id;
+    const fromApi = scriptOptionsRaw.value.find((op: any) => op.id === fallbackScriptId);
     const apiMeta = buildApiScriptMeta(fromApi);
-    const source = local ? local : apiMeta;
+    const source: Record<string, any> = (local || fromDetail || apiMeta) as Record<string, any>;
+    const payloadProgramId =
+      local?.programIds || local?.dynamicFormId || fromDetail?.programIds || id;
+    const payloadId = local?.id || fromDetail?.id || payloadProgramId;
     return {
-      id: (local as any)?.dynamicFormId,
-      programIds: (local as any)?.dynamicFormId,
-      scriptId: sourceScriptId,
+      id: payloadId,
+      programIds: payloadProgramId,
+      scriptId: local?.scriptId || fromDetail?.scriptId || fallbackScriptId,
       programName: source.programName,
       logoPath: source.logoPath,
       programCategory: source.programCategory,
-      form: source.currentForm || [],
-      extendedColumn: source.extendedColumn || [],
+      form: source.currentForm || source.form,
+      extendedColumn: source.extendedColumn,
     };
   });
 }
@@ -251,7 +251,7 @@ function cancelFn() {
 }
 
 function onScriptIdChange(value: string) {
-  const current = scriptOptionsRaw.value.find((item: any) => String(item.id) === String(value));
+  const current = scriptOptionsRaw.value.find((item: any) => item.id === value);
   if (!current) return;
   const apiMeta = buildApiScriptMeta(current);
   if (!drawerForm.logoPath) {
@@ -284,7 +284,7 @@ async function submitFn() {
   };
   const saveRes = await saveDynamicFormApi(dynamicPayload);
   const saveData = (saveRes as any)?.data;
-  const dynamicFormId = String(saveData?.id || saveData || drawerForm.dynamicFormId || '');
+  const dynamicFormId = saveData?.id || saveData || drawerForm.dynamicFormId;
   if (!dynamicFormId) {
     ElMessage.error('动态表单保存失败：未返回有效ID');
     return;

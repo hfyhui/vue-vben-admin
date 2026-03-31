@@ -40,17 +40,14 @@ watch(
       resetForm();
       return;
     }
-    const mappedIds = Array.isArray(row.programIds)
-      ? row.programIds.map((id: any) => String(id))
-      : [];
     submitData.id = row.id;
     submitData.applicationName = row.applicationName;
     submitData.logoPath = row.logoPath;
     submitData.packageName = row.packageName;
     submitData.activityName = row.activityName;
     submitData.orderNum = row.orderNum;
-    submitData.programType = mappedIds;
-    submitData.programTypeDetail = Array.isArray(row.programType) ? row.programType : [];
+    submitData.programType = row.programIds || [];
+    submitData.programTypeDetail = row.programType || [];
     submitData.applicationStatus = row.applicationStatus;
   },
   { immediate: true },
@@ -59,11 +56,17 @@ watch(
 async function submitFn() {
   const valid = await submitFormRef.value?.validate?.().then(() => true).catch(() => false);
   if (!valid) return;
-  const detailIds = Array.isArray(submitData.programTypeDetail)
-    ? submitData.programTypeDetail
-        .map((item: any) => String(item?.id || item?.programIds || ''))
-        .filter(Boolean)
-    : [];
+  const normalizedProgramType = submitData.programTypeDetail.map((item: Record<string, any>) => ({
+    ...item,
+    id: item.id,
+    programIds: item.programIds,
+    scriptId: item.scriptId,
+    form: item.form,
+    extendedColumn: item.extendedColumn,
+  }));
+  const detailIds = normalizedProgramType.map(
+    (item: Record<string, any>) => item.programIds,
+  );
   const payload: ApplicationUpsertPayload = {
     id: submitData.id,
     applicationName: submitData.applicationName,
@@ -71,14 +74,8 @@ async function submitFn() {
     packageName: submitData.packageName,
     activityName: submitData.activityName,
     orderNum: submitData.orderNum,
-    programIds: detailIds.length
-      ? detailIds
-      : Array.isArray(submitData.programType)
-        ? submitData.programType.map((id: any) => String(id))
-        : [],
-    programType: Array.isArray(submitData.programTypeDetail)
-      ? submitData.programTypeDetail
-      : [],
+    programIds: detailIds.length ? detailIds : submitData.programType,
+    programType: normalizedProgramType,
     applicationStatus: submitData.applicationStatus,
   };
   emit('submit', payload);
@@ -89,7 +86,7 @@ function onScriptChange() {
 }
 
 function onScriptDetailChange(list: Record<string, any>[]) {
-  submitData.programTypeDetail = Array.isArray(list) ? list : [];
+  submitData.programTypeDetail = list;
 }
 
 function resetForm() {
@@ -151,6 +148,7 @@ defineExpose({
       <el-form-item label="脚本清单" prop="programType">
         <ScriptSelector
           v-model="submitData.programType"
+          :detail-list="submitData.programTypeDetail"
           @change="onScriptChange"
           @change-detail="onScriptDetailChange"
         />
