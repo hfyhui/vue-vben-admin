@@ -16,6 +16,7 @@ type BoundProxy = {
   area?: string;
   proxyArea?: string;
   ip?: string;
+  proxyIp?: string;
   proxy?: string;
 };
 
@@ -34,15 +35,19 @@ function getProxyDisplay(row: DeviceItem) {
   if (bound.length > 0) {
     return bound
       .map((p) => {
-        const area = p.proxyArea ?? p.area;
-        const ip = p.proxy ?? p.ip;
+        // 切换视图后，统一按地区(area)+ip展示，避免读到 proxy/proxyArea 的混合值
+        const area = p.area;
+        const ip = p.ip ?? p.proxyIp;
         if (area) return `${area} ${ip ?? ''}`.trim();
         return ip ?? '';
       })
       .filter(Boolean)
       .join(',');
-  } 
-  return row.proxy
+  }
+  const area = row.area as string | undefined;
+  const ip = (row.ip as string | undefined) ?? (row.proxyIp as string | undefined);
+  if (area) return `${area} ${ip ?? ''}`.trim();
+  return ip ?? (row.proxy as string | undefined) ?? '';
 }
 
 const props = defineProps<{
