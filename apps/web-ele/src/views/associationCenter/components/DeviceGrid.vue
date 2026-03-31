@@ -261,7 +261,20 @@ function getBoundAccounts(item: DeviceItem): BoundAccountRow[] {
 
 <style scoped>
 .cards-wrapper {
+  height: 100%;
   min-height: 100%;
+  overflow-y: scroll;
+  scrollbar-width: thin;
+  scrollbar-color: var(--el-border-color) transparent;
+}
+
+.cards-wrapper::-webkit-scrollbar {
+  width: 6px;
+}
+
+.cards-wrapper::-webkit-scrollbar-thumb {
+  background: var(--el-border-color);
+  border-radius: 3px;
 }
 
 .device-grid {
