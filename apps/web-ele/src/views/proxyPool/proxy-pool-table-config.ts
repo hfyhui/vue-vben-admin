@@ -9,7 +9,7 @@ import { getProxyAssetPageApi } from '#/api/core/asset';
 import { $t } from '#/locales';
 
 export type ProxyPoolSortOption = { label: string; value: string };
-export type ProxyPoolGroupOption = { id: string; suiteName: string };
+export type ProxyPoolGroupOption = { id: string; suiteName: string; suiteDesc?: string };
 export type ProxyPoolRegionOption = {
   label: string;
   value: string;
