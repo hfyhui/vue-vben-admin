@@ -56,7 +56,7 @@ async function copyText(text: string) {
 export async function getProxyPoolListApi(_params: {
   page: number;
   pageSize: number;
-  areaPath?: string[];
+  areaPath?: string[][];
   proxySearch?: string;
   proxyGroup?: string[];
   sortCondition?: string;
@@ -70,7 +70,10 @@ export async function getProxyPoolListApi(_params: {
     size: pageSize ?? 10,
   };
 
-  if (areaPath?.length) reqParams.area = areaPath[areaPath.length - 1];
+  if (areaPath?.length) {
+    reqParams.area = areaPath
+      .map((path) => path?.[path.length - 1])
+  }
   if (proxySearch) reqParams.proxy = proxySearch;
   if (proxyGroup?.length) reqParams.suiteIds = proxyGroup;
   if (sortCondition) reqParams.sortType = sortCondition;
@@ -103,6 +106,7 @@ export const getFormOptions = (
           label: 'label',
           children: 'children',
           emitPath: true,
+          multiple: true,
           checkStrictly: false,
         },
         showAllLevels: false,

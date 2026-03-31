@@ -48,8 +48,8 @@ const props = defineProps<{
 }>();
 
 const filterForm = reactive({
-  area: '',
-  areaPath: [] as string[],
+  area: [] as string[],
+  areaPath: [] as string[][],
   proxySearch: '',
   proxyGroup: [] as string[],
   sortType: '',
@@ -75,6 +75,7 @@ const regionCascaderProps = {
   label: 'label',
   children: 'children',
   emitPath: true,
+  multiple: true,
   checkStrictly: false,
 };
 
@@ -144,10 +145,10 @@ function buildRequestParams() {
   const params: Record<string, any> = {
     current: pagination.current,
     size: pagination.size,
-    area: filterForm.area,
     proxy: filterForm.proxySearch,
     sortType: filterForm.sortType,
   };
+  if (filterForm.area.length) params.area = filterForm.area;
   if (filterForm.proxyGroup.length) params.suiteIds = filterForm.proxyGroup;
   return params;
 }
@@ -174,8 +175,9 @@ async function loadSortOptions() {
   }
 }
 
-function handleRegionChange(path: string[]) {
-  filterForm.area = path?.[path.length - 1] ?? '';
+function handleRegionChange(paths: string[][]) {
+  filterForm.area = (paths || [])
+    .map((path) => path?.[path.length - 1])
   handleSearch();
 }
 

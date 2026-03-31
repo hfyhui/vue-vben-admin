@@ -11,15 +11,6 @@ import {
 
 import type { DeviceItem } from '#/api/core/asset';
 
-type BoundAccount = {
-  accountId?: string;
-  account?: string;
-  userAccount?: string;
-  platform?: string;
-  logoPath?: string;
-  fromServer?: boolean;
-};
-
 type BoundProxy = {
   id?: string;
   area?: string;
@@ -33,57 +24,9 @@ function getLogoUrl(logoPath?: string) {
   return formatProcessUrl(logoPath);
 }
 
-function getBoundAccounts(
-  row: DeviceItem,
-): Array<{
-  id?: string;
-  tooltip: string;
-  logoPath?: string;
-  color?: string;
-  fromServer?: boolean;
-}> {
-  const result: Array<{
-    id?: string;
-    tooltip: string;
-    logoPath?: string;
-    color?: string;
-    fromServer?: boolean;
-  }> = [];
-  const accountInfos = (row.accountInfos as Array<Record<string, any>> | undefined) || [];
-  const bound =
-    accountInfos.length > 0
-      ? accountInfos.map((it) => ({
-          accountId: it.accountId,
-          logoPath: it.appLogo,
-          color: it.color as string | undefined,
-          fromServer: it.fromServer === true,
-        }))
-      : ((row.boundAccounts as BoundAccount[] | undefined) || []).map((it) => ({
-          ...it,
-          color: row.color as string | undefined,
-          fromServer: it.fromServer === true,
-        }));
-  for (const acc of bound) {
-    const id = acc.accountId;
-    if (!id) continue;
-    result.push({
-      id,
-      tooltip: id || '',
-      logoPath: acc.logoPath,
-      color: acc.color || (row.color as string | undefined),
-      fromServer: acc.fromServer === true,
-    });
-  }
-  return result;
-}
-
 function getGroupDisplay(row: DeviceItem) {
   if (Array.isArray(row.groups)) return row.groups.filter(Boolean).join(',');
   return row.deviceGroup
-}
-
-function getPhoneDisplay(row: DeviceItem) {
-  return row.deviceNum
 }
 
 function getProxyDisplay(row: DeviceItem) {
@@ -91,8 +34,8 @@ function getProxyDisplay(row: DeviceItem) {
   if (bound.length > 0) {
     return bound
       .map((p) => {
-        const area = p.area;
-        const ip = p.ip
+        const area = p.proxyArea ?? p.area;
+        const ip = p.proxy ?? p.ip;
         if (area) return `${area} ${ip ?? ''}`.trim();
         return ip ?? '';
       })
@@ -193,7 +136,7 @@ function onUnbindProxy(ev: Event, row: DeviceItem) {
           {{ getGroupDisplay(row) }}
         </template>
       </el-table-column>
-      <el-table-column :label="$t('associationCenter.networkProxy')" min-width="200">
+      <el-table-column :label="$t('associationCenter.networkProxy')" min-width="260">
         <template #default="{ row }">
           <div class="table-proxy-cell">
             <span class="table-proxy-text" :title="getProxyDisplay(row)">{{
@@ -215,62 +158,61 @@ function onUnbindProxy(ev: Event, row: DeviceItem) {
           </div>
         </template>
       </el-table-column>
-      <el-table-column :label="$t('associationCenter.proxyIp')" min-width="150">
-        <template #default="{ row }">
-          {{ row.proxyIp }}
-        </template>
-      </el-table-column>
       <el-table-column :label="$t('associationCenter.deviceVersion')" min-width="100">
         <template #default="{ row }">
           {{ getDeviceVersion(row) }}
         </template>
       </el-table-column>
-      <el-table-column :label="$t('associationCenter.phoneNumber')" min-width="140">
-        <template #default="{ row }">
-          {{ getPhoneDisplay(row) }}
-        </template>
-      </el-table-column>
-      <el-table-column :label="$t('associationCenter.associationStatus')" min-width="140" align="left">
+      <el-table-column :label="$t('associationCenter.associatedApps')" min-width="220" align="left">
         <template #default="{ row }">
           <div
-            v-if="getBoundAccounts(row).length > 0"
+            v-if="Array.isArray(row.accountInfos) && row.accountInfos.length > 0"
             class="table-bound-accounts"
           >
             <div
-              v-for="(acc, i) in getBoundAccounts(row)"
-              :key="`acc-${i}-${acc.id}`"
+              v-for="(acc, i) in row.accountInfos"
+              :key="`acc-${i}-${acc.accountId || ''}`"
               class="table-bound-account-row"
             >
-              <el-tooltip :content="acc.tooltip" placement="top">
+              <el-tooltip
+                :content="[acc.userAccount, acc.accountNickname].filter(Boolean).join(' / ')"
+                placement="top"
+              >
                 <img
-                  v-if="acc.logoPath"
-                  :src="getLogoUrl(acc.logoPath)"
+                  v-if="acc.appLogo"
+                  :src="getLogoUrl(acc.appLogo)"
                   class="platform-logo-cell"
                   alt="account-logo"
                 />
               </el-tooltip>
+              <div
+                class="table-account-text"
+                :title="[acc.userAccount, acc.accountNickname].filter(Boolean).join(' / ')"
+              >
+                <div v-if="acc.userAccount" class="table-account-line1">{{ acc.userAccount }}</div>
+                <div v-if="acc.accountNickname" class="table-account-line2">{{ acc.accountNickname }}</div>
+              </div>
               <span
-                v-if="acc.fromServer"
+                v-if="acc.fromServer === true"
                 class="table-account-color-pill"
-                :class="(acc.color || 'gray').toLowerCase()"
+                :class="(acc.color || row.color || 'gray').toLowerCase()"
                 aria-hidden="true"
               />
               <el-tooltip
-                v-if="acc.fromServer"
+                v-if="acc.fromServer === true"
                 :content="$t('associationCenter.unbindAccount')"
                 placement="top"
               >
                 <button
                   type="button"
                   class="table-unbind-account-btn"
-                  @click="onUnbindAccount($event, row, acc.id)"
+                  @click="onUnbindAccount($event, row, acc.accountId)"
                 >
                   <el-icon><CircleClose /></el-icon>
                 </button>
               </el-tooltip>
             </div>
           </div>
-          <span v-else class="table-empty-status">-</span>
         </template>
       </el-table-column>
     </el-table>
@@ -384,6 +326,28 @@ function onUnbindProxy(ev: Event, row: DeviceItem) {
   gap: 6px;
   min-width: 0;
   width: 100%;
+}
+
+.table-account-text {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  line-height: 1.1;
+}
+
+.table-account-line1,
+.table-account-line2 {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.table-account-line2 {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
 }
 
 .table-unbind-account-btn {
