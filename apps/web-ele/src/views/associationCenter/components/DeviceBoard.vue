@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, nextTick, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { ElMessage } from 'element-plus';
@@ -26,7 +26,8 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  refreshSummary: [];
+  (e: 'refreshSummary'): void;
+  (e: 'refreshProxyList'): void;
 }>();
 const loading = ref(false);
 const finished = ref(false);
@@ -57,6 +58,8 @@ const pagination = reactive({
 
 const list = ref<DeviceItem[]>([]);
 const allMockRecords = ref<DeviceItem[]>([]);
+const boardContentRef = ref<HTMLElement | null>(null);
+const autoFillRunning = ref(false);
 
 const largeScreenVisible = ref(false);
 const largeScreenDevice = ref<DeviceItem | null>(null);
@@ -257,12 +260,43 @@ async function fetchData() {
     finished.value = true;
   } finally {
     loading.value = false;
+    if (viewMode.value === 'grid' && !showPinnedOnly.value && !finished.value) {
+      void ensureGridScrollableOrFinished();
+    }
+  }
+}
+
+/** 网格模式下若首屏未出现可拖动滚动条，自动补拉后续页 */
+async function ensureGridScrollableOrFinished() {
+  if (autoFillRunning.value) return;
+  if (viewMode.value !== 'grid' || showPinnedOnly.value) return;
+
+  autoFillRunning.value = true;
+  try {
+    let guard = 0;
+    while (!finished.value && guard < 20) {
+      await nextTick();
+      const scroller = boardContentRef.value?.querySelector(
+        '.cards-wrapper',
+      ) as HTMLElement | null;
+      if (!scroller) break;
+      if (scroller.scrollHeight > scroller.clientHeight + 2) break;
+      if (loading.value) {
+        await new Promise((resolve) => setTimeout(resolve, 80));
+        continue;
+      }
+      await fetchData();
+      guard += 1;
+    }
+  } finally {
+    autoFillRunning.value = false;
   }
 }
 
 /** 执行查询：重置分页/列表/选择状态并重新加载 */
 function handleSearch() {
   pagination.current = 1;
+  pagination.total = 0;
   tablePagination.current = 1;
   tablePagination.total = 0;
   list.value = [];
@@ -583,6 +617,9 @@ function onCardDrop(ev: DragEvent, item: DeviceItem) {
 /** 切换设备展示模式（卡片/表格） */
 function toggleViewMode() {
   viewMode.value = viewMode.value === 'grid' ? 'table' : 'grid';
+  if (viewMode.value === 'grid') {
+    void ensureGridScrollableOrFinished();
+  }
 }
 
 /** 解绑成功后静默拉第一页列表：不触发全局 loading、不先清空列表，避免闪烁 */
@@ -625,6 +662,7 @@ async function handleUnbindProxy(item: DeviceItem) {
       }
       await refreshDeviceListAfterUnbind();
       emit('refreshSummary');
+      emit('refreshProxyList');
     }
   } catch (e) {
     console.error(e);
@@ -845,7 +883,11 @@ onMounted(() => {
       />
     </div>
 
-    <div class="board-content">
+    <div
+      ref="boardContentRef"
+      class="board-content"
+      :class="{ 'board-content--grid': viewMode === 'grid' }"
+    >
       <DeviceGrid
         v-if="viewMode === 'grid'"
         :list="displayGridList"
@@ -957,6 +999,11 @@ onMounted(() => {
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--el-border-color) transparent;
+}
+
+.board-content--grid {
+  height: 520px;
+  overflow-y: hidden;
 }
 
 .board-content::-webkit-scrollbar {

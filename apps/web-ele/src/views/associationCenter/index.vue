@@ -102,6 +102,14 @@ function onViewSwitch() {
   deviceBoardRef.value?.toggleViewMode?.();
 }
 
+async function onDeviceBoardRefreshSummary() {
+  await loadAssetSummary();
+}
+
+async function onDeviceBoardRefreshProxyList() {
+  await proxyBoardRef.value?.refreshProxyList?.();
+}
+
 function onAutoAssociate() {
   const accounts = accountBoardRef.value?.getSelectedAccounts?.() || [];
   const proxies = proxyBoardRef.value?.getSelectedProxies?.() || [];
@@ -332,7 +340,12 @@ async function onReverseQuery() {
 
     <!-- 设备看板 -->
     <el-card>
-      <DeviceBoard ref="deviceBoardRef" :group-options="sharedGroupOptions" />
+      <DeviceBoard
+        ref="deviceBoardRef"
+        :group-options="sharedGroupOptions"
+        @refresh-summary="onDeviceBoardRefreshSummary"
+        @refresh-proxy-list="onDeviceBoardRefreshProxyList"
+      />
     </el-card>
   </div>
 </template>
