@@ -6,6 +6,7 @@ import { Delete, Edit, Plus } from '@element-plus/icons-vue';
 
 import {
   getApplicationScriptListApi,
+  saveDynamicFormApi,
   type ApplicationScriptItem,
 } from '#/api/core/application';
 import ImageUpload from '#/components/ImageUpload.vue';
@@ -17,6 +18,8 @@ import CurrentForm from './currentForm/index.vue';
 type ScriptCard = {
   id: string;
   scriptId: string;
+  dynamicFormId?: string;
+  programIds?: string;
   programName: string;
   logoPath?: string;
   programCategory?: string;
@@ -31,6 +34,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string[]): void;
   (e: 'change', value: string[]): void;
+  (e: 'changeDetail', value: Record<string, any>[]): void;
 }>();
 
 const scriptLoading = ref(false);
@@ -58,7 +62,7 @@ const modelIds = computed<string[]>(() => {
 const scriptSelectOptions = computed(() =>
   scriptOptionsRaw.value.map((item: any) => ({
     value: item.id,
-    label: item.programName,
+    label: item.name,
     logoPath: item.logoPath,
     programCategory: item.programCategory,
   })),
@@ -66,33 +70,32 @@ const scriptSelectOptions = computed(() =>
 
 const scriptCategoryOptions = computed(() => {
   const mobileTaskCategory = assetEnumsStore.getEnumByKey<any>('MOBILE_TASK_CATEGORY');
-  const categoryList = mobileTaskCategory?.children || mobileTaskCategory || [];
-
-  const dictOptions = categoryList
-    .map((item: any) => ({
-      label: item?.content || item?.label || item?.name || item?.value || '',
-      value: item?.name || item?.value || item?.code || item?.content || '',
-    }))
-    .filter((item: any) => item.label && item.value);
-
-  if (dictOptions.length) return dictOptions;
-
-  const categories = scriptSelectOptions.value.map((item) => item.programCategory).filter(Boolean);
-  return [...new Set(categories)].map((item) => ({ label: item, value: item }));
+  const categoryList = Array.isArray(mobileTaskCategory?.children)
+    ? mobileTaskCategory.children
+    : [];
+  return categoryList.map((item: any) => ({
+    label: item.content,
+    value: item.name,
+  }));
 });
 
 const selectedScriptList = computed<ScriptCard[]>(() =>
   modelIds.value.map((id) => {
     const local = localScriptMap.value[id];
-    const fromApi = scriptSelectOptions.value.find((op) => op.value === id);
+    const sourceScriptId = local?.scriptId || id;
+    const fromApi = scriptOptionsRaw.value.find(
+      (op: any) => String(op.id) === String(sourceScriptId),
+    );
+    const apiMeta = buildApiScriptMeta(fromApi);
+    const source = local ? local : apiMeta;
     return {
       id,
-      scriptId: id,
-      programName: local?.programName || fromApi?.label || `脚本-${id}`,
-      logoPath: local?.logoPath || fromApi?.logoPath || '',
-      programCategory: local?.programCategory || fromApi?.programCategory || '',
-      currentForm: local?.currentForm || [],
-      extendedColumn: local?.extendedColumn || [],
+      scriptId: sourceScriptId,
+      programName: source.programName,
+      logoPath: source.logoPath,
+      programCategory: source.programCategory,
+      currentForm: source.currentForm,
+      extendedColumn: source.extendedColumn,
     };
   }),
 );
@@ -145,6 +148,52 @@ const drawerRules = {
   scriptId: [{ required: true, message: '请选择脚本', trigger: 'change' }],
 };
 
+function normalizeColumnList(value: any) {
+  if (Array.isArray(value)) return value;
+  if (typeof value === 'string' && value.trim()) {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+function buildApiScriptMeta(item?: any) {
+  const formSource = item && item.form !== undefined ? item.form : item?.currentForm;
+  return {
+    programName:  item.name,
+    logoPath: item.logoPath,
+    programCategory: item.programCategory,
+    currentForm: normalizeColumnList(formSource),
+    extendedColumn: normalizeColumnList(item?.extendedColumn),
+  };
+}
+
+function buildProgramTypeList(ids: string[]) {
+  return ids.map((id) => {
+    const local = localScriptMap.value[id];
+    const sourceScriptId = local?.scriptId;
+    const fromApi = scriptOptionsRaw.value.find(
+      (op: any) => String(op.id) === String(sourceScriptId),
+    );
+    const apiMeta = buildApiScriptMeta(fromApi);
+    const source = local ? local : apiMeta;
+    return {
+      id: (local as any)?.dynamicFormId,
+      programIds: (local as any)?.dynamicFormId,
+      scriptId: sourceScriptId,
+      programName: source.programName,
+      logoPath: source.logoPath,
+      programCategory: source.programCategory,
+      form: source.currentForm || [],
+      extendedColumn: source.extendedColumn || [],
+    };
+  });
+}
+
 onMounted(() => {
   void assetEnumsStore.ensureAssetEnumsLoaded();
   fetchScriptOptions();
@@ -168,6 +217,7 @@ async function fetchScriptOptions() {
 function resetDrawerForm() {
   drawerForm.id = '';
   drawerForm.scriptId = '';
+  drawerForm.dynamicFormId = '';
   drawerForm.programName = '';
   drawerForm.logoPath = '';
   drawerForm.programCategory = '';
@@ -183,6 +233,7 @@ async function addTaskType(row?: ScriptCard) {
     currentEditId.value = row.id;
     drawerForm.id = row.id;
     drawerForm.scriptId = row.scriptId;
+    drawerForm.dynamicFormId = row.dynamicFormId;
     drawerForm.programName = row.programName;
     drawerForm.logoPath = row.logoPath;
     drawerForm.programCategory = row.programCategory;
@@ -200,17 +251,18 @@ function cancelFn() {
 }
 
 function onScriptIdChange(value: string) {
-  const current = scriptSelectOptions.value.find((item) => item.value === value);
+  const current = scriptOptionsRaw.value.find((item: any) => String(item.id) === String(value));
   if (!current) return;
-  if (!drawerForm.programName) {
-    drawerForm.programName = current.label;
-  }
+  const apiMeta = buildApiScriptMeta(current);
   if (!drawerForm.logoPath) {
-    drawerForm.logoPath = current.logoPath;
+    drawerForm.logoPath = apiMeta.logoPath;
   }
   if (!drawerForm.programCategory) {
-    drawerForm.programCategory = current.programCategory;
+    drawerForm.programCategory = apiMeta.programCategory;
   }
+  // 切换脚本时优先回填接口返回的动态表单配置
+  drawerForm.currentForm = apiMeta.currentForm;
+  drawerForm.extendedColumn = apiMeta.extendedColumn;
 }
 
 async function submitFn() {
@@ -218,12 +270,31 @@ async function submitFn() {
   if (!valid) {
     return;
   }
-  const newId = drawerForm.scriptId;
-  if (!newId) return;
+  const selectedScriptId = drawerForm.scriptId;
+  if (!selectedScriptId) return;
+
+  const dynamicPayload = {
+    id: drawerForm.dynamicFormId,
+    scriptId: selectedScriptId,
+    programName: drawerForm.programName,
+    logoPath: drawerForm.logoPath,
+    programCategory: drawerForm.programCategory,
+    form: drawerForm.currentForm || [],
+    extendedColumn: drawerForm.extendedColumn || [],
+  };
+  const saveRes = await saveDynamicFormApi(dynamicPayload);
+  const saveData = (saveRes as any)?.data;
+  const dynamicFormId = String(saveData?.id || saveData || drawerForm.dynamicFormId || '');
+  if (!dynamicFormId) {
+    ElMessage.error('动态表单保存失败：未返回有效ID');
+    return;
+  }
 
   const newCard: ScriptCard = {
-    id: newId,
-    scriptId: newId,
+    id: dynamicFormId,
+    programIds: dynamicFormId,
+    scriptId: selectedScriptId,
+    dynamicFormId,
     programName: drawerForm.programName,
     logoPath: drawerForm.logoPath,
     programCategory: drawerForm.programCategory,
@@ -235,21 +306,22 @@ async function submitFn() {
   if (currentEditId.value) {
     const editIndex = nextIds.findIndex((id) => id === currentEditId.value);
     if (editIndex > -1) {
-      nextIds[editIndex] = newId;
-    } else if (!nextIds.includes(newId)) {
-      nextIds.push(newId);
+      nextIds[editIndex] = dynamicFormId;
+    } else if (!nextIds.includes(dynamicFormId)) {
+      nextIds.push(dynamicFormId);
     }
-    if (currentEditId.value !== newId) {
+    if (currentEditId.value !== dynamicFormId) {
       delete localScriptMap.value[currentEditId.value];
     }
-  } else if (!nextIds.includes(newId)) {
-    nextIds.push(newId);
+  } else if (!nextIds.includes(dynamicFormId)) {
+    nextIds.push(dynamicFormId);
   }
 
-  localScriptMap.value[newId] = newCard;
+  localScriptMap.value[dynamicFormId] = newCard;
   const uniqueIds = [...new Set(nextIds)];
   emit('update:modelValue', uniqueIds);
   emit('change', uniqueIds);
+  emit('changeDetail', buildProgramTypeList(uniqueIds));
   cancelFn();
 }
 
@@ -258,6 +330,7 @@ function removeFn(row: ScriptCard) {
   delete localScriptMap.value[row.id];
   emit('update:modelValue', nextIds);
   emit('change', nextIds);
+  emit('changeDetail', buildProgramTypeList(nextIds));
 }
 </script>
 
@@ -319,6 +392,7 @@ function removeFn(row: ScriptCard) {
 
           <template #currentForm>
             <CurrentForm
+              class="current-form"
               v-model="drawerForm.currentForm"
               :ext-columns="drawerForm.extendedColumn"
               @update:extColumns="(val) => (drawerForm.extendedColumn = val)"
@@ -424,6 +498,10 @@ function removeFn(row: ScriptCard) {
 
 .content :deep(.el-form-item__content) {
   min-height: 32px;
+}
+
+.current-form {
+  width: 100%;
 }
 
 .footer-box {

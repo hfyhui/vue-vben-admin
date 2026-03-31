@@ -23,6 +23,7 @@ const submitData = reactive<Record<string, any>>({
   orderNum: undefined,
   packageName: '',
   programType: [],
+  programTypeDetail: [],
 });
 const rules = {
   applicationName: [{ required: true, message: '请输入应用名称', trigger: 'blur' }],
@@ -49,6 +50,7 @@ watch(
     submitData.activityName = row.activityName;
     submitData.orderNum = row.orderNum;
     submitData.programType = mappedIds;
+    submitData.programTypeDetail = Array.isArray(row.programType) ? row.programType : [];
     submitData.applicationStatus = row.applicationStatus;
   },
   { immediate: true },
@@ -57,6 +59,11 @@ watch(
 async function submitFn() {
   const valid = await submitFormRef.value?.validate?.().then(() => true).catch(() => false);
   if (!valid) return;
+  const detailIds = Array.isArray(submitData.programTypeDetail)
+    ? submitData.programTypeDetail
+        .map((item: any) => String(item?.id || item?.programIds || ''))
+        .filter(Boolean)
+    : [];
   const payload: ApplicationUpsertPayload = {
     id: submitData.id,
     applicationName: submitData.applicationName,
@@ -64,8 +71,13 @@ async function submitFn() {
     packageName: submitData.packageName,
     activityName: submitData.activityName,
     orderNum: submitData.orderNum,
-    programIds: Array.isArray(submitData.programType)
-      ? submitData.programType.map((id: any) => String(id))
+    programIds: detailIds.length
+      ? detailIds
+      : Array.isArray(submitData.programType)
+        ? submitData.programType.map((id: any) => String(id))
+        : [],
+    programType: Array.isArray(submitData.programTypeDetail)
+      ? submitData.programTypeDetail
       : [],
     applicationStatus: submitData.applicationStatus,
   };
@@ -76,6 +88,10 @@ function onScriptChange() {
   submitFormRef.value?.validateField?.('programType');
 }
 
+function onScriptDetailChange(list: Record<string, any>[]) {
+  submitData.programTypeDetail = Array.isArray(list) ? list : [];
+}
+
 function resetForm() {
   submitData.id = undefined;
   submitData.applicationName = '';
@@ -84,6 +100,7 @@ function resetForm() {
   submitData.activityName = '';
   submitData.orderNum = undefined;
   submitData.programType = [];
+  submitData.programTypeDetail = [];
   submitData.applicationStatus = undefined;
   submitFormRef.value?.resetFields?.();
 }
@@ -132,7 +149,11 @@ defineExpose({
     </el-form-item>
 
       <el-form-item label="脚本清单" prop="programType">
-        <ScriptSelector v-model="submitData.programType" @change="onScriptChange" />
+        <ScriptSelector
+          v-model="submitData.programType"
+          @change="onScriptChange"
+          @change-detail="onScriptDetailChange"
+        />
       </el-form-item>
 
       <el-form-item label="序号" prop="orderNum">

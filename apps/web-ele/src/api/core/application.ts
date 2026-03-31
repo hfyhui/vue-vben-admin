@@ -45,6 +45,25 @@ export interface ApplicationScriptItem {
   [key: string]: any;
 }
 
+export interface DynamicFormColumnItem {
+  label?: string;
+  prop?: string;
+  field?: string;
+  children?: DynamicFormColumnItem[];
+  [key: string]: any;
+}
+
+export interface DynamicFormUpsertPayload {
+  id?: string;
+  scriptId?: string;
+  programName?: string;
+  logoPath?: string;
+  programCategory?: string;
+  form?: Record<string, any>[];
+  extendedColumn?: Record<string, any>[];
+  [key: string]: any;
+}
+
 export interface ApplicationUpsertPayload {
   id?: string;
   applicationName: string;
@@ -52,6 +71,7 @@ export interface ApplicationUpsertPayload {
   packageName?: string;
   activityName?: string;
   programIds: string[];
+  programType?: Record<string, any>[];
   orderNum?: number;
   applicationStatus?: 0 | 1;
 }
@@ -108,6 +128,20 @@ export async function getApplicationScriptListApi(): Promise<
   ApiResponse<ApplicationScriptItem[]>
 > {
   return socialClient.get('/social/application/management/script');
+}
+
+/** 获取动态表单字段配置 */
+export async function getDynamicFormColumnConfigApi(): Promise<
+  ApiResponse<DynamicFormColumnItem[]>
+> {
+  return socialClient.post('/social/dynamic/form/column/table', {});
+}
+
+/** 新增/编辑动态表单 */
+export async function saveDynamicFormApi(
+  data: DynamicFormUpsertPayload,
+): Promise<ApiResponse<{ id?: string }>> {
+  return socialClient.put('/social/dynamic/form', data);
 }
 
 /** 新增应用 */
