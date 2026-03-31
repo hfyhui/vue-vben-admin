@@ -39,7 +39,15 @@
     "add": "Add",
     "import": "Import",
     "downloadTemplate": "Download Template",
-    "batchDelete": "Batch Delete"
+    "batchDelete": "Batch Delete",
+    "setGrouping": "Set Grouping"
+  },
+  "groupForm": {
+    "title": "Proxy Grouping",
+    "groupName": "Group Name",
+    "groupNamePlaceholder": "Select proxy group",
+    "groupDesc": "Group Description",
+    "groupDescPlaceholder": "Enter group description"
   },
   "form": {
     "addProxyTitle": "Add Network Configuration",
@@ -72,7 +80,10 @@
     "importSuccess": "Proxy import succeeded",
     "importFailed": "Proxy import failed",
     "addSuccess": "Proxy added successfully",
-    "addFailed": "Failed to add proxy"
+    "addFailed": "Failed to add proxy",
+    "selectBeforeGrouping": "Please select proxies before grouping",
+    "groupSetSuccess": "Proxy grouping succeeded",
+    "groupSetFailed": "Proxy grouping failed"
   }
 }
 

@@ -39,7 +39,15 @@
     "add": "新增",
     "import": "导入",
     "downloadTemplate": "下载模板",
-    "batchDelete": "批量删除"
+    "batchDelete": "批量删除",
+    "setGrouping": "代理分组"
+  },
+  "groupForm": {
+    "title": "代理分组",
+    "groupName": "分组名称",
+    "groupNamePlaceholder": "请选择代理分组",
+    "groupDesc": "分组描述",
+    "groupDescPlaceholder": "请输入分组描述"
   },
   "form": {
     "addProxyTitle": "新增网络配置",
@@ -72,7 +80,10 @@
     "importSuccess": "导入代理成功",
     "importFailed": "导入代理失败",
     "addSuccess": "新增代理成功",
-    "addFailed": "新增代理失败"
+    "addFailed": "新增代理失败",
+    "selectBeforeGrouping": "请先选择要分组的代理",
+    "groupSetSuccess": "代理分组成功",
+    "groupSetFailed": "代理分组失败"
   }
 }
 

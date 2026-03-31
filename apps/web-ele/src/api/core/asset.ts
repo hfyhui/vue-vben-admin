@@ -99,6 +99,7 @@ export interface ProxyRegionTreeNode {
 export interface AssetGroupItem {
   id?: string;
   suiteName?: string;
+  suiteDesc?: string;
 }
 
 export interface AccountPoolNumData {
@@ -175,6 +176,13 @@ export interface AddProxyParams {
   proxyLinkPort?: number;
   username?: string;
   password?: string;
+}
+
+export interface AddProxyGroupParams {
+  suiteId?: string;
+  suiteName?: string;
+  suiteDesc?: string;
+  proxyIds?: string[];
 }
 
 export interface IntelligentRecognitionParams {
@@ -400,6 +408,13 @@ export async function addProxyApi(
   params: AddProxyParams,
 ): Promise<ApiResponse<null>> {
   return proxyClient.post<ApiResponse<null>>('/asset/add/proxy', params);
+}
+
+/** 新增代理分组 POST /asset/add/proxy-group */
+export async function addProxyGroupApi(
+  params: AddProxyGroupParams,
+): Promise<ApiResponse<null>> {
+  return proxyClient.post<ApiResponse<null>>('/asset/add/proxy-group', params);
 }
 
 /** 智能识别 POST /asset/intelligent/recognition */

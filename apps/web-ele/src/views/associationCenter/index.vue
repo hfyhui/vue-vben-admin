@@ -116,7 +116,7 @@ function onAutoAssociate() {
 
   // 代理超出时，丢弃 bandingCount 更大的代理，但保持剩余代理原始顺序（保证一一对应顺序）
   let usedProxies = proxies;
-  if (proxies.length > accounts.length) {
+  if (accounts.length > 0 && proxies.length > accounts.length) {
     const dropCount = proxies.length - accounts.length;
     const dropIndexes = new Set(
       proxies

@@ -144,7 +144,7 @@ function getBoundAccounts(item: DeviceItem): BoundAccountRow[] {
             <div class="card-ip">{{ item.deviceIp }}</div>
             <div class="card-row">
               <span class="card-label">{{ $t('associationCenter.groupInfo') }}:</span>
-              <span>{{ getGroupDisplay(item) }}</span>
+              <span class="card-text-ellipsis">{{ getGroupDisplay(item) }}</span>
             </div>
             <div class="card-row card-proxy-row">
               <span class="card-label">{{ $t('associationCenter.networkProxy') }}:</span>
@@ -281,7 +281,7 @@ function getBoundAccounts(item: DeviceItem): BoundAccountRow[] {
 
 .device-grid {
   display: grid;
-  grid-template-columns: repeat(10, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 8px;
 }
 
@@ -360,6 +360,14 @@ function getBoundAccounts(item: DeviceItem): BoundAccountRow[] {
   color: var(--el-text-color-regular);
   margin-right: 4px;
   flex-shrink: 0;
+}
+
+.card-text-ellipsis {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .card-proxy-row {
@@ -572,18 +580,6 @@ function getBoundAccounts(item: DeviceItem): BoundAccountRow[] {
   text-align: center;
   font-size: 12px;
   color: var(--el-text-color-secondary);
-}
-
-@media (max-width: 1600px) {
-  .device-grid {
-    grid-template-columns: repeat(8, 1fr);
-  }
-}
-
-@media (max-width: 1200px) {
-  .device-grid {
-    grid-template-columns: repeat(6, 1fr);
-  }
 }
 
 @media (max-width: 768px) {

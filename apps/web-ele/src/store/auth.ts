@@ -91,10 +91,15 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function fetchUserInfo() {
-    let userInfo: null | UserInfo = null;
-    userInfo = await getUserInfoApi();
-    userStore.setUserInfo(userInfo);
-    return userInfo;
+    try {
+      const userInfo = await getUserInfoApi();
+      userStore.setUserInfo(userInfo);
+      return userInfo;
+    } catch (error) {
+      // /auth/getInfo 异常时，立即清理登录态并回到登录页
+      await logout(false);
+      throw error;
+    }
   }
 
   function $reset() {

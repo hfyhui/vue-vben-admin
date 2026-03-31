@@ -21,12 +21,14 @@ import { useAssetEnumsStore } from '#/store';
 import {
   type ProxyPoolSortOption,
   type ProxyPoolGroupOption,
+  type ProxyPoolRow,
   type ProxyPoolRegionOption,
   getProxyPoolListApi,
   getFormOptions,
   useColumns,
 } from './proxy-pool-table-config';
 import ProxyPoolFormModal from './proxy-form-modal.vue';
+import ProxyGroupModal from './proxy-group-modal.vue';
 
 interface RegionTreeNode {
   name?: string;
@@ -130,6 +132,7 @@ async function loadGroupOptions() {
       .map((item) => ({
         id: item.id as string,
         suiteName: item.suiteName ?? '',
+        suiteDesc: item.suiteDesc ?? '',
       }));
   } catch (error) {
     console.error('[proxyPool] 获取分组失败:', error);
@@ -198,6 +201,27 @@ async function onBatchDelete() {
   }
 }
 
+function getSelectedProxyIds() {
+  const records: ProxyPoolRow[] = (gridApi as any).grid.getCheckboxRecords?.() || [];
+  return records
+    .map((item) => item.proxyId || item.id)
+    .filter((id): id is string => Boolean(id));
+}
+
+function onSetGrouping() {
+  const proxyIds = getSelectedProxyIds();
+  if (!proxyIds.length) {
+    ElMessage.warning($t('proxyPool.message.selectBeforeGrouping'));
+    return;
+  }
+  groupModalApi
+    .setData({
+      proxyIds,
+      groupOptions: groupOptions.value,
+    })
+    .open();
+}
+
 const statsData = [
   { key: 'proxyPool', value: 56 },
   { key: 'runningProxies', value: 102 },
@@ -217,6 +241,14 @@ function onCreateSuccess() {
 
 const [FormModal, formModalApi] = useVbenModal({
   connectedComponent: ProxyPoolFormModal,
+});
+
+function onGroupSuccess() {
+  gridApi.reload();
+}
+
+const [GroupModal, groupModalApi] = useVbenModal({
+  connectedComponent: ProxyGroupModal,
 });
 </script>
 
@@ -268,9 +300,13 @@ const [FormModal, formModalApi] = useVbenModal({
           <ElButton type="danger" @click="onBatchDelete">
             {{ $t('proxyPool.action.batchDelete') }}
           </ElButton>
+          <ElButton class="ml-2" type="primary" @click="onSetGrouping">
+            {{ $t('proxyPool.action.setGrouping') }}
+          </ElButton>
         </template>
       </Grid>
       <FormModal @success-after="onCreateSuccess" />
+      <GroupModal @success-after="onGroupSuccess" />
     </div>
   </Page>
 </template>
@@ -302,6 +338,10 @@ const [FormModal, formModalApi] = useVbenModal({
 
 .mr-2 {
   margin-right: 8px;
+}
+
+.ml-2 {
+  margin-left: 8px;
 }
 </style>
 

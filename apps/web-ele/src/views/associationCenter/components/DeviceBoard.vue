@@ -719,22 +719,25 @@ function autoAssociateWithSelections(
   const devices = selectedDeviceKeys.value
     .map((key) => deviceMap.get(key))
     .filter((item): item is DeviceItem => Boolean(item));
-  if (!accounts.length || !proxies.length || !devices.length) {
+  const hasAccounts = accounts.length > 0;
+  const hasProxies = proxies.length > 0;
+  if (!devices.length || (!hasAccounts && !hasProxies)) {
     ElMessage.warning($t('associationCenter.selectDataInAllBoardsFirst'));
     return;
   }
 
   // 自动关联要求账号与设备严格 1v1，数量必须一致
-  if (accounts.length !== devices.length) {
+  if (hasAccounts && accounts.length !== devices.length) {
     ElMessage.error($t('associationCenter.autoAssociateCountMismatch'));
     return;
   }
 
   const bindCount = devices.length;
-  const usedProxies =
-    proxies.length >= bindCount
+  const usedProxies = hasProxies
+    ? proxies.length >= bindCount
       ? proxies.slice(0, bindCount)
-      : Array.from({ length: bindCount }, (_, i) => proxies[i % proxies.length]);
+      : Array.from({ length: bindCount }, (_, i) => proxies[i % proxies.length])
+    : [];
   if (bindCount <= 0) {
     ElMessage.warning($t('associationCenter.insufficientDataToAssociate'));
     return;
@@ -742,55 +745,63 @@ function autoAssociateWithSelections(
 
   for (let i = 0; i < bindCount; i++) {
     const target = devices[i];
-    const account = accounts[i];
-    const proxy = usedProxies[i];
-    if (!target || !account || !proxy) continue;
+    if (!target) continue;
 
-    const existingAccounts = getMergedBoundAccounts(target);
-    const existingAppIds = getDeviceBoundAppIds(target);
-    const accountAppId = getAccountAppId(account as Record<string, any>);
-    if (accountAppId && existingAppIds.includes(accountAppId)) {
-      ElMessage.error(
-        $t('associationCenter.deviceAlreadyBoundAppId', {
-          deviceIp: target.deviceIp,
+    if (hasAccounts) {
+      const account = accounts[i];
+      if (!account) continue;
+      const existingAccounts = getMergedBoundAccounts(target);
+      const existingAppIds = getDeviceBoundAppIds(target);
+      const accountAppId = getAccountAppId(account as Record<string, any>);
+      if (accountAppId && existingAppIds.includes(accountAppId)) {
+        ElMessage.error(
+          $t('associationCenter.deviceAlreadyBoundAppId', {
+            deviceIp: target.deviceIp,
+          }),
+        );
+        return;
+      }
+      target.boundAccounts = [
+        ...existingAccounts,
+        { ...account, fromServer: false },
+      ];
+      syncAccountInfosFromBound(target);
+    }
+
+    if (hasProxies) {
+      const proxy = usedProxies[i];
+      if (!proxy) continue;
+      const displayProxy = getProxyDisplayText(proxy);
+      target.boundProxies = [
+        { ...proxy, proxy: displayProxy, proxyArea: proxy.area, fromServer: false },
+      ];
+      target.proxy = displayProxy;
+      target.proxyArea = proxy.area;
+    }
+  }
+
+  updateTableData();
+  if (hasProxies) {
+    const droppedProxyCount = Math.max(0, proxies.length - bindCount);
+    const reusedProxyCount = Math.max(0, bindCount - proxies.length);
+    if (droppedProxyCount > 0) {
+      ElMessage.success(
+        $t('associationCenter.autoAssociateSuccessDropped', {
+          bindCount,
+          droppedProxyCount,
         }),
       );
       return;
     }
-
-    target.boundAccounts = [
-      ...existingAccounts,
-      { ...account, fromServer: false },
-    ];
-    syncAccountInfosFromBound(target);
-    const displayProxy = getProxyDisplayText(proxy);
-    target.boundProxies = [
-      { ...proxy, proxy: displayProxy, proxyArea: proxy.area, fromServer: false },
-    ];
-    target.proxy = displayProxy;
-    target.proxyArea = proxy.area;
-  }
-
-  updateTableData();
-  const droppedProxyCount = Math.max(0, proxies.length - bindCount);
-  const reusedProxyCount = Math.max(0, bindCount - proxies.length);
-  if (droppedProxyCount > 0) {
-    ElMessage.success(
-      $t('associationCenter.autoAssociateSuccessDropped', {
-        bindCount,
-        droppedProxyCount,
-      }),
-    );
-    return;
-  }
-  if (reusedProxyCount > 0) {
-    ElMessage.success(
-      $t('associationCenter.autoAssociateSuccessReused', {
-        bindCount,
-        reusedProxyCount,
-      }),
-    );
-    return;
+    if (reusedProxyCount > 0) {
+      ElMessage.success(
+        $t('associationCenter.autoAssociateSuccessReused', {
+          bindCount,
+          reusedProxyCount,
+        }),
+      );
+      return;
+    }
   }
   ElMessage.success($t('associationCenter.autoAssociateSuccess', { bindCount }));
 }
