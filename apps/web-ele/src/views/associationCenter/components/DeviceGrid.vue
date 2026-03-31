@@ -17,6 +17,8 @@ type BoundAccountRow = {
   logoPath?: string;
   userAccount?: string;
   accountNickname?: string | null;
+  displayId?: string;
+  tooltip?: string;
   color?: string;
   /** 列表接口带回才可解绑 */
   fromServer?: boolean;
@@ -110,6 +112,7 @@ function getBoundAccounts(item: DeviceItem): BoundAccountRow[] {
         logoPath: acc.appLogo,
         userAccount: acc.userAccount,
         accountNickname: acc.accountNickname,
+        tooltip:  acc.accountId,
         color: (acc.color as string | undefined),
         fromServer: acc.fromServer === true,
       })) || [];
@@ -199,7 +202,10 @@ function getBoundAccounts(item: DeviceItem): BoundAccountRow[] {
                     </div>
                     <div class="bound-account-text">
                       <div class="bound-account-line1">
-                        {{ acc.userAccount || '—' }}
+                        {{ acc.userAccount }}
+                      </div>
+                      <div class="bound-account-line2">
+                        {{ acc.accountNickname }}
                       </div>
                     </div>
                   </div>
