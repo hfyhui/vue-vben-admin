@@ -696,6 +696,7 @@ async function handleUnbindAccount(item: DeviceItem, accountId: string) {
         ElMessage.success(res.msg);
       }
       await refreshDeviceListAfterUnbind();
+      emit('refreshSummary');
     } else {
       ElMessage.error(res?.msg || $t('associationCenter.unbindAccountFailed'));
     }
