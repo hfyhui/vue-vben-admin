@@ -10,14 +10,11 @@ import { ElMessage } from 'element-plus';
 import { useVbenForm } from '#/adapter/form';
 import { addProxyApi, intelligentRecognitionApi } from '#/api/core/asset';
 import { $t } from '#/locales';
-import { useAssetEnumsStore } from '#/store';
 
 interface ProxyFormValues {
-  smartRecognition?: string;
   ip?: string;
   area?: string;
   agreement?: string;
-  networkStatus?: string;
   expirationTime?: string;
   networkLink?: string;
   proxyLinkIp?: string;
@@ -32,27 +29,12 @@ const emit = defineEmits<{
 }>();
 
 const creating = ref(false);
-const assetEnumsStore = useAssetEnumsStore();
-const networkStatusOptions = ref<Array<{ label: string; value: string }>>([]);
-
-async function loadNetworkStatusOptions() {
-  try {
-    networkStatusOptions.value = await assetEnumsStore.getEnumOptionsAsync(
-      'MOBILE_NETWORK_STATUS',
-    );
-  } catch (error) {
-    console.error('[proxyPool] 获取网络状态枚举失败:', error);
-    networkStatusOptions.value = [];
-  }
-}
 
 function getDefaultValues(): ProxyFormValues {
   return {
-    smartRecognition: '',
     ip: '',
     area: '',
     agreement: '',
-    networkStatus: '',
     expirationTime: '',
     networkLink: '',
     phoneIp: '',
@@ -63,8 +45,8 @@ function getDefaultValues(): ProxyFormValues {
   };
 }
 
-async function onSmartRecognitionBlur(event: FocusEvent) {
-  const target = event.target as HTMLInputElement
+async function onNetworkLinkBlur(event: FocusEvent) {
+  const target = event.target as HTMLInputElement;
   const networkLink = target?.value
   if (!networkLink) return;
   try {
@@ -96,12 +78,13 @@ const [Form, formApi] = useVbenForm({
   schema: [
     {
       component: 'Input',
-      fieldName: 'smartRecognition',
-      label: $t('proxyPool.form.smartRecognition'),
+      fieldName: 'networkLink',
+      label: $t('proxyPool.form.networkLink'),
+      rules: 'required',
       componentProps: {
         placeholder: $t('proxyPool.form.smartRecognitionPlaceholder'),
         clearable: true,
-        onBlur: onSmartRecognitionBlur,
+        onBlur: onNetworkLinkBlur,
       },
     },
     {
@@ -112,6 +95,35 @@ const [Form, formApi] = useVbenForm({
       componentProps: {
         placeholder: $t('proxyPool.form.ipPlaceholder'),
         clearable: true,
+      },
+    },
+    {
+      component: 'Input',
+      fieldName: 'proxyLinkPort',
+      label: $t('proxyPool.form.proxyPort'),
+      componentProps: {
+        placeholder: '',
+        disabled: true,
+      },
+    },
+    {
+      component: 'Input',
+      fieldName: 'username',
+      label: $t('proxyPool.form.username'),
+      componentProps: {
+        placeholder: '',
+        disabled: true,
+      },
+    },
+    {
+      component: 'Input',
+      fieldName: 'password',
+      label: $t('proxyPool.form.password'),
+      componentProps: {
+        type: 'password',
+        showPassword: true,
+        placeholder: '',
+        disabled: true,
       },
     },
     {
@@ -144,26 +156,6 @@ const [Form, formApi] = useVbenForm({
       },
     },
     {
-      component: 'Input',
-      fieldName: 'networkLink',
-      label: $t('proxyPool.form.networkLink'),
-      rules: 'required',
-      componentProps: {
-        placeholder: $t('proxyPool.form.networkLinkPlaceholder'),
-        clearable: true,
-      },
-    },
-    {
-      component: 'Select',
-      fieldName: 'networkStatus',
-      label: $t('proxyPool.form.networkStatus'),
-      componentProps: {
-        placeholder: $t('proxyPool.form.networkStatusPlaceholder'),
-        options: networkStatusOptions,
-        clearable: true,
-      },
-    },
-    {
       component: 'DatePicker',
       fieldName: 'expirationTime',
       label: $t('proxyPool.form.expirationTime'),
@@ -191,7 +183,6 @@ const [Modal, modalApi] = useVbenModal({
   },
   onOpenChange: async (isOpen) => {
     if (isOpen) {
-      await loadNetworkStatusOptions();
       await formApi.resetForm();
       await formApi.setValues(getDefaultValues());
       return;
@@ -209,7 +200,6 @@ async function onSubmit(values: ProxyFormValues) {
       ip: values.ip,
       area: values.area,
       agreement: values.agreement,
-      networkStatus: values.networkStatus,
       expirationTime: values.expirationTime,
       networkLink: values.networkLink,
       proxyLinkIp: values.proxyLinkIp,
@@ -229,8 +219,6 @@ async function onSubmit(values: ProxyFormValues) {
       ElMessage.success($t('proxyPool.message.addSuccess'));
       modalApi.close();
       emit('success-after');
-    } else {
-      ElMessage.error(res?.msg || $t('proxyPool.message.addFailed'));
     }
   } catch (error) {
     console.error('[proxyPool] 新增代理失败:', error);

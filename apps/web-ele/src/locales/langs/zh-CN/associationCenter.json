@@ -84,6 +84,8 @@
   "containerResetFailed": "容器重置失败",
   "officialEnableSuccess": "正式启用成功",
   "officialEnableFailed": "正式启用失败",
+  "dropBindCheckFailed": "拖拽关联校验未通过",
+  "deviceMissingForBind": "设备缺少标识，无法完成校验",
   "accountDragParseFailed": "拖拽账号数据解析失败",
   "oneAccountPerPlatformPerDevice": "同一设备内，每个社媒平台只能绑定一个账号",
   "proxyDragParseFailed": "拖拽代理数据解析失败",

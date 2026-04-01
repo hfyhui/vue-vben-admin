@@ -11,6 +11,7 @@ import {
   getContainerAssetPageApi,
   unbindAccountApi,
   unbindProxyApi,
+  type DeviceEnableItem,
   type DeviceItem,
 } from '#/api/core/asset';
 
@@ -23,6 +24,10 @@ import DeviceTable from './DeviceTable.vue';
 const router = useRouter();
 const props = defineProps<{
   groupOptions?: Array<{ id: string; suiteName: string }>;
+  /** 拖拽账号/代理到设备前调用 POST /asset/check/account-device，返回 false 时不落地绑定 */
+  checkDropDeviceEnables?: (
+    deviceEnables: DeviceEnableItem[],
+  ) => Promise<boolean>;
 }>();
 
 const emit = defineEmits<{
@@ -499,6 +504,24 @@ function getDeviceProxyId(item: DeviceItem) {
   return ((item as Record<string, any>)?.proxyId) as string;
 }
 
+/** 构造单台设备的 deviceEnables 项（与正式启用接口结构一致） */
+function buildDeviceEnablePayload(
+  item: DeviceItem,
+  overrides?: { accountIds?: string[]; proxyId?: string },
+): DeviceEnableItem | null {
+  const deviceId = getDeviceId(item);
+  if (!deviceId) return null;
+  const accountIds =
+    overrides?.accountIds ?? getDeviceBoundAccountIds(item);
+  const proxyId = overrides?.proxyId ?? (getDeviceProxyId(item) || '');
+  return {
+    deviceId,
+    deviceIp: item.deviceIp ?? '',
+    accountIds,
+    proxyId,
+  };
+}
+
 /** 点击设备：仅切换选中状态（用于自动关联） */
 function handleDeviceClick(item: DeviceItem) {
   toggleDeviceSelect(item);
@@ -636,7 +659,7 @@ function onCardDragOver(ev: DragEvent) {
 }
 
 /** 卡片投放处理：支持账号与代理拖拽绑定，并做重复/冲突校验 */
-function onCardDrop(ev: DragEvent, item: DeviceItem) {
+async function onCardDrop(ev: DragEvent, item: DeviceItem) {
   const dt = ev.dataTransfer;
   if (!dt) return;
   ev.preventDefault();
@@ -669,6 +692,23 @@ function onCardDrop(ev: DragEvent, item: DeviceItem) {
       if (appId) currentAppIds.push(appId);
     }
 
+    const nextAccountIds = [...getDeviceBoundAccountIds(target)];
+    for (const acc of accounts) {
+      const id = acc.accountId;
+      if (id && !nextAccountIds.includes(id)) nextAccountIds.push(id);
+    }
+    const deviceEnable = buildDeviceEnablePayload(target, {
+      accountIds: nextAccountIds,
+    });
+    if (!deviceEnable) {
+      ElMessage.warning($t('associationCenter.deviceMissingForBind'));
+      return;
+    }
+    if (props.checkDropDeviceEnables) {
+      const ok = await props.checkDropDeviceEnables([deviceEnable]);
+      if (!ok) return;
+    }
+
     target.boundAccounts = [
       ...existing,
       ...accounts.map((a) => ({ ...a, fromServer: false })),
@@ -685,6 +725,19 @@ function onCardDrop(ev: DragEvent, item: DeviceItem) {
     } catch {
       ElMessage.error($t('associationCenter.proxyDragParseFailed'));
       return;
+    }
+
+    const newProxyId = getProxyId(proxy) || '';
+    const deviceEnable = buildDeviceEnablePayload(target, {
+      proxyId: newProxyId,
+    });
+    if (!deviceEnable) {
+      ElMessage.warning($t('associationCenter.deviceMissingForBind'));
+      return;
+    }
+    if (props.checkDropDeviceEnables) {
+      const ok = await props.checkDropDeviceEnables([deviceEnable]);
+      if (!ok) return;
     }
 
     const displayProxy = getProxyDisplayText(proxy);

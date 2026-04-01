@@ -22,8 +22,9 @@
     "entryTime": "录入时间",
     "riskAlert": "风险提示",
     "loginStatus": "登录状态",
-    "account": "用户昵称",
+    "account": "账号昵称",
     "accountId": "账号ID",
+    "nickName": "用户昵称",
     "username": "用户名",
     "userAccount": "用户账号",
     "accountPassword": "账号密码",
@@ -33,6 +34,7 @@
     "remarks": "备注",
     "accountGroup": "账号分组",
     "associatedDevices": "关联设备",
+    "deviceIp": "关联设备",
     "associatedAgents": "关联代理"
   },
   "action": {
