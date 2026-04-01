@@ -56,7 +56,6 @@ function getDefaultValues(defaultAppId = ''): AddAccountParams {
   return {
     appId: defaultAppId,
     riskLevel: '',
-    appAccount: '',
     userName: '',
     userAccount: '',
     password: '',
@@ -94,16 +93,6 @@ const [Form, formApi] = useVbenForm({
       componentProps: {
         placeholder: $t('accountPool.form.userNicknamePlaceholder'),
         maxlength: 50,
-        clearable: true,
-      },
-    },
-    {
-      component: 'Input',
-      fieldName: 'appAccount',
-      label: $t('accountPool.form.accountIdOptional'),
-      componentProps: {
-        placeholder: $t('accountPool.form.accountIdPlaceholder'),
-        maxlength: 100,
         clearable: true,
       },
     },

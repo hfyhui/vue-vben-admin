@@ -5,7 +5,11 @@ import { getAccountAssetPageApi } from '#/api/core/asset';
 import { $t } from '#/locales';
 
 /** 与 GET /platform/asset/group（getAssetGroupApi）返回项一致，用于筛选下拉 */
-export type AccountPoolGroupOption = { id: string; suiteName: string };
+export type AccountPoolGroupOption = {
+  id: string;
+  suiteName: string;
+  suiteDesc?: string;
+};
 export type AccountPoolPlatformOption = { id: string; applicationName: string };
 export type AccountPoolSortOption = { label: string; value: string };
 
@@ -25,6 +29,9 @@ export interface AccountPoolRow {
   accountGroup: string;
   associatedDevices: string;
   associatedAgents: string;
+  appId?: string;
+  logoPath?: string;
+  color?: string;
 }
 
 interface AccountAssetRecord {
@@ -34,6 +41,7 @@ interface AccountAssetRecord {
   riskTips?: string;
   account?: string;
   accountId?: string;
+  nickName?: string;
   userAccount?: string;
   accountPassword?: string;
   email?: string;
@@ -41,6 +49,8 @@ interface AccountAssetRecord {
   remark?: string;
   accountGroup?: string;
   proxy?: string;
+  logoPath?: string;
+  color?: string;
   [key: string]: any;
 }
 
@@ -80,7 +90,28 @@ export async function getAccountPoolListApi(_params: {
 
   const data = await getAccountAssetPageApi<AccountAssetRecord>(reqParams);
 
-  const list = (data.records || []) as AccountPoolRow[];
+  const list: AccountPoolRow[] = (data.records || []).map(
+    (item: AccountAssetRecord) => ({
+    id: item.accountId ?? '',
+    platform: item.platform ?? '',
+    entryTime: item.inputTime ?? '',
+    riskAlert: item.riskTips ?? '',
+    account: item.account ?? '',
+    accountId: item.accountId ?? '',
+    username: item.nickName ?? '',
+    userAccount: item.userAccount ?? '',
+    accountPassword: item.accountPassword ?? '',
+    verificationEmail: item.email ?? '',
+    emailPassword: item.emailPassword ?? '',
+    remarks: item.remark ?? '',
+    accountGroup: item.accountGroup ?? '',
+    associatedDevices: '',
+    associatedAgents: item.proxy ?? '',
+    appId: item.appId ?? '',
+    logoPath: item.logoPath ?? '',
+      color: item.color ?? '',
+    }),
+  );
 
   return {
     list,

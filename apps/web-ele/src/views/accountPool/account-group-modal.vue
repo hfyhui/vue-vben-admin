@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import type { AddProxyGroupParams } from '#/api/core/asset';
+import type { AddAccountGroupParams } from '#/api/core/asset';
 
 import { ref } from 'vue';
 
@@ -7,14 +7,14 @@ import { useVbenModal } from '@vben/common-ui';
 import { ElAutocomplete, ElMessage } from 'element-plus';
 
 import { useVbenForm } from '#/adapter/form';
-import { addProxyGroupApi } from '#/api/core/asset';
+import { addAccountGroupApi } from '#/api/core/asset';
 import { $t } from '#/locales';
 
-import type { ProxyPoolGroupOption } from './proxy-pool-table-config';
+import type { AccountPoolGroupOption } from './account-pool-table-config';
 
-interface ProxyGroupModalData {
-  proxyIds?: string[];
-  groupOptions?: ProxyPoolGroupOption[];
+interface AccountGroupModalData {
+  accountIds?: string[];
+  groupOptions?: AccountPoolGroupOption[];
 }
 
 const emit = defineEmits<{
@@ -22,8 +22,8 @@ const emit = defineEmits<{
 }>();
 
 const submitting = ref(false);
-const proxyIds = ref<string[]>([]);
-const groupOptions = ref<ProxyPoolGroupOption[]>([]);
+const accountIds = ref<string[]>([]);
+const groupOptions = ref<AccountPoolGroupOption[]>([]);
 
 function getGroupNameSuggestions(queryString = '') {
   const keyword = queryString.trim()
@@ -31,7 +31,7 @@ function getGroupNameSuggestions(queryString = '') {
     .filter((item) => Boolean(item?.suiteName))
     .filter((item) => {
       if (!keyword) return true;
-      return item.suiteName.includes(keyword);
+      return (item.suiteName ?? '').includes(keyword);
     })
     .map((item) => ({
       value: item.suiteName,
@@ -43,7 +43,7 @@ function getDefaultValues() {
   return {
     suiteName: '',
     suiteDesc: '',
-    proxyIds: [] as string[],
+    accountIds: [] as string[],
   };
 }
 
@@ -57,13 +57,13 @@ const [Form, formApi] = useVbenForm({
     {
       component: ElAutocomplete,
       fieldName: 'suiteName',
-      label: $t('proxyPool.groupForm.groupName'),
+      label: $t('accountPool.groupForm.groupName'),
       rules: 'required',
       componentProps: {
         triggerOnFocus: true,
         clearable: true,
         maxlength: 50,
-        placeholder: $t('proxyPool.groupForm.groupNamePlaceholder'),
+        placeholder: $t('accountPool.groupForm.groupNamePlaceholder'),
         fetchSuggestions: (
           queryString: string,
           callback: (items: Array<{ suiteDesc?: string; value: string }>) => void,
@@ -91,20 +91,20 @@ const [Form, formApi] = useVbenForm({
     {
       component: 'Input',
       fieldName: 'suiteDesc',
-      label: $t('proxyPool.groupForm.groupDesc'),
+      label: $t('accountPool.groupForm.groupDesc'),
       componentProps: {
         type: 'textarea',
         rows: 3,
         maxlength: 200,
         showWordLimit: true,
-        placeholder: $t('proxyPool.groupForm.groupDescPlaceholder'),
+        placeholder: $t('accountPool.groupForm.groupDescPlaceholder'),
       },
     },
   ],
 });
 
 const [Modal, modalApi] = useVbenModal({
-  title: $t('proxyPool.groupForm.title'),
+  title: $t('accountPool.groupForm.title'),
   class: 'w-[560px]',
   closeOnClickModal: false,
   onCancel() {
@@ -115,23 +115,23 @@ const [Modal, modalApi] = useVbenModal({
   },
   onOpenChange: async (isOpen) => {
     if (isOpen) {
-      const data = modalApi.getData<ProxyGroupModalData>();
-      proxyIds.value = data?.proxyIds ?? [];
+      const data = modalApi.getData<AccountGroupModalData>();
+      accountIds.value = data?.accountIds ?? [];
       groupOptions.value = data?.groupOptions ?? [];
       await formApi.resetForm();
       await formApi.setValues(getDefaultValues());
       return;
     }
     await formApi.resetForm();
-    proxyIds.value = [];
+    accountIds.value = [];
     groupOptions.value = [];
   },
 });
 
-async function onSubmit(values: AddProxyGroupParams) {
+async function onSubmit(values: AddAccountGroupParams) {
   if (submitting.value) return;
-  if (!proxyIds.value.length) {
-    ElMessage.warning($t('proxyPool.message.selectBeforeGrouping'));
+  if (!accountIds.value.length) {
+    ElMessage.warning($t('accountPool.message.selectBeforeGrouping'));
     return;
   }
   submitting.value = true;
@@ -141,23 +141,23 @@ async function onSubmit(values: AddProxyGroupParams) {
     const selectedGroup = groupOptions.value.find(
       (item) => item?.suiteName === suiteName,
     );
-    const payload: AddProxyGroupParams = {
+    const payload: AddAccountGroupParams = {
       suiteId: selectedGroup?.id ?? '',
       suiteName,
       suiteDesc: values.suiteDesc ?? selectedGroup?.suiteDesc ?? '',
-      proxyIds: proxyIds.value,
+      accountIds: accountIds.value,
     };
-    const res = await addProxyGroupApi(payload);
+    const res = await addAccountGroupApi(payload);
     if (res?.code === 100000) {
-      ElMessage.success($t('proxyPool.message.groupSetSuccess'));
+      ElMessage.success($t('accountPool.message.groupSetSuccess'));
       modalApi.close();
       emit('success-after');
     } else {
-      ElMessage.error(res?.msg || $t('proxyPool.message.groupSetFailed'));
+      ElMessage.error(res?.msg || $t('accountPool.message.groupSetFailed'));
     }
   } catch (error) {
-    console.error('[proxyPool] 设置代理分组失败:', error);
-    ElMessage.error($t('proxyPool.message.groupSetFailed'));
+    console.error('[accountPool] 设置账号分组失败:', error);
+    ElMessage.error($t('accountPool.message.groupSetFailed'));
   } finally {
     submitting.value = false;
     modalApi.unlock();

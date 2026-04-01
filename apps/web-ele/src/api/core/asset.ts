@@ -123,6 +123,11 @@ export interface BatchDelProxyParams {
   proxyIds?: string[];
 }
 
+export interface LockAccountParams {
+  accountIds?: string[];
+  lock?: boolean;
+}
+
 /** 解绑账号 POST /asset/account/unbind */
 export interface AccountUnbindParams {
   accountIds?: string[];
@@ -183,6 +188,13 @@ export interface AddProxyGroupParams {
   suiteName?: string;
   suiteDesc?: string;
   proxyIds?: string[];
+}
+
+export interface AddAccountGroupParams {
+  suiteId?: string;
+  suiteName?: string;
+  suiteDesc?: string;
+  accountIds?: string[];
 }
 
 export interface IntelligentRecognitionParams {
@@ -343,6 +355,13 @@ export async function batchDeleteAccountApi(
   });
 }
 
+/** 锁定/解锁账号 POST /asset/lock-account */
+export async function lockAccountApi(
+  params: LockAccountParams,
+): Promise<ApiResponse<null>> {
+  return proxyClient.post<ApiResponse<null>>('/asset/lock-account', params);
+}
+
 /** 批量删除代理 DELETE /asset/batch/del-proxy */
 export async function batchDeleteProxyApi(
   proxyIds: string[],
@@ -415,6 +434,13 @@ export async function addProxyGroupApi(
   params: AddProxyGroupParams,
 ): Promise<ApiResponse<null>> {
   return proxyClient.post<ApiResponse<null>>('/asset/add/proxy-group', params);
+}
+
+/** 账号分组 POST /asset/add/account-group */
+export async function addAccountGroupApi(
+  params: AddAccountGroupParams,
+): Promise<ApiResponse<null>> {
+  return proxyClient.post<ApiResponse<null>>('/asset/add/account-group', params);
 }
 
 /** 智能识别 POST /asset/intelligent/recognition */
