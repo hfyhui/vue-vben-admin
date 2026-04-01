@@ -7,7 +7,11 @@ import { Page } from '@vben/common-ui';
 
 import { ElMessage } from 'element-plus';
 
-import { getAssetGroupApi, resetContainerApi } from '#/api/core/asset';
+import {
+  getAssetGroupApi,
+  getContainerPoolNumApi,
+  resetContainerApi,
+} from '#/api/core/asset';
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import { $t } from '#/locales';
 import { useAssetEnumsStore } from '#/store';
@@ -23,6 +27,26 @@ import {
 const sortOptions = ref<ContainerPoolSortOption[]>([]);
 const groupOptions = ref<ContainerPoolGroupOption[]>([]);
 const assetEnumsStore = useAssetEnumsStore();
+
+const statsData = ref([
+  { key: 'devicePool', value: 0 },
+  { key: 'runningDevices', value: 0 },
+  { key: 'pendingDevices', value: 0 },
+]);
+
+async function loadContainerPoolNum() {
+  try {
+    const response = await getContainerPoolNumApi();
+    const data = response?.data ?? {};
+    statsData.value = [
+      { key: 'devicePool', value: data.deviceTotalNum },
+      { key: 'runningDevices', value: data.deviceUsedNum },
+      { key: 'pendingDevices', value: data.deviceWaitingNum },
+    ];
+  } catch (error) {
+    console.error('[containerPool] 获取容器池数量失败:', error);
+  }
+}
 
 const [Grid, gridApi] = useVbenVxeGrid({
   formOptions: getFormOptions([], []),
@@ -121,9 +145,10 @@ async function onDeviceReset() {
     if (response?.code === 100000) {
       ElMessage.success(response.msg || $t('containerPool.message.resetSuccess'));
       gridApi.reload();
+      await loadContainerPoolNum();
       return;
     }
-    ElMessage.error(response?.msg || $t('containerPool.message.resetFailed'));
+    // 非 100000：proxyClient 已弹出业务 msg，不提示成功、不刷新
   } catch (error) {
     console.error('[containerPool] 容器重置失败:', error);
     ElMessage.error($t('containerPool.message.resetFailed'));
@@ -138,16 +163,10 @@ function onDeviceGroup() {
   ElMessage.info($t('containerPool.action.deviceGroup'));
 }
 
-const statsData = [
-  { key: 'devicePool', value: 56 },
-  { key: 'runningDevices', value: 102 },
-  { key: 'pendingDevices', value: 39 },
-  { key: 'other', value: 3 },
-];
-
 onMounted(() => {
   loadGroupOptions();
   loadSortOptions();
+  loadContainerPoolNum();
 });
 </script>
 
@@ -175,18 +194,20 @@ onMounted(() => {
 
       <Grid>
         <template #toolbar-actions>
-          <ElButton class="mr-2" type="primary" @click="onDeviceReset">
-            {{ $t('containerPool.action.deviceReset') }}
-          </ElButton>
-          <ElButton class="mr-2" type="primary" @click="onDisableLock">
-            {{ $t('containerPool.action.disableLock') }}
-          </ElButton>
-          <ElButton class="mr-2" type="primary" @click="onQuickNewDevice">
-            {{ $t('containerPool.action.quickNewDevice') }}
-          </ElButton>
-          <ElButton type="primary" @click="onDeviceGroup">
-            {{ $t('containerPool.action.deviceGroup') }}
-          </ElButton>
+          <div class="toolbar-actions">
+            <ElButton type="primary" @click="onDeviceReset">
+              {{ $t('containerPool.action.deviceReset') }}
+            </ElButton>
+            <ElButton type="primary" @click="onDisableLock">
+              {{ $t('containerPool.action.disableLock') }}
+            </ElButton>
+            <ElButton type="primary" @click="onQuickNewDevice">
+              {{ $t('containerPool.action.quickNewDevice') }}
+            </ElButton>
+            <ElButton type="primary" @click="onDeviceGroup">
+              {{ $t('containerPool.action.deviceGroup') }}
+            </ElButton>
+          </div>
         </template>
       </Grid>
     </div>
@@ -218,8 +239,19 @@ onMounted(() => {
   color: var(--el-color-primary);
 }
 
-.mr-2 {
-  margin-right: 8px;
+.toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+:deep(.el-form-item) {
+  margin-bottom: 14px;
+}
+
+:deep(.vxe-table--empty-content) {
+  padding: 40px 0 !important;
 }
 </style>
 

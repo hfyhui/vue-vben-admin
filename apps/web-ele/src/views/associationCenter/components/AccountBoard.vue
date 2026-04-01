@@ -252,7 +252,7 @@ function onAccountDragStart(ev: DragEvent, item: AccountItem, index: number) {
     if (!appId) continue;
     appIdMap[appId] = (appIdMap[appId] || 0) + 1;
     if (appIdMap[appId] > 1) {
-      ElMessage.error('同一批拖拽中，每个社媒平台只能选择一个账号');
+      ElMessage.error($t('associationCenter.oneAccountPerPlatformPerDevice'));
       ev.preventDefault();
       return;
     }

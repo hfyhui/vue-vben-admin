@@ -18,6 +18,7 @@ export interface AccountPoolRow {
   platform: string;
   entryTime: string;
   riskAlert: string;
+  loginStatus?: string;
   account: string;
   accountId: string;
   username: string;
@@ -25,10 +26,11 @@ export interface AccountPoolRow {
   accountPassword: string;
   verificationEmail: string;
   emailPassword: string;
+  twiceCheck?: string;
   remarks: string;
   accountGroup: string;
-  associatedDevices: string;
   associatedAgents: string;
+  isLock?: boolean;
   appId?: string;
   logoPath?: string;
   color?: string;
@@ -39,6 +41,7 @@ interface AccountAssetRecord {
   appId?: string;
   inputTime?: string;
   riskTips?: string;
+  loginStatus?: string;
   account?: string;
   accountId?: string;
   nickName?: string;
@@ -46,9 +49,13 @@ interface AccountAssetRecord {
   accountPassword?: string;
   email?: string;
   emailPassword?: string;
+  twiceCheck?: string;
   remark?: string;
+  suiteName?: string;
   accountGroup?: string;
   proxy?: string;
+  isLock?: boolean;
+  lock?: boolean;
   logoPath?: string;
   color?: string;
   [key: string]: any;
@@ -96,6 +103,7 @@ export async function getAccountPoolListApi(_params: {
     platform: item.platform ?? '',
     entryTime: item.inputTime ?? '',
     riskAlert: item.riskTips ?? '',
+    loginStatus: item.loginStatus ?? '',
     account: item.account ?? '',
     accountId: item.accountId ?? '',
     username: item.nickName ?? '',
@@ -103,10 +111,11 @@ export async function getAccountPoolListApi(_params: {
     accountPassword: item.accountPassword ?? '',
     verificationEmail: item.email ?? '',
     emailPassword: item.emailPassword ?? '',
+    twiceCheck: item.twiceCheck ?? '',
     remarks: item.remark ?? '',
-    accountGroup: item.accountGroup ?? '',
-    associatedDevices: '',
+    accountGroup: item.suiteName,
     associatedAgents: item.proxy ?? '',
+    isLock:item.isLock,
     appId: item.appId ?? '',
     logoPath: item.logoPath ?? '',
       color: item.color ?? '',
@@ -191,9 +200,13 @@ export const useColumns = () => [
   { field: 'platform', title: $t('accountPool.table.platform'), minWidth: 120 },
   { field: 'entryTime', title: $t('accountPool.table.entryTime'), minWidth: 160 },
   { field: 'riskAlert', title: $t('accountPool.table.riskAlert'), minWidth: 100 },
+  {
+    field: 'loginStatus',
+    title: $t('accountPool.table.loginStatus'),
+    minWidth: 120,
+  },
   { field: 'account', title: $t('accountPool.table.account'), minWidth: 120 },
   { field: 'accountId', title: $t('accountPool.table.accountId'), minWidth: 120 },
-  { field: 'username', title: $t('accountPool.table.username'), minWidth: 120 },
   {
     field: 'userAccount',
     title: $t('accountPool.table.userAccount'),
@@ -214,15 +227,15 @@ export const useColumns = () => [
     title: $t('accountPool.table.emailPassword'),
     minWidth: 120,
   },
+  {
+    field: 'twiceCheck',
+    title: $t('accountPool.table.twiceCheck'),
+    minWidth: 120,
+  },
   { field: 'remarks', title: $t('accountPool.table.remarks'), minWidth: 120 },
   {
     field: 'accountGroup',
     title: $t('accountPool.table.accountGroup'),
-    minWidth: 120,
-  },
-  {
-    field: 'associatedDevices',
-    title: $t('accountPool.table.associatedDevices'),
     minWidth: 120,
   },
   {

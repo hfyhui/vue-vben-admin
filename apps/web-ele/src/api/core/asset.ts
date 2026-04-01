@@ -109,6 +109,19 @@ export interface AccountPoolNumData {
   accountRiskNum?: string;
 }
 
+export interface ProxyPoolNumData {
+  proxyTotalNum?: string;
+  proxyUsedNum?: string;
+  proxyWaitNum?: string;
+  proxyRiskNum?: string;
+}
+
+export interface ContainerPoolNumData {
+  deviceTotalNum?: string;
+  deviceUsedNum?: string;
+  deviceWaitingNum?: string;
+}
+
 export interface ReverseQueryParams {
   accountIds?: string[];
   proxyIds?: string[];
@@ -151,13 +164,16 @@ export interface ImportProxyParams {
 }
 
 export interface AddAccountParams {
-  appId?: string;
-  riskLevel?: string;
+  nickName?: string;
   appAccount?: string;
-  userName?: string;
-  userAccount?: string;
-  password?: string;
-  email?: string;
+  accountPasswd?: string;
+  emailAddr?: string;
+  emailPasswd?: string;
+  loginStatus?: string;
+  twiceCheck?: string;
+  appId?: string;
+  appName?: string;
+  riskLevel?: string;
   remark?: string;
   suiteId?: string;
   suiteName?: string;
@@ -336,6 +352,16 @@ export async function getAssetGroupApi(): Promise<ApiResponse<AssetGroupItem[]>>
 /** 获取账号池数量 GET /asset/account/num */
 export async function getAccountPoolNumApi(): Promise<ApiResponse<AccountPoolNumData>> {
   return proxyClient.get<ApiResponse<AccountPoolNumData>>('/asset/account/num');
+}
+
+/** 获取代理池数量 GET /asset/proxy/num */
+export async function getProxyPoolNumApi(): Promise<ApiResponse<ProxyPoolNumData>> {
+  return proxyClient.get<ApiResponse<ProxyPoolNumData>>('/asset/proxy/num');
+}
+
+/** 获取容器池数量 GET /asset/container/num */
+export async function getContainerPoolNumApi(): Promise<ApiResponse<ContainerPoolNumData>> {
+  return proxyClient.get<ApiResponse<ContainerPoolNumData>>('/asset/container/num');
 }
 
 /** 反向查询 POST /asset/reverse/query */

@@ -51,15 +51,22 @@ const groupSelectOptions = computed(() =>
 const riskLevelSelectOptions = computed(() => {
   return assetEnumsStore.getEnumOptions('ACCOUNT_RISK_LEVEL');
 });
+const loginStatusSelectOptions = computed(() => {
+  return assetEnumsStore.getEnumOptions('LOGIN_STATUS');
+});
 
 function getDefaultValues(defaultAppId = ''): AddAccountParams {
   return {
-    appId: defaultAppId,
-    riskLevel: '',
-    userName: '',
-    userAccount: '',
-    password: '',
-    email: '',
+    appId: defaultAppId || undefined,
+    appName: '',
+    riskLevel: undefined,
+    loginStatus: undefined,
+    nickName: '',
+    appAccount: '',
+    accountPasswd: '',
+    emailAddr: '',
+    emailPasswd: '',
+    twiceCheck: '',
     remark: '',
     suiteId: '',
     suiteName: '',
@@ -88,7 +95,7 @@ const [Form, formApi] = useVbenForm({
     },
     {
       component: 'Input',
-      fieldName: 'userName',
+      fieldName: 'nickName',
       label: $t('accountPool.form.userNickname'),
       componentProps: {
         placeholder: $t('accountPool.form.userNicknamePlaceholder'),
@@ -98,36 +105,56 @@ const [Form, formApi] = useVbenForm({
     },
     {
       component: 'Input',
-      fieldName: 'userAccount',
+      fieldName: 'appAccount',
       label: $t('accountPool.form.userAccount'),
       rules: 'required',
       componentProps: {
         placeholder: $t('accountPool.form.userAccountPlaceholder'),
-        maxlength: 100,
+        maxlength: 50,
         clearable: true,
       },
     },
     {
       component: 'Input',
-      fieldName: 'password',
+      fieldName: 'accountPasswd',
       label: $t('accountPool.form.accountPassword'),
       rules: 'required',
       componentProps: {
         type: 'password',
         showPassword: true,
         placeholder: $t('accountPool.form.accountPasswordPlaceholder'),
-        maxlength: 100,
+        maxlength: 20,
         clearable: true,
       },
     },
     {
       component: 'Input',
-      fieldName: 'email',
+      fieldName: 'emailAddr',
       label: $t('accountPool.form.email'),
       rules: 'required',
       componentProps: {
         placeholder: $t('accountPool.form.emailPlaceholder'),
-        maxlength: 100,
+        maxlength: 50,
+        clearable: true,
+      },
+    },
+    {
+      component: 'Input',
+      fieldName: 'emailPasswd',
+      label: $t('accountPool.form.emailPassword'),
+      componentProps: {
+        placeholder: $t('accountPool.form.emailPasswordPlaceholder'),
+        maxlength: 20,
+        clearable: true,
+      },
+    },
+    {
+      component: 'Input',
+      fieldName: 'twiceCheck',
+      label: $t('accountPool.form.twiceCheck'),
+      componentProps: {
+        placeholder: $t('accountPool.form.twiceCheckPlaceholder'),
+        maxlength: 50,
         clearable: true,
       },
     },
@@ -143,6 +170,16 @@ const [Form, formApi] = useVbenForm({
       },
     },
     {
+      component: 'Select',
+      fieldName: 'loginStatus',
+      label: $t('accountPool.form.loginStatus'),
+      componentProps: {
+        placeholder: $t('accountPool.form.loginStatusPlaceholder'),
+        clearable: true,
+        options: loginStatusSelectOptions,
+      },
+    },
+    {
       component: 'Input',
       fieldName: 'remark',
       label: $t('accountPool.form.remarkOptional'),
@@ -150,7 +187,7 @@ const [Form, formApi] = useVbenForm({
         type: 'textarea',
         placeholder: $t('accountPool.form.remarkPlaceholder'),
         rows: 3,
-        maxlength: 200,
+        maxlength: 50,
         showWordLimit: true,
       },
     },
@@ -203,17 +240,19 @@ async function onSubmit(values: AddAccountParams) {
   creating.value = true;
   modalApi.lock();
   try {
+    const selectedPlatform = platformOptions.value.find(
+      (item) => item.id === values.appId,
+    );
     const payload: AddAccountParams = {
       ...getDefaultValues(),
       ...values,
+      appName: selectedPlatform?.applicationName ?? '',
     };
     const res = await addAccountApi(payload);
     if (res?.code === 100000) {
       ElMessage.success($t('accountPool.message.addSuccess'));
       modalApi.close();
       emit('success-after');
-    } else {
-      ElMessage.error(res?.msg || $t('accountPool.message.addFailed'));
     }
   } catch (error) {
     console.error('[accountPool] 新增账号失败:', error);
