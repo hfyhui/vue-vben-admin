@@ -90,6 +90,8 @@
   "proxyBoundToDevice": "代理已绑定到设备",
   "proxyReuseConfirmTitle": "复用代理确认",
   "proxyReuseConfirmMessage": "设备数量大于代理数量，是否复用代理继续关联？",
+  "confirmButtonText": "确定",
+  "cancelButtonText": "取消",
   "proxyReuseCancelled": "已取消复用代理",
   "proxyCapacityInsufficient": "所选代理可关联设备数量不足（单代理最多关联3台容器）",
   "selectDataInAllBoardsFirst": "请先在账号看板、代理看板、设备看板中分别选择数据",

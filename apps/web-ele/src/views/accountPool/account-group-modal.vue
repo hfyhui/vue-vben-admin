@@ -26,12 +26,12 @@ const accountIds = ref<string[]>([]);
 const groupOptions = ref<AccountPoolGroupOption[]>([]);
 
 function getGroupNameSuggestions(queryString = '') {
-  const keyword = queryString.trim()
+  const keyword = queryString.trim().toLowerCase();
   return groupOptions.value
     .filter((item) => Boolean(item?.suiteName))
     .filter((item) => {
       if (!keyword) return true;
-      return (item.suiteName ?? '').includes(keyword);
+      return (item.suiteName ?? '').toLowerCase().includes(keyword);
     })
     .map((item) => ({
       value: item.suiteName,

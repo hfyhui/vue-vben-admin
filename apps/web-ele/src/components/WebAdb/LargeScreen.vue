@@ -41,7 +41,7 @@
       <DeviceOperateButton
         v-if="showFooterButtons && isWebAdbConnected"
         @press-key="handlePressKey"
-        @reconnect="handleReconnect"
+        @open-setting="handleOpenSetting"
       />
     </div>
   </div>
@@ -115,10 +115,10 @@ function getWebAdbInstance() {
   return webAdbRef.value || null;
 }
 
-async function handleReconnect() {
+async function handleOpenSetting() {
   const instance = getWebAdbInstance();
-  if (instance?.reconnect) {
-    await instance.reconnect();
+  if (instance?.openSetting) {
+    await instance.openSetting();
   }
 }
 
