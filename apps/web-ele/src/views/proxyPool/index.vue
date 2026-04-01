@@ -245,6 +245,7 @@ const [FormModal, formModalApi] = useVbenModal({
 
 function onGroupSuccess() {
   gridApi.reload();
+  loadGroupOptions();
 }
 
 const [GroupModal, groupModalApi] = useVbenModal({

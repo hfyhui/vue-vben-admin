@@ -17,6 +17,7 @@ import {
   getAccountPoolNumApi,
   getAssetGroupApi,
   importAccountApi,
+  lockAccountApi,
 } from '#/api/core/asset';
 
 import {
@@ -29,12 +30,14 @@ import {
   useColumns,
 } from './account-pool-table-config';
 import AccountPoolFormModal from './form-modal.vue';
+import AccountGroupModal from './account-group-modal.vue';
 
 const importFileInputRef = ref<HTMLInputElement>();
 const currentAppId = ref('');
 const selectedPlatformIds = ref<string[]>([]);
 const importAppId = ref('');
 const importing = ref(false);
+const locking = ref(false);
 const groupOptions = ref<AccountPoolGroupOption[]>([]);
 const platformOptions = ref<AccountPoolPlatformOption[]>([]);
 const sortOptions = ref<AccountPoolSortOption[]>([]);
@@ -143,18 +146,8 @@ async function onImportFileChange(event: Event) {
 }
 
 function onBatchDelete() {
-  const checkboxRecords = (gridApi as any).grid.getCheckboxRecords?.() || [];
-  if (checkboxRecords.length === 0) {
-    ElMessage.warning($t('accountPool.message.selectBeforeDelete'));
-    return;
-  }
-
-  const ids = checkboxRecords.map((item: any) => item.accountId);
-
-  if (!ids.length) {
-    ElMessage.warning($t('accountPool.message.selectIdFailed'));
-    return;
-  }
+  const ids = getSelectedAccountIds($t('accountPool.message.selectBeforeDelete'));
+  if (!ids.length) return;
 
   const count = ids.length;
 
@@ -177,6 +170,83 @@ function onBatchDelete() {
     .catch(() => {
       // 用户取消
     });
+}
+
+function getSelectedAccountIds(emptyTip: string) {
+  const checkboxRecords = (gridApi as any).grid.getCheckboxRecords?.() || [];
+  if (checkboxRecords.length === 0) {
+    ElMessage.warning(emptyTip);
+    return [];
+  }
+  const ids = checkboxRecords
+    .map((item: any) => item.accountId)
+    .filter((id: unknown) => Boolean(id));
+  if (!ids.length) {
+    ElMessage.warning($t('accountPool.message.selectIdFailed'));
+    return [];
+  }
+  return ids;
+}
+
+function onBatchLock(lock: boolean) {
+  if (locking.value) return;
+  const ids = getSelectedAccountIds($t('accountPool.message.selectBeforeLock'));
+  if (!ids.length) return;
+  const count = ids.length;
+  const confirmMessage = lock
+    ? $t('accountPool.message.batchLockConfirm', { count })
+    : $t('accountPool.message.batchUnlockConfirm', { count });
+  const confirmTitle = lock
+    ? $t('accountPool.message.batchLockConfirmTitle')
+    : $t('accountPool.message.batchUnlockConfirmTitle');
+
+  ElMessageBox.confirm(confirmMessage, confirmTitle, { type: 'warning' })
+    .then(async () => {
+      locking.value = true;
+      try {
+        const res = await lockAccountApi({ accountIds: ids, lock });
+        if (res?.code === 100000) {
+          ElMessage.success(
+            lock
+              ? $t('accountPool.message.batchLockSuccess', { count })
+              : $t('accountPool.message.batchUnlockSuccess', { count }),
+          );
+          gridApi.reload();
+          return;
+        }
+        ElMessage.error(
+          res?.msg ||
+            (lock
+              ? $t('accountPool.message.batchLockFailed')
+              : $t('accountPool.message.batchUnlockFailed')),
+        );
+      } catch (error) {
+        console.error('[accountPool] 锁定/解锁账号失败:', error);
+        ElMessage.error(
+          lock
+            ? $t('accountPool.message.batchLockFailed')
+            : $t('accountPool.message.batchUnlockFailed'),
+        );
+      } finally {
+        locking.value = false;
+      }
+    })
+    .catch(() => {
+      // 用户取消
+    });
+}
+
+function onSetGrouping() {
+  const accountIds = getSelectedAccountIds(
+    $t('accountPool.message.selectBeforeGrouping'),
+  );
+  if (!accountIds.length) return;
+  groupModalApi
+    .setData({
+      accountIds,
+      groupOptions: groupOptions.value,
+    })
+    .open();
 }
 
 async function onDownloadTemplate() {
@@ -218,9 +288,17 @@ async function loadAccountPoolNum() {
 async function loadGroupOptions() {
   try {
     const response = await getAssetGroupApi();
-    groupOptions.value = (response?.data ?? []) as AccountPoolGroupOption[];
+    const groups = Array.isArray(response?.data) ? response.data : [];
+    groupOptions.value = groups
+      .filter((item) => Boolean(item?.id))
+      .map((item) => ({
+        id: item.id as string,
+        suiteName: item.suiteName ?? '',
+        suiteDesc: item.suiteDesc ?? '',
+      }));
   } catch (error) {
     console.error('[accountPool] 获取分组失败:', error);
+    groupOptions.value = [];
   }
   applyFormOptions();
 }
@@ -299,6 +377,15 @@ const [FormModal, formModalApi] = useVbenModal({
   connectedComponent: AccountPoolFormModal,
 });
 
+function onGroupSuccess() {
+  gridApi.reload();
+  loadGroupOptions();
+}
+
+const [GroupModal, groupModalApi] = useVbenModal({
+  connectedComponent: AccountGroupModal,
+});
+
 onMounted(() => {
   loadAccountPoolNum();
   loadGroupOptions();
@@ -368,12 +455,32 @@ onMounted(() => {
           <ElButton class="mr-2" type="primary" @click="onDownloadTemplate">
             {{ $t('accountPool.action.downloadTemplate') }}
           </ElButton>
-          <ElButton type="danger" @click="onBatchDelete">
+          <ElButton class="mr-2" type="danger" @click="onBatchDelete">
             {{ $t('accountPool.action.batchDelete') }}
+          </ElButton>
+          <ElButton
+            class="mr-2"
+            type="warning"
+            :loading="locking"
+            @click="onBatchLock(true)"
+          >
+            {{ $t('accountPool.action.lock') }}
+          </ElButton>
+          <ElButton
+            class="mr-2"
+            type="success"
+            :loading="locking"
+            @click="onBatchLock(false)"
+          >
+            {{ $t('accountPool.action.unlock') }}
+          </ElButton>
+          <ElButton class="ml-2" type="primary" @click="onSetGrouping">
+            {{ $t('accountPool.action.setGrouping') }}
           </ElButton>
         </template>
       </Grid>
       <FormModal @success-after="onCreateSuccess" />
+      <GroupModal @success-after="onGroupSuccess" />
     </div>
   </Page>
 </template>
@@ -405,6 +512,10 @@ onMounted(() => {
 
 .mr-2 {
   margin-right: 8px;
+}
+
+.ml-2 {
+  margin-left: 8px;
 }
 
 .import-platform-select {

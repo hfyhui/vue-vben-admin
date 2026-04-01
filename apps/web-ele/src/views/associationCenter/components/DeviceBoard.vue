@@ -136,7 +136,11 @@ async function allocateProxiesForAutoAssociate(
       await ElMessageBox.confirm(
         $t('associationCenter.proxyReuseConfirmMessage'),
         $t('associationCenter.proxyReuseConfirmTitle'),
-        { type: 'warning' },
+        {
+          type: 'warning',
+          confirmButtonText: $t('associationCenter.confirmButtonText'),
+          cancelButtonText: $t('associationCenter.cancelButtonText'),
+        },
       );
     } catch {
       ElMessage.info($t('associationCenter.proxyReuseCancelled'));

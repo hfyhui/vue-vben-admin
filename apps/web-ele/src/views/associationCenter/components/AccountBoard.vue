@@ -405,12 +405,6 @@ defineExpose({
                 </div>
                 <div class="account-name">
                   {{ item.nickName || '-' }}
-                  <span
-                    v-if="item.riskTips"
-                    class="risk-warning"
-                  >
-                    {{ item.riskTips }}
-                  </span>
                 </div>
               </div>
             </div>
@@ -606,11 +600,6 @@ defineExpose({
   font-size: 11px;
   color: var(--el-text-color-secondary);
   margin-top: 1px;
-}
-
-.risk-warning {
-  color: var(--el-color-danger);
-  margin-left: 4px;
 }
 
 .growth-rate {

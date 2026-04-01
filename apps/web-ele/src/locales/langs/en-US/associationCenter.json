@@ -88,6 +88,8 @@
   "proxyBoundToDevice": "Proxy has been bound to the device",
   "proxyReuseConfirmTitle": "Reuse Proxy Confirmation",
   "proxyReuseConfirmMessage": "The number of devices is greater than proxies. Reuse proxies to continue association?",
+  "confirmButtonText": "OK",
+  "cancelButtonText": "Cancel",
   "proxyReuseCancelled": "Proxy reuse cancelled",
   "proxyCapacityInsufficient": "Selected proxies do not have enough capacity (max 3 containers per proxy)",
   "selectDataInAllBoardsFirst": "Please select data in account board, proxy board, and device board first",

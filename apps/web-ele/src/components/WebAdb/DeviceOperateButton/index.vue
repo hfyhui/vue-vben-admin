@@ -26,14 +26,14 @@ const buttons = computed(() => [
   { key: 'AndroidHome', content: $t('webadb.scrcpy.goHome'), icon: 'icon-home' },
   { key: 'AndroidAppSwitch', content: $t('webadb.scrcpy.multitask'), icon: 'icon-multitask' },
   { key: 'ContextMenu', content: $t('webadb.scrcpy.clearSpeed'), icon: 'icon-clear-speed' },
-  { key: 'reconnect', content: $t('webadb.scrcpy.reconnect'), icon: 'icon-shezhi' },
+  { key: 'openSetting', content: $t('webadb.scrcpy.setUp'), icon: 'icon-shezhi' },
 ]);
 
-const emit = defineEmits(['reconnect', 'pressKey']);
+const emit = defineEmits(['openSetting', 'pressKey']);
 
 function handlePress(_e, key) {
-  if (key === 'reconnect') {
-    emit('reconnect');
+  if (key === 'openSetting') {
+    emit('openSetting');
   } else {
     emit('pressKey', { e: _e, key });
   }
