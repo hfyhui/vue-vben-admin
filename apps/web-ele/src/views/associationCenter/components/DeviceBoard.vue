@@ -2,7 +2,7 @@
 import { computed, nextTick, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
-import { ElMessage } from 'element-plus';
+import { ElMessage, ElMessageBox } from 'element-plus';
 import { TopRight } from '@element-plus/icons-vue';
 
 import { $t } from '#/locales';
@@ -99,6 +99,7 @@ type BoundProxy = {
   proxy?: string;
   proxyArea?: string;
   proxyGroup?: string;
+  bandingCount?: number;
   /** true：列表/接口带回，可解绑；false：拖拽/自动关联，未正式启用不可解绑 */
   fromServer?: boolean;
 };
@@ -110,6 +111,85 @@ function getProxyId(proxy: Partial<BoundProxy> & Record<string, any>) {
 /** 代理展示值：优先使用原始 proxy 串，缺失时再回退 area + ip / ip */
 function getProxyDisplayText(proxy: Partial<BoundProxy> & Record<string, any>) {
   return proxy.proxy as string;
+}
+
+function getProxyBindingCount(proxy: Partial<BoundProxy> & Record<string, any>) {
+  return Number(proxy?.bandingCount ?? 0);
+}
+
+async function allocateProxiesForAutoAssociate(
+  proxies: BoundProxy[],
+  bindCount: number,
+) {
+  if (!proxies.length || bindCount <= 0) return [] as BoundProxy[];
+
+  const states = proxies.map((proxy, index) => ({
+    index,
+    proxy,
+    current: getProxyBindingCount(proxy),
+    reused: 0,
+  }));
+
+  const needReuse = bindCount > proxies.length;
+  if (needReuse) {
+    try {
+      await ElMessageBox.confirm(
+        $t('associationCenter.proxyReuseConfirmMessage'),
+        $t('associationCenter.proxyReuseConfirmTitle'),
+        { type: 'warning' },
+      );
+    } catch {
+      ElMessage.info($t('associationCenter.proxyReuseCancelled'));
+      return null;
+    }
+  }
+
+  const pickLowestWithRandomTie = (
+    pool: Array<{ index: number; proxy: BoundProxy; current: number; reused: number }>,
+  ) => {
+    const minCurrent = Math.min(...pool.map((item) => item.current));
+    const currentCandidates = pool.filter((item) => item.current === minCurrent);
+    const minReused = Math.min(...currentCandidates.map((item) => item.reused));
+    const finalCandidates = currentCandidates.filter(
+      (item) => item.reused === minReused,
+    );
+    const randomIndex = Math.floor(Math.random() * finalCandidates.length);
+    return finalCandidates[randomIndex];
+  };
+
+  // 代理数 > 设备数：优先使用关联数更低的代理；同数量随机
+  if (!needReuse) {
+    const pool = [...states];
+    const result: BoundProxy[] = [];
+    for (let i = 0; i < bindCount; i++) {
+      if (!pool.length) break;
+      const picked = pickLowestWithRandomTie(pool);
+      if (!picked) break;
+      result.push(picked.proxy);
+      const removeIndex = pool.findIndex((item) => item.index === picked.index);
+      if (removeIndex > -1) pool.splice(removeIndex, 1);
+    }
+    return result;
+  }
+
+  // 设备数 > 代理数：先按选择顺序一轮分配，再复用“使用数更低”的代理（同数量随机）
+  const result: BoundProxy[] = proxies.slice();
+  const remaining = bindCount - proxies.length;
+  if (remaining <= 0) return result.slice(0, bindCount);
+
+  for (const state of states) {
+    state.current += 1;
+    state.reused += 1;
+  }
+
+  for (let i = 0; i < remaining; i++) {
+    const picked = pickLowestWithRandomTie(states);
+    if (!picked) break;
+    result.push(picked.proxy);
+    picked.current += 1;
+    picked.reused += 1;
+  }
+  return result;
 }
 
 /** 统一读取账号 appId（用于同设备唯一校验） */
@@ -707,7 +787,7 @@ async function handleUnbindAccount(item: DeviceItem, accountId: string) {
 }
 
 /** 自动关联：账号与设备按 1v1 绑定，代理支持复用到多个设备 */
-function autoAssociateWithSelections(
+async function autoAssociateWithSelections(
   accounts: BoundAccount[],
   proxies: BoundProxy[],
 ) {
@@ -726,6 +806,28 @@ function autoAssociateWithSelections(
     return;
   }
 
+  const selectedAppIds = hasAccounts
+    ? Array.from(
+        new Set(
+          accounts
+            .map((item) => getAccountAppId(item as Record<string, any>))
+            .filter(Boolean),
+        ),
+      )
+    : [];
+
+  if (hasAccounts && devices.length > 1) {
+    if (selectedAppIds.length > 1) {
+      ElMessage.error($t('associationCenter.multiAppOnlyOneDevice'));
+      return;
+    }
+  }
+
+  if (hasAccounts && devices.length > 1 && selectedAppIds.length === 1 && accounts.length !== devices.length) {
+    ElMessage.error($t('associationCenter.samePlatformCountMismatch'));
+    return;
+  }
+
   // 自动关联要求账号与设备严格 1v1，数量必须一致
   if (hasAccounts && accounts.length !== devices.length) {
     ElMessage.error($t('associationCenter.autoAssociateCountMismatch'));
@@ -733,11 +835,15 @@ function autoAssociateWithSelections(
   }
 
   const bindCount = devices.length;
-  const usedProxies = hasProxies
-    ? proxies.length >= bindCount
-      ? proxies.slice(0, bindCount)
-      : Array.from({ length: bindCount }, (_, i) => proxies[i % proxies.length])
-    : [];
+  let usedProxies: BoundProxy[] = [];
+  if (hasProxies) {
+    const allocatedProxies = await allocateProxiesForAutoAssociate(
+      proxies,
+      bindCount,
+    );
+    if (!allocatedProxies) return;
+    usedProxies = allocatedProxies;
+  }
   if (bindCount <= 0) {
     ElMessage.warning($t('associationCenter.insufficientDataToAssociate'));
     return;

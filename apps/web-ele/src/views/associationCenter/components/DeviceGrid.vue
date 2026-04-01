@@ -144,7 +144,12 @@ function getBoundAccounts(item: DeviceItem): BoundAccountRow[] {
             <div class="card-ip">{{ item.deviceIp }}</div>
             <div class="card-row">
               <span class="card-label">{{ $t('associationCenter.groupInfo') }}:</span>
-              <span class="card-text-ellipsis">{{ getGroupDisplay(item) }}</span>
+              <el-tooltip
+                :content="getGroupDisplay(item)"
+                placement="top"
+              >
+                <span class="card-text-ellipsis">{{ getGroupDisplay(item) }}</span>
+              </el-tooltip>
             </div>
             <div class="card-row card-proxy-row">
               <span class="card-label">{{ $t('associationCenter.networkProxy') }}:</span>
