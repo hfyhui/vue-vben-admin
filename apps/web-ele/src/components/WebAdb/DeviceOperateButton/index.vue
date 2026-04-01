@@ -25,7 +25,7 @@ const buttons = computed(() => [
   { key: 'AndroidBack', content: $t('webadb.scrcpy.goBack'), icon: 'icon-back' },
   { key: 'AndroidHome', content: $t('webadb.scrcpy.goHome'), icon: 'icon-home' },
   { key: 'AndroidAppSwitch', content: $t('webadb.scrcpy.multitask'), icon: 'icon-multitask' },
-  { key: 'ContextMenu', content: $t('webadb.scrcpy.menu'), icon: 'icon-clear-speed' },
+  { key: 'ContextMenu', content: $t('webadb.scrcpy.clearSpeed'), icon: 'icon-clear-speed' },
   { key: 'reconnect', content: $t('webadb.scrcpy.reconnect'), icon: 'icon-shezhi' },
 ]);
 
