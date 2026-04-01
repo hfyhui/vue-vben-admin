@@ -123,7 +123,6 @@ async function onDeviceReset() {
       gridApi.reload();
       return;
     }
-    ElMessage.error(response?.msg || $t('containerPool.message.resetFailed'));
   } catch (error) {
     console.error('[containerPool] 容器重置失败:', error);
     ElMessage.error($t('containerPool.message.resetFailed'));
@@ -175,18 +174,20 @@ onMounted(() => {
 
       <Grid>
         <template #toolbar-actions>
-          <ElButton class="mr-2" type="primary" @click="onDeviceReset">
-            {{ $t('containerPool.action.deviceReset') }}
-          </ElButton>
-          <ElButton class="mr-2" type="primary" @click="onDisableLock">
-            {{ $t('containerPool.action.disableLock') }}
-          </ElButton>
-          <ElButton class="mr-2" type="primary" @click="onQuickNewDevice">
-            {{ $t('containerPool.action.quickNewDevice') }}
-          </ElButton>
-          <ElButton type="primary" @click="onDeviceGroup">
-            {{ $t('containerPool.action.deviceGroup') }}
-          </ElButton>
+          <div class="toolbar-actions">
+            <ElButton type="primary" @click="onDeviceReset">
+              {{ $t('containerPool.action.deviceReset') }}
+            </ElButton>
+            <ElButton type="primary" @click="onDisableLock">
+              {{ $t('containerPool.action.disableLock') }}
+            </ElButton>
+            <ElButton type="primary" @click="onQuickNewDevice">
+              {{ $t('containerPool.action.quickNewDevice') }}
+            </ElButton>
+            <ElButton type="primary" @click="onDeviceGroup">
+              {{ $t('containerPool.action.deviceGroup') }}
+            </ElButton>
+          </div>
         </template>
       </Grid>
     </div>
@@ -218,8 +219,19 @@ onMounted(() => {
   color: var(--el-color-primary);
 }
 
-.mr-2 {
-  margin-right: 8px;
+.toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+:deep(.el-form-item) {
+  margin-bottom: 14px;
+}
+
+:deep(.vxe-table--empty-content) {
+  padding: 40px 0 !important;
 }
 </style>
 

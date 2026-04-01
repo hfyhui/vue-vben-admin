@@ -162,8 +162,6 @@ async function onImportFileChange(event: Event) {
     if (res?.code === 100000) {
       ElMessage.success($t('proxyPool.message.importSuccess'));
       gridApi.reload();
-    } else {
-      ElMessage.error(res?.msg || $t('proxyPool.message.importFailed'));
     }
   } catch (error) {
     console.error('[proxyPool] 导入代理失败:', error);
@@ -277,33 +275,34 @@ const [GroupModal, groupModalApi] = useVbenModal({
 
       <Grid>
         <template #toolbar-actions>
-          <ElButton class="mr-2" type="primary" @click="onCreate">
-            {{ $t('proxyPool.action.add') }}
-          </ElButton>
-          <ElButton
-            class="mr-2"
-            type="primary"
-            :loading="importing"
-            @click="onImport"
-          >
-            {{ $t('proxyPool.action.import') }}
-          </ElButton>
-          <input
-            ref="importFileInputRef"
-            type="file"
-            accept=".csv"
-            style="display: none"
-            @change="onImportFileChange"
-          />
-          <ElButton class="mr-2" type="primary" @click="onDownloadTemplate">
-            {{ $t('proxyPool.action.downloadTemplate') }}
-          </ElButton>
-          <ElButton type="danger" @click="onBatchDelete">
-            {{ $t('proxyPool.action.batchDelete') }}
-          </ElButton>
-          <ElButton class="ml-2" type="primary" @click="onSetGrouping">
-            {{ $t('proxyPool.action.setGrouping') }}
-          </ElButton>
+          <div class="toolbar-actions">
+            <ElButton type="primary" @click="onCreate">
+              {{ $t('proxyPool.action.add') }}
+            </ElButton>
+            <ElButton
+              type="primary"
+              :loading="importing"
+              @click="onImport"
+            >
+              {{ $t('proxyPool.action.import') }}
+            </ElButton>
+            <input
+              ref="importFileInputRef"
+              type="file"
+              accept=".csv"
+              style="display: none"
+              @change="onImportFileChange"
+            />
+            <ElButton type="primary" @click="onDownloadTemplate">
+              {{ $t('proxyPool.action.downloadTemplate') }}
+            </ElButton>
+            <ElButton type="danger" @click="onBatchDelete">
+              {{ $t('proxyPool.action.batchDelete') }}
+            </ElButton>
+            <ElButton type="primary" @click="onSetGrouping">
+              {{ $t('proxyPool.action.setGrouping') }}
+            </ElButton>
+          </div>
         </template>
       </Grid>
       <FormModal @success-after="onCreateSuccess" />
@@ -337,12 +336,19 @@ const [GroupModal, groupModalApi] = useVbenModal({
   color: var(--el-color-primary);
 }
 
-.mr-2 {
-  margin-right: 8px;
+.toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
 }
 
-.ml-2 {
-  margin-left: 8px;
+:deep(.el-form-item) {
+  margin-bottom: 14px;
+}
+
+:deep(.vxe-table--empty-content) {
+  padding: 40px 0 !important;
 }
 </style>
 

@@ -78,7 +78,13 @@ const [Form, formApi] = useVbenForm({
       component: 'Select',
       fieldName: 'appId',
       label: $t('accountPool.form.appName'),
-      rules: 'selectRequired',
+      rules: [
+        {
+          required: true,
+          message: $t('accountPool.form.appNamePlaceholder'),
+          trigger: 'change',
+        },
+      ] as any,
       componentProps: {
         placeholder: $t('accountPool.form.appNamePlaceholder'),
         filterable: true,
@@ -135,7 +141,13 @@ const [Form, formApi] = useVbenForm({
       component: 'Select',
       fieldName: 'riskLevel',
       label: $t('accountPool.form.riskLevel'),
-      rules: 'selectRequired',
+      rules: [
+        {
+          required: true,
+          message: $t('accountPool.form.riskLevelPlaceholder'),
+          trigger: 'change',
+        },
+      ] as any,
       componentProps: {
         placeholder: $t('accountPool.form.riskLevelPlaceholder'),
         clearable: true,

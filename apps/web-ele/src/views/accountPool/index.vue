@@ -9,7 +9,7 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import { $t } from '#/locales';
-import { ASSET_ENUMS_CACHE_KEY, useAssetEnumsStore } from '#/store';
+import { useAssetEnumsStore } from '#/store';
 import {
   batchDeleteAccountApi,
   downloadAccountTemplateApi,
@@ -21,7 +21,6 @@ import {
 } from '#/api/core/asset';
 
 import {
-  type AccountPoolRow,
   type AccountPoolGroupOption,
   type AccountPoolPlatformOption,
   type AccountPoolSortOption,
@@ -41,7 +40,6 @@ const locking = ref(false);
 const groupOptions = ref<AccountPoolGroupOption[]>([]);
 const platformOptions = ref<AccountPoolPlatformOption[]>([]);
 const sortOptions = ref<AccountPoolSortOption[]>([]);
-const riskLevelMap = ref<Record<string, string>>(readRiskLevelMapFromLocalCache());
 const assetEnumsStore = useAssetEnumsStore();
 
 const [Grid, gridApi] = useVbenVxeGrid({
@@ -53,6 +51,12 @@ const [Grid, gridApi] = useVbenVxeGrid({
       pageSize: 10,
       pageSizes: [10, 20, 50, 100],
       layouts: ['PrevPage', 'JumpNumber', 'NextPage', 'Sizes', 'Total'],
+    },
+    rowClassName: ({ row }: { row: Record<string, any> }) =>
+      row.isLock ? 'account-row--locked' : '',
+    rowConfig: {
+      rowClassName: ({ row }: { row: Record<string, any> }) =>
+        row.isLock ? 'account-row--locked' : '',
     },
     proxyConfig: {
       response: {
@@ -75,13 +79,9 @@ const [Grid, gridApi] = useVbenVxeGrid({
             pageSize: page.pageSize,
             ...formValues,
           });
-          const list = (response?.list ?? []).map((item: AccountPoolRow) => ({
-            ...item,
-            riskAlert: mapRiskLevelLabel(item.riskAlert),
-          }));
           return {
             ...response,
-            list,
+            list: response?.list ?? [],
           };
         },
       },
@@ -134,8 +134,6 @@ async function onImportFileChange(event: Event) {
       ElMessage.success($t('accountPool.message.importSuccess'));
       gridApi.reload();
       loadAccountPoolNum();
-    } else {
-      ElMessage.error(res?.msg || $t('accountPool.message.importFailed'));
     }
   } catch (error) {
     console.error('[accountPool] 导入账号失败:', error);
@@ -214,12 +212,6 @@ function onBatchLock(lock: boolean) {
           gridApi.reload();
           return;
         }
-        ElMessage.error(
-          res?.msg ||
-            (lock
-              ? $t('accountPool.message.batchLockFailed')
-              : $t('accountPool.message.batchUnlockFailed')),
-        );
       } catch (error) {
         console.error('[accountPool] 锁定/解锁账号失败:', error);
         ElMessage.error(
@@ -332,10 +324,6 @@ function applyFormOptions() {
   });
 }
 
-function mapRiskLevelLabel(riskLevel: string) {
-  return riskLevelMap.value[riskLevel] ?? '';
-}
-
 async function loadSortOptions() {
   try {
     sortOptions.value = await assetEnumsStore.getEnumOptionsAsync(
@@ -346,26 +334,6 @@ async function loadSortOptions() {
     sortOptions.value = [];
   }
   applyFormOptions();
-}
-
-function readRiskLevelMapFromLocalCache() {
-  if (typeof window === 'undefined') return {};
-  try {
-    const parsed = JSON.parse(
-      window.localStorage.getItem(ASSET_ENUMS_CACHE_KEY) || '{}',
-    );
-    const children = parsed.ACCOUNT_RISK_LEVEL.children as Array<{
-      name: string;
-      content: string;
-    }>;
-    return children.reduce<Record<string, string>>((acc, item) => {
-      acc[item.name] = item.content;
-      return acc;
-    }, {});
-  } catch (error) {
-    console.error('[accountPool] 读取本地风险等级枚举失败:', error);
-    return {};
-  }
 }
 
 function onCreateSuccess() {
@@ -391,7 +359,6 @@ onMounted(() => {
   loadGroupOptions();
   loadPlatformOptions();
   loadSortOptions();
-  riskLevelMap.value = readRiskLevelMapFromLocalCache();
 });
 </script>
 
@@ -420,63 +387,62 @@ onMounted(() => {
 
       <Grid>
         <template #toolbar-actions>
-          <ElButton class="mr-2" type="primary" @click="onCreate">
-            {{ $t('accountPool.action.add') }}
-          </ElButton>
-          <el-select
-            v-model="importAppId"
-            class="mr-2 import-platform-select"
-            :placeholder="$t('accountPool.filter.importPlatformPlaceholder')"
-            clearable
-            filterable
-          >
-            <el-option
-              v-for="item in platformOptions"
-              :key="item.id"
-              :label="item.applicationName || item.id"
-              :value="item.id"
+          <div class="toolbar-actions">
+            <ElButton type="primary" @click="onCreate">
+              {{ $t('accountPool.action.add') }}
+            </ElButton>
+            <el-select
+              v-model="importAppId"
+              class="import-platform-select"
+              :placeholder="$t('accountPool.filter.importPlatformPlaceholder')"
+              clearable
+              filterable
+            >
+              <el-option
+                v-for="item in platformOptions"
+                :key="item.id"
+                :label="item.applicationName || item.id"
+                :value="item.id"
+              />
+            </el-select>
+            <ElButton
+              type="primary"
+              :loading="importing"
+              @click="onImport"
+            >
+              {{ $t('accountPool.action.import') }}
+            </ElButton>
+            <input
+              ref="importFileInputRef"
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              style="display: none"
+              @change="onImportFileChange"
             />
-          </el-select>
-          <ElButton
-            class="mr-2"
-            type="primary"
-            :loading="importing"
-            @click="onImport"
-          >
-            {{ $t('accountPool.action.import') }}
-          </ElButton>
-          <input
-            ref="importFileInputRef"
-            type="file"
-            accept=".xlsx,.xls,.csv"
-            style="display: none"
-            @change="onImportFileChange"
-          />
-          <ElButton class="mr-2" type="primary" @click="onDownloadTemplate">
-            {{ $t('accountPool.action.downloadTemplate') }}
-          </ElButton>
-          <ElButton class="mr-2" type="danger" @click="onBatchDelete">
-            {{ $t('accountPool.action.batchDelete') }}
-          </ElButton>
-          <ElButton
-            class="mr-2"
-            type="warning"
-            :loading="locking"
-            @click="onBatchLock(true)"
-          >
-            {{ $t('accountPool.action.lock') }}
-          </ElButton>
-          <ElButton
-            class="mr-2"
-            type="success"
-            :loading="locking"
-            @click="onBatchLock(false)"
-          >
-            {{ $t('accountPool.action.unlock') }}
-          </ElButton>
-          <ElButton class="ml-2" type="primary" @click="onSetGrouping">
-            {{ $t('accountPool.action.setGrouping') }}
-          </ElButton>
+            <ElButton type="primary" @click="onDownloadTemplate">
+              {{ $t('accountPool.action.downloadTemplate') }}
+            </ElButton>
+            <ElButton type="danger" @click="onBatchDelete">
+              {{ $t('accountPool.action.batchDelete') }}
+            </ElButton>
+            <ElButton
+              type="warning"
+              :loading="locking"
+              @click="onBatchLock(true)"
+            >
+              {{ $t('accountPool.action.lock') }}
+            </ElButton>
+            <ElButton
+              type="success"
+              :loading="locking"
+              @click="onBatchLock(false)"
+            >
+              {{ $t('accountPool.action.unlock') }}
+            </ElButton>
+            <ElButton type="primary" @click="onSetGrouping">
+              {{ $t('accountPool.action.setGrouping') }}
+            </ElButton>
+          </div>
         </template>
       </Grid>
       <FormModal @success-after="onCreateSuccess" />
@@ -510,15 +476,30 @@ onMounted(() => {
   color: var(--el-color-primary);
 }
 
-.mr-2 {
-  margin-right: 8px;
-}
-
-.ml-2 {
-  margin-left: 8px;
+.toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
 }
 
 .import-platform-select {
-  width: 220px;
+  width: 240px;
+}
+
+:deep(.el-form-item) {
+  margin-bottom: 14px;
+}
+
+:deep(.vxe-table--empty-content) {
+  padding: 40px 0 !important;
+}
+
+:deep(tr.account-row--locked td.vxe-body--column) {
+  background-color: var(--el-fill-color-light) !important;
+}
+
+:deep(tr.account-row--locked .vxe-cell) {
+  color: var(--el-text-color-placeholder) !important;
 }
 </style>
