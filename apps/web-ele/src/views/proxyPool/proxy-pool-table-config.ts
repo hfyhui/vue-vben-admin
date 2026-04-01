@@ -17,22 +17,28 @@ export type ProxyPoolRegionOption = {
 };
 
 export interface ProxyPoolRow {
-  id: string;
-  proxyId: string;
-  region: string;
-  loginTime: string;
-  protocol: string;
-  deviceIp: string;
-  port: string;
-  username: string;
-  password: string;
-  link: string;
-  expireTime: string;
-  proxyGroup: string;
-  remarks: string;
-  associatedDevices: string;
-  associatedAccounts: string;
-  riskAlert: string;
+  id?: string;
+  proxyId?: string;
+  area?: string;
+  inputTime?: string;
+  protocol?: string;
+  ip?: string;
+  proxyLinkIp?: string;
+  proxyLinkPort?: string;
+  username?: string;
+  password?: string;
+  link?: string;
+  expireTime?: string;
+  remark?: string;
+  deviceIp?: string[];
+  appAccounts?: string[];
+  riskTips?: string;
+  color?: string;
+  surplusDays?: string;
+  surplusDaysColor?: string;
+  bandingCount?: number;
+  suiteId?: string;
+  suiteName?: string;
 }
 
 async function copyText(text: string) {
@@ -51,6 +57,11 @@ async function copyText(text: string) {
     document.body.removeChild(input);
     ElMessage.success('复制成功');
   }
+}
+
+function renderArrayText(value?: string[] | string) {
+  if (Array.isArray(value)) return value.filter(Boolean).join(', ');
+  return value || '';
 }
 
 export async function getProxyPoolListApi(_params: {
@@ -158,11 +169,11 @@ export const getFormOptions = (
 
 export const useColumns = () => [
   { type: 'checkbox', width: 50, align: 'center' },
-  { field: 'region', title: $t('proxyPool.table.region'), minWidth: 120 },
-  { field: 'loginTime', title: $t('proxyPool.table.loginTime'), minWidth: 160 },
+  { field: 'area', title: $t('proxyPool.table.region'), minWidth: 120 },
+  { field: 'inputTime', title: $t('proxyPool.table.loginTime'), minWidth: 160 },
   { field: 'protocol', title: $t('proxyPool.table.protocol'), minWidth: 100 },
-  { field: 'deviceIp', title: $t('proxyPool.table.deviceIp'), minWidth: 120 },
-  { field: 'port', title: $t('proxyPool.table.port'), minWidth: 100 },
+  { field: 'proxyLinkIp', title: $t('proxyPool.table.deviceIp'), minWidth: 140 },
+  { field: 'proxyLinkPort', title: $t('proxyPool.table.port'), minWidth: 100 },
   { field: 'username', title: $t('proxyPool.table.username'), minWidth: 120 },
   { field: 'password', title: $t('proxyPool.table.password'), minWidth: 120 },
   {
@@ -182,23 +193,27 @@ export const useColumns = () => [
               void copyText(row.link || '');
             },
           },
-          row.link || '-',
+          row.link || '',
         ),
     },
   },
   { field: 'expireTime', title: $t('proxyPool.table.expireTime'), minWidth: 160 },
-  { field: 'proxyGroup', title: $t('proxyPool.table.proxyGroup'), minWidth: 120 },
-  { field: 'remarks', title: $t('proxyPool.table.remarks'), minWidth: 120 },
+  { field: 'suiteName', title: $t('proxyPool.table.proxyGroup'), minWidth: 120 },
+  { field: 'remark', title: $t('proxyPool.table.remarks'), minWidth: 120 },
   {
-    field: 'associatedDevices',
+    field: 'deviceIp',
     title: $t('proxyPool.table.associatedDevices'),
-    minWidth: 120,
+    minWidth: 180,
+    formatter: ({ cellValue }: { cellValue: string[] | string }) =>
+      renderArrayText(cellValue),
   },
   {
-    field: 'associatedAccounts',
+    field: 'appAccounts',
     title: $t('proxyPool.table.associatedAccounts'),
-    minWidth: 120,
+    minWidth: 180,
+    formatter: ({ cellValue }: { cellValue: string[] | string }) =>
+      renderArrayText(cellValue),
   },
-  { field: 'riskAlert', title: $t('proxyPool.table.riskAlert'), minWidth: 120 },
+  { field: 'riskTips', title: $t('proxyPool.table.riskAlert'), minWidth: 140 },
 ];
 

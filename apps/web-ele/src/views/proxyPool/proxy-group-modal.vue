@@ -1,10 +1,10 @@
 <script lang="ts" setup>
 import type { AddProxyGroupParams } from '#/api/core/asset';
 
-import { computed, ref } from 'vue';
+import { ref } from 'vue';
 
 import { useVbenModal } from '@vben/common-ui';
-import { ElMessage } from 'element-plus';
+import { ElAutocomplete, ElMessage } from 'element-plus';
 
 import { useVbenForm } from '#/adapter/form';
 import { addProxyGroupApi } from '#/api/core/asset';
@@ -25,18 +25,17 @@ const submitting = ref(false);
 const proxyIds = ref<string[]>([]);
 const groupOptions = ref<ProxyPoolGroupOption[]>([]);
 
-const groupNameOptions = computed(() =>
-  groupOptions.value
-    .filter((item) => Boolean(item?.id) && Boolean(item?.suiteName))
+function getGroupNameSuggestions() {
+  return groupOptions.value
+    .filter((item) => Boolean(item?.suiteName))
     .map((item) => ({
-      label: item.suiteName,
-      value: item.id,
-    })),
-);
+      value: item.suiteName,
+      suiteDesc: item.suiteDesc,
+    }));
+}
 
 function getDefaultValues() {
   return {
-    suiteId: '',
     suiteName: '',
     suiteDesc: '',
     proxyIds: [] as string[],
@@ -51,20 +50,34 @@ const [Form, formApi] = useVbenForm({
   },
   schema: [
     {
-      component: 'Select',
-      fieldName: 'suiteId',
+      component: ElAutocomplete,
+      fieldName: 'suiteName',
       label: $t('proxyPool.groupForm.groupName'),
       rules: 'required',
       componentProps: {
-        filterable: true,
+        triggerOnFocus: true,
         clearable: true,
-        options: groupNameOptions,
+        maxlength: 50,
         placeholder: $t('proxyPool.groupForm.groupNamePlaceholder'),
-        onChange: async (value?: string) => {
-          const selected = groupOptions.value.find((item) => item.id === (value || ''));
+        fetchSuggestions: (
+          _queryString: string,
+          callback: (items: Array<{ suiteDesc?: string; value: string }>) => void,
+        ) => {
+          callback(getGroupNameSuggestions());
+        },
+        onSelect: async (item: { suiteDesc?: string; value: string }) => {
           await formApi.setValues({
-            suiteId: value || '',
-            suiteName: selected?.suiteName || '',
+            suiteName: item?.value || '',
+            suiteDesc: item?.suiteDesc || '',
+          });
+        },
+        onChange: async (value: string) => {
+          const suiteName = value ?? '';
+          const selected = groupOptions.value.find(
+            (item) => item?.suiteName === suiteName,
+          );
+          await formApi.setValues({
+            suiteName,
             suiteDesc: selected?.suiteDesc || '',
           });
         },
@@ -119,15 +132,14 @@ async function onSubmit(values: AddProxyGroupParams) {
   submitting.value = true;
   modalApi.lock();
   try {
+    const suiteName = values.suiteName ?? '';
     const selectedGroup = groupOptions.value.find(
-      (item) => item.id === (values.suiteId || ''),
+      (item) => item?.suiteName === suiteName,
     );
     const payload: AddProxyGroupParams = {
-      ...getDefaultValues(),
-      ...values,
-      suiteId: values.suiteId || selectedGroup?.id || '',
-      suiteName: values.suiteName || selectedGroup?.suiteName || '',
-      suiteDesc: values.suiteDesc || selectedGroup?.suiteDesc || '',
+      suiteId: selectedGroup?.id ?? '',
+      suiteName,
+      suiteDesc: values.suiteDesc ?? selectedGroup?.suiteDesc ?? '',
       proxyIds: proxyIds.value,
     };
     const res = await addProxyGroupApi(payload);
