@@ -12,6 +12,7 @@ import {
   getAssetSummaryApi,
   resetContainerApi,
   reverseQueryAssetApi,
+  type DeviceEnableItem,
 } from '#/api/core/asset';
 import { $t } from '#/locales';
 import { useAssetEnumsStore } from '#/store';
@@ -108,6 +109,24 @@ async function onDeviceBoardRefreshSummary() {
 
 async function onDeviceBoardRefreshProxyList() {
   await proxyBoardRef.value?.refreshProxyList?.();
+}
+
+/** 拖拽账号/代理到容器前：校验账号-容器、代理-容器关系 */
+async function checkDropDeviceEnables(deviceEnables: DeviceEnableItem[]) {
+  try {
+    const checkResponse = await checkAccountDeviceApi({ deviceEnables });
+    if (checkResponse?.code !== 100000) {
+      if (!checkResponse?.msg) {
+        ElMessage.error($t('associationCenter.dropBindCheckFailed'));
+      }
+      return false;
+    }
+    return true;
+  } catch (error) {
+    console.error('[associationCenter] 拖拽关联校验失败:', error);
+    ElMessage.error($t('associationCenter.dropBindCheckFailed'));
+    return false;
+  }
 }
 
 function onAutoAssociate() {
@@ -325,6 +344,7 @@ async function onReverseQuery() {
       <DeviceBoard
         ref="deviceBoardRef"
         :group-options="sharedGroupOptions"
+        :check-drop-device-enables="checkDropDeviceEnables"
         @refresh-summary="onDeviceBoardRefreshSummary"
         @refresh-proxy-list="onDeviceBoardRefreshProxyList"
       />

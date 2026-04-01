@@ -22,8 +22,9 @@
     "entryTime": "Entry Time",
     "riskAlert": "Risk Alert",
     "loginStatus": "Login Status",
-    "account": "User Nickname",
+    "account": "account Nickname",
     "accountId": "Account ID",
+    "nickName": "User Nickname",
     "username": "Username",
     "userAccount": "User Account",
     "accountPassword": "Account Password",
@@ -33,6 +34,7 @@
     "remarks": "Remarks",
     "accountGroup": "Account Group",
     "associatedDevices": "Associated Devices",
+    "deviceIp": "Associated Device",
     "associatedAgents": "Associated Agents"
   },
   "action": {

@@ -13,54 +13,6 @@ export type AccountPoolGroupOption = {
 export type AccountPoolPlatformOption = { id: string; applicationName: string };
 export type AccountPoolSortOption = { label: string; value: string };
 
-export interface AccountPoolRow {
-  id: string;
-  platform: string;
-  entryTime: string;
-  riskAlert: string;
-  loginStatus?: string;
-  account: string;
-  accountId: string;
-  username: string;
-  userAccount: string;
-  accountPassword: string;
-  verificationEmail: string;
-  emailPassword: string;
-  twiceCheck?: string;
-  remarks: string;
-  accountGroup: string;
-  associatedAgents: string;
-  isLock?: boolean;
-  appId?: string;
-  logoPath?: string;
-  color?: string;
-}
-
-interface AccountAssetRecord {
-  platform?: string;
-  appId?: string;
-  inputTime?: string;
-  riskTips?: string;
-  loginStatus?: string;
-  account?: string;
-  accountId?: string;
-  nickName?: string;
-  userAccount?: string;
-  accountPassword?: string;
-  email?: string;
-  emailPassword?: string;
-  twiceCheck?: string;
-  remark?: string;
-  suiteName?: string;
-  accountGroup?: string;
-  proxy?: string;
-  isLock?: boolean;
-  lock?: boolean;
-  logoPath?: string;
-  color?: string;
-  [key: string]: any;
-}
-
 export async function getAccountPoolListApi(_params: {
   page: number;
   pageSize: number;
@@ -79,12 +31,6 @@ export async function getAccountPoolListApi(_params: {
     sortCondition,
   } = _params;
 
-  // 入参与接口文档保持一致：POST /asset/account/page
-  // - current/size：分页
-  // - accountName：账号（accountSearch）
-  // - suiteIds：分组（accountGroup）
-  // - appIds：应用（platform）
-  // - sortCondition：排序条件
   const reqParams: Record<string, any> = {
     current: page ?? 1,
     size: pageSize ?? 10,
@@ -95,35 +41,10 @@ export async function getAccountPoolListApi(_params: {
   if (platform?.length) reqParams.appIds = platform;
   if (sortCondition) reqParams.sortCondition = sortCondition;
 
-  const data = await getAccountAssetPageApi<AccountAssetRecord>(reqParams);
-
-  const list: AccountPoolRow[] = (data.records || []).map(
-    (item: AccountAssetRecord) => ({
-    id: item.accountId ?? '',
-    platform: item.platform ?? '',
-    entryTime: item.inputTime ?? '',
-    riskAlert: item.riskTips ?? '',
-    loginStatus: item.loginStatus ?? '',
-    account: item.account ?? '',
-    accountId: item.accountId ?? '',
-    username: item.nickName ?? '',
-    userAccount: item.userAccount ?? '',
-    accountPassword: item.accountPassword ?? '',
-    verificationEmail: item.email ?? '',
-    emailPassword: item.emailPassword ?? '',
-    twiceCheck: item.twiceCheck ?? '',
-    remarks: item.remark ?? '',
-    accountGroup: item.suiteName,
-    associatedAgents: item.proxy ?? '',
-    isLock:item.isLock,
-    appId: item.appId ?? '',
-    logoPath: item.logoPath ?? '',
-      color: item.color ?? '',
-    }),
-  );
+  const data = await getAccountAssetPageApi(reqParams);
 
   return {
-    list,
+    list: data.records ?? [],
     total: Number(data.total ?? 0),
   };
 }
@@ -198,8 +119,8 @@ export const getFormOptions = (
 export const useColumns = () => [
   { type: 'checkbox', width: 50, align: 'center' },
   { field: 'platform', title: $t('accountPool.table.platform'), minWidth: 120 },
-  { field: 'entryTime', title: $t('accountPool.table.entryTime'), minWidth: 160 },
-  { field: 'riskAlert', title: $t('accountPool.table.riskAlert'), minWidth: 100 },
+  { field: 'inputTime', title: $t('accountPool.table.entryTime'), minWidth: 160 },
+  { field: 'riskTips', title: $t('accountPool.table.riskAlert'), minWidth: 100 },
   {
     field: 'loginStatus',
     title: $t('accountPool.table.loginStatus'),
@@ -208,8 +129,8 @@ export const useColumns = () => [
   { field: 'account', title: $t('accountPool.table.account'), minWidth: 120 },
   { field: 'accountId', title: $t('accountPool.table.accountId'), minWidth: 120 },
   {
-    field: 'userAccount',
-    title: $t('accountPool.table.userAccount'),
+    field: 'nickName',
+    title: $t('accountPool.table.nickName'),
     minWidth: 120,
   },
   {
@@ -218,7 +139,7 @@ export const useColumns = () => [
     minWidth: 120,
   },
   {
-    field: 'verificationEmail',
+    field: 'email',
     title: $t('accountPool.table.verificationEmail'),
     minWidth: 150,
   },
@@ -232,14 +153,19 @@ export const useColumns = () => [
     title: $t('accountPool.table.twiceCheck'),
     minWidth: 120,
   },
-  { field: 'remarks', title: $t('accountPool.table.remarks'), minWidth: 120 },
+  { field: 'remark', title: $t('accountPool.table.remarks'), minWidth: 120 },
   {
-    field: 'accountGroup',
+    field: 'suiteName',
     title: $t('accountPool.table.accountGroup'),
     minWidth: 120,
   },
   {
-    field: 'associatedAgents',
+    field: 'deviceIp',
+    title: $t('accountPool.table.deviceIp'),
+    minWidth: 140,
+  },
+  {
+    field: 'proxy',
     title: $t('accountPool.table.associatedAgents'),
     minWidth: 120,
   },

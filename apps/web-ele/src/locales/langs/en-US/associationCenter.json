@@ -82,6 +82,8 @@
   "containerResetFailed": "Container reset failed",
   "officialEnableSuccess": "Official enable succeeded",
   "officialEnableFailed": "Official enable failed",
+  "dropBindCheckFailed": "Drag-and-drop association check failed",
+  "deviceMissingForBind": "Device identifier is missing; cannot verify binding",
   "accountDragParseFailed": "Failed to parse dragged account data",
   "oneAccountPerPlatformPerDevice": "Only one account per social platform can be bound on the same device",
   "proxyDragParseFailed": "Failed to parse dragged proxy data",
