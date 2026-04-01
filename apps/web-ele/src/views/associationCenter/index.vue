@@ -113,25 +113,7 @@ async function onDeviceBoardRefreshProxyList() {
 function onAutoAssociate() {
   const accounts = accountBoardRef.value?.getSelectedAccounts?.() || [];
   const proxies = proxyBoardRef.value?.getSelectedProxies?.() || [];
-
-  // 代理超出时，丢弃 bandingCount 更大的代理，但保持剩余代理原始顺序（保证一一对应顺序）
-  let usedProxies = proxies;
-  if (accounts.length > 0 && proxies.length > accounts.length) {
-    const dropCount = proxies.length - accounts.length;
-    const dropIndexes = new Set(
-      proxies
-        .map((item: any, index: number) => ({
-          index,
-          bandingCount: Number(item?.bandingCount ?? 0),
-        }))
-        .sort((a, b) => b.bandingCount - a.bandingCount || b.index - a.index)
-        .slice(0, dropCount)
-        .map((item) => item.index),
-    );
-    usedProxies = proxies.filter((_, index) => !dropIndexes.has(index));
-  }
-
-  deviceBoardRef.value?.autoAssociateWithSelections?.(accounts, usedProxies);
+  deviceBoardRef.value?.autoAssociateWithSelections?.(accounts, proxies);
 }
 
 async function onContainerReset() {
