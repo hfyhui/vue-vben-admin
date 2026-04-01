@@ -21,6 +21,7 @@
     "platform": "Platform",
     "entryTime": "Entry Time",
     "riskAlert": "Risk Alert",
+    "loginStatus": "Login Status",
     "account": "User Nickname",
     "accountId": "Account ID",
     "username": "Username",
@@ -64,8 +65,14 @@
     "accountPasswordPlaceholder": "Please enter account password",
     "email": "Email",
     "emailPlaceholder": "Please enter email",
+    "emailPassword": "Email Password",
+    "emailPasswordPlaceholder": "Please enter email password",
+    "twiceCheck": "Second Verification",
+    "twiceCheckPlaceholder": "Please enter second verification",
     "riskLevel": "Risk Level",
     "riskLevelPlaceholder": "Please select risk level",
+    "loginStatus": "Login Status",
+    "loginStatusPlaceholder": "Please select login status",
     "riskLow": "Low Risk",
     "riskMedium": "Medium Risk",
     "riskHigh": "High Risk",
@@ -99,6 +106,12 @@
     "importFailed": "Failed to import accounts",
     "downloadFailed": "Download failed",
     "addSuccess": "Account added successfully",
-    "addFailed": "Failed to add account"
+    "addFailed": "Failed to add account",
+    "userAccountLengthExceeded": "User account supports up to 50 characters",
+    "passwordLengthExceeded": "Account password supports up to 20 characters",
+    "emailLengthExceeded": "Email supports up to 50 characters",
+    "emailPasswordLengthExceeded": "Email password supports up to 20 characters",
+    "twiceCheckLengthExceeded": "Second verification supports up to 50 characters",
+    "remarkLengthExceeded": "Remark supports up to 50 characters"
   }
 }

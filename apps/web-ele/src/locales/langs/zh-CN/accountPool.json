@@ -21,6 +21,7 @@
     "platform": "所属平台",
     "entryTime": "录入时间",
     "riskAlert": "风险提示",
+    "loginStatus": "登录状态",
     "account": "用户昵称",
     "accountId": "账号ID",
     "username": "用户名",
@@ -64,8 +65,14 @@
     "accountPasswordPlaceholder": "请输入账号密码",
     "email": "邮箱",
     "emailPlaceholder": "请输入邮箱",
+    "emailPassword": "邮箱密码",
+    "emailPasswordPlaceholder": "请输入邮箱密码",
+    "twiceCheck": "二次验证",
+    "twiceCheckPlaceholder": "请输入二次验证",
     "riskLevel": "风险等级",
     "riskLevelPlaceholder": "请选择风险等级",
+    "loginStatus": "登录状态",
+    "loginStatusPlaceholder": "请选择登录状态",
     "riskLow": "低风险",
     "riskMedium": "中风险",
     "riskHigh": "高风险",
@@ -99,6 +106,12 @@
     "importFailed": "导入账号失败",
     "downloadFailed": "下载失败",
     "addSuccess": "新增账号成功",
-    "addFailed": "新增账号失败"
+    "addFailed": "新增账号失败",
+    "userAccountLengthExceeded": "用户账号最多支持50个字符",
+    "passwordLengthExceeded": "账号密码最多支持20个字符",
+    "emailLengthExceeded": "邮箱最多支持50个字符",
+    "emailPasswordLengthExceeded": "邮箱密码最多支持20个字符",
+    "twiceCheckLengthExceeded": "二次验证最多支持50个字符",
+    "remarkLengthExceeded": "备注最多支持50个字符"
   }
 }

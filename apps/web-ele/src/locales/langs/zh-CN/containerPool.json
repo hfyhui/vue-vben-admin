@@ -1,9 +1,8 @@
 {
   "stats": {
-    "devicePool": "设备池",
-    "runningDevices": "运行中设备",
-    "pendingDevices": "待使用设备",
-    "other": "..."
+    "devicePool": "容器池总量",
+    "runningDevices": "已使用",
+    "pendingDevices": "待使用设备"
   },
   "filter": {
     "containerFilter": "容器筛选",

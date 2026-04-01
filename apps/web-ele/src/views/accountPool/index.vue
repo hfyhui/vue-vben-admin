@@ -161,9 +161,9 @@ function onBatchDelete() {
           $t('accountPool.message.batchDeleteSuccess', { count }),
         );
         gridApi.reload();
-      } else {
-        ElMessage.error(res?.msg || $t('accountPool.message.batchDeleteFailed'));
+        await loadAccountPoolNum();
       }
+      // 非 100000：proxyClient 已弹出业务 msg，不再重复提示、不刷新
     })
     .catch(() => {
       // 用户取消

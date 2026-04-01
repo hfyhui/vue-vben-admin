@@ -18,6 +18,7 @@ export interface AccountPoolRow {
   platform: string;
   entryTime: string;
   riskAlert: string;
+  loginStatus?: string;
   account: string;
   accountId: string;
   username: string;
@@ -40,6 +41,7 @@ interface AccountAssetRecord {
   appId?: string;
   inputTime?: string;
   riskTips?: string;
+  loginStatus?: string;
   account?: string;
   accountId?: string;
   nickName?: string;
@@ -101,6 +103,7 @@ export async function getAccountPoolListApi(_params: {
     platform: item.platform ?? '',
     entryTime: item.inputTime ?? '',
     riskAlert: item.riskTips ?? '',
+    loginStatus: item.loginStatus ?? '',
     account: item.account ?? '',
     accountId: item.accountId ?? '',
     username: item.nickName ?? '',
@@ -197,6 +200,11 @@ export const useColumns = () => [
   { field: 'platform', title: $t('accountPool.table.platform'), minWidth: 120 },
   { field: 'entryTime', title: $t('accountPool.table.entryTime'), minWidth: 160 },
   { field: 'riskAlert', title: $t('accountPool.table.riskAlert'), minWidth: 100 },
+  {
+    field: 'loginStatus',
+    title: $t('accountPool.table.loginStatus'),
+    minWidth: 120,
+  },
   { field: 'account', title: $t('accountPool.table.account'), minWidth: 120 },
   { field: 'accountId', title: $t('accountPool.table.accountId'), minWidth: 120 },
   {

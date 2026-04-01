@@ -7,7 +7,11 @@ import { Page } from '@vben/common-ui';
 
 import { ElMessage } from 'element-plus';
 
-import { getAssetGroupApi, resetContainerApi } from '#/api/core/asset';
+import {
+  getAssetGroupApi,
+  getContainerPoolNumApi,
+  resetContainerApi,
+} from '#/api/core/asset';
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import { $t } from '#/locales';
 import { useAssetEnumsStore } from '#/store';
@@ -23,6 +27,26 @@ import {
 const sortOptions = ref<ContainerPoolSortOption[]>([]);
 const groupOptions = ref<ContainerPoolGroupOption[]>([]);
 const assetEnumsStore = useAssetEnumsStore();
+
+const statsData = ref([
+  { key: 'devicePool', value: 0 },
+  { key: 'runningDevices', value: 0 },
+  { key: 'pendingDevices', value: 0 },
+]);
+
+async function loadContainerPoolNum() {
+  try {
+    const response = await getContainerPoolNumApi();
+    const data = response?.data ?? {};
+    statsData.value = [
+      { key: 'devicePool', value: data.deviceTotalNum },
+      { key: 'runningDevices', value: data.deviceUsedNum },
+      { key: 'pendingDevices', value: data.deviceWaitingNum },
+    ];
+  } catch (error) {
+    console.error('[containerPool] 获取容器池数量失败:', error);
+  }
+}
 
 const [Grid, gridApi] = useVbenVxeGrid({
   formOptions: getFormOptions([], []),
@@ -121,8 +145,10 @@ async function onDeviceReset() {
     if (response?.code === 100000) {
       ElMessage.success(response.msg || $t('containerPool.message.resetSuccess'));
       gridApi.reload();
+      await loadContainerPoolNum();
       return;
     }
+    // 非 100000：proxyClient 已弹出业务 msg，不提示成功、不刷新
   } catch (error) {
     console.error('[containerPool] 容器重置失败:', error);
     ElMessage.error($t('containerPool.message.resetFailed'));
@@ -137,16 +163,10 @@ function onDeviceGroup() {
   ElMessage.info($t('containerPool.action.deviceGroup'));
 }
 
-const statsData = [
-  { key: 'devicePool', value: 56 },
-  { key: 'runningDevices', value: 102 },
-  { key: 'pendingDevices', value: 39 },
-  { key: 'other', value: 3 },
-];
-
 onMounted(() => {
   loadGroupOptions();
   loadSortOptions();
+  loadContainerPoolNum();
 });
 </script>
 
