@@ -174,8 +174,8 @@ const [Form, formApi] = useVbenForm({
         clearable: true,
         filterable: true,
         multiple: true,
-        collapseTags: true,
-        collapseTagsTooltip: true,
+        // 不折叠展示，避免出现 "+1"
+        collapseTags: false,
         options: deviceNodeSelectOptions,
         props: {
           label: 'deviceIp',
@@ -238,6 +238,17 @@ async function onSubmit(values: ProxyFormValues) {
   creating.value = true;
   modalApi.lock();
   try {
+    const phones: { phoneId?: string; phoneIp: string }[] = [];
+    for (const phoneIp of values?.phoneIp) {
+      const matched = deviceNodeOptions.value.find(
+        (opt) => opt?.deviceIp === phoneIp,
+      );
+      phones.push({
+        phoneId: matched?.deviceId,
+        phoneIp,
+      });
+    }
+
     const payload: AddProxyParams = {
       ip: values.ip,
       area: values.area,
@@ -248,9 +259,7 @@ async function onSubmit(values: ProxyFormValues) {
       proxyLinkPort: values.proxyLinkPort,
       username: values.username,
       password: values.password,
-      phones: (Array.isArray(values.phoneIp) ? values.phoneIp : [])
-        .filter((ip) => ip != null && ip !== '')
-        .map((phoneIp) => ({ phoneIp: phoneIp })),
+      phones,
     };
     const res = await addProxyApi(payload);
     if (res?.code === 100000) {

@@ -105,14 +105,15 @@ const [Grid, gridApi] = useVbenVxeGrid({
         if (!editingRemarkProxyId.value || savingRemark.value) return;
         savingRemark.value = true;
         const proxyId = editingRemarkProxyId.value;
-        const remark = String(editingRemarkValue.value ?? '').trim();
+        const trimmed = editingRemarkValue?.value.trim();
+        // 备注为空时不传 remark 字段，避免后端把空串当作非法值
+        const remark = trimmed ? trimmed : undefined;
         try {
           const res = await addProxyRemarkApi({ proxyId, remark });
           if (res?.code === 100000) {
             ElMessage.success($t('proxyPool.message.editRemarkSuccess'));
-            gridApi.reload();
-            await loadProxyPoolNum();
-          }
+            // 只刷新当前页，避免重置到第一页
+            gridApi.query?.()          }
         } catch (error) {
           console.error('[proxyPool] 更新代理备注失败:', error);
           ElMessage.error($t('proxyPool.message.editRemarkFailed'));
