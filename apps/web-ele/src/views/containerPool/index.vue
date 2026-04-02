@@ -59,6 +59,12 @@ const [Grid, gridApi] = useVbenVxeGrid({
       pageSizes: [10, 20, 50, 100],
       layouts: ['PrevPage', 'JumpNumber', 'NextPage', 'Sizes', 'Total'],
     },
+    checkboxConfig: {
+      reserve: true,
+    },
+    rowConfig: {
+      keyField: 'deviceId',
+    },
     proxyConfig: {
       response: {
         result: 'list',
@@ -127,13 +133,21 @@ function uniqueIds(values: string[]) {
   return [...new Set(values)];
 }
 
-async function onDeviceReset() {
-  const records = ((gridApi as any).grid.getCheckboxRecords?.() || []) as Array<
-    Record<string, any>
-  >;
-  const deviceIds = uniqueIds(
-    records.map((item) => item?.deviceId).filter((id): id is string => Boolean(id)),
+function getSelectedDeviceIds() {
+  const grid = (gridApi as any).grid;
+  const current = grid.getCheckboxRecords?.() || [];
+  const reserve = grid.getCheckboxReserveRecords?.() || [];
+  const records = [...reserve, ...current] as Array<Record<string, any>>;
+  return uniqueIds(
+    records
+      .map((item) => item?.deviceId)
+      .filter((id): id is string => Boolean(id))
+      .map((id) => String(id)),
   );
+}
+
+async function onDeviceReset() {
+  const deviceIds = getSelectedDeviceIds();
 
   if (!deviceIds.length) {
     ElMessage.warning($t('containerPool.message.selectDeviceBeforeReset'));
@@ -144,6 +158,7 @@ async function onDeviceReset() {
     const response = await resetContainerApi({ deviceIds });
     if (response?.code === 100000) {
       ElMessage.success(response.msg || $t('containerPool.message.resetSuccess'));
+      (gridApi as any).grid.clearCheckboxReserve?.();
       gridApi.reload();
       await loadContainerPoolNum();
       return;

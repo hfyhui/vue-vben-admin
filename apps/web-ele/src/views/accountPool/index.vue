@@ -52,9 +52,14 @@ const [Grid, gridApi] = useVbenVxeGrid({
       pageSizes: [10, 20, 50, 100],
       layouts: ['PrevPage', 'JumpNumber', 'NextPage', 'Sizes', 'Total'],
     },
+    /** 跨分页保留勾选，需配合 rowConfig.keyField */
+    checkboxConfig: {
+      reserve: true,
+    },
     rowClassName: ({ row }: { row: Record<string, any> }) =>
       row.isLock ? 'account-row--locked' : '',
     rowConfig: {
+      keyField: 'accountId',
       rowClassName: ({ row }: { row: Record<string, any> }) =>
         row.isLock ? 'account-row--locked' : '',
     },
@@ -160,6 +165,7 @@ function onBatchDelete() {
         ElMessage.success(
           $t('accountPool.message.batchDeleteSuccess', { count }),
         );
+        (gridApi as any).grid.clearCheckboxReserve?.();
         gridApi.reload();
         await loadAccountPoolNum();
       }
@@ -171,14 +177,20 @@ function onBatchDelete() {
 }
 
 function getSelectedAccountIds(emptyTip: string) {
-  const checkboxRecords = (gridApi as any).grid.getCheckboxRecords?.() || [];
+  const grid = (gridApi as any).grid;
+  const current = grid.getCheckboxRecords?.() || [];
+  const reserve = grid.getCheckboxReserveRecords?.() || [];
+  const checkboxRecords = [...reserve, ...current];
   if (checkboxRecords.length === 0) {
     ElMessage.warning(emptyTip);
     return [];
   }
-  const ids = checkboxRecords
-    .map((item: any) => item.accountId)
-    .filter((id: unknown) => Boolean(id));
+  const idSet = new Set<string>();
+  for (const item of checkboxRecords) {
+    const id = (item as any)?.accountId;
+    if (id) idSet.add(String(id));
+  }
+  const ids = [...idSet];
   if (!ids.length) {
     ElMessage.warning($t('accountPool.message.selectIdFailed'));
     return [];

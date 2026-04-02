@@ -88,6 +88,12 @@ const [Grid, gridApi] = useVbenVxeGrid({
       pageSizes: [10, 20, 50, 100],
       layouts: ['PrevPage', 'JumpNumber', 'NextPage', 'Sizes', 'Total'],
     },
+    checkboxConfig: {
+      reserve: true,
+    },
+    rowConfig: {
+      keyField: 'proxyId',
+    },
     proxyConfig: {
       response: {
         result: 'list',
@@ -205,8 +211,7 @@ async function onDownloadTemplate() {
 }
 
 function onBatchDelete() {
-  const records = (gridApi as any).grid.getCheckboxRecords?.() || [];
-  const proxyIds = records.map((item: any) => item.proxyId).filter(Boolean);
+  const proxyIds = getSelectedProxyIds();
 
   if (!proxyIds.length) {
     ElMessage.warning($t('proxyPool.message.selectBeforeDelete'));
@@ -225,6 +230,7 @@ function onBatchDelete() {
         const res = await batchDeleteProxyApi(proxyIds);
         if (res?.code === 100000) {
           ElMessage.success($t('proxyPool.message.batchDeleteSuccess'));
+          (gridApi as any).grid.clearCheckboxReserve?.();
           gridApi.reload();
           await loadProxyPoolNum();
         }
@@ -240,10 +246,16 @@ function onBatchDelete() {
 }
 
 function getSelectedProxyIds() {
-  const records: ProxyPoolRow[] = (gridApi as any).grid.getCheckboxRecords?.() || [];
-  return records
-    .map((item) => item.proxyId || item.id)
-    .filter((id): id is string => Boolean(id));
+  const grid = (gridApi as any).grid;
+  const current = grid.getCheckboxRecords?.() || [];
+  const reserve = grid.getCheckboxReserveRecords?.() || [];
+  const records: ProxyPoolRow[] = [...reserve, ...current];
+  const idSet = new Set<string>();
+  for (const item of records) {
+    const id = item.proxyId || item.id;
+    if (id) idSet.add(String(id));
+  }
+  return [...idSet];
 }
 
 function onSetGrouping() {

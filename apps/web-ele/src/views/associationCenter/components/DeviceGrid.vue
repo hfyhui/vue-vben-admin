@@ -489,7 +489,8 @@ function getBoundAccounts(item: DeviceItem): BoundAccountRow[] {
 
 .bound-account-text {
   flex: 1;
-  min-width: 0;
+  /* 与账号看板一致：短数字/短昵称时仍保留可点、可读的文本区宽度 */
+  min-width: 96px;
   display: flex;
   flex-direction: column;
   gap: 2px;

@@ -6,7 +6,6 @@ import { Box, Loading } from '@element-plus/icons-vue';
 
 import { $t } from '#/locales';
 import { useAssetEnumsStore } from '#/store';
-import { poolRiskTipsTagProps } from '#/utils/risk-tips-display';
 
 import {
   getProxyAssetPageApi,
@@ -139,13 +138,6 @@ function applyReverseQueryProxies(proxies: ProxyItem[] | null | undefined) {
 /** 右侧色条颜色，直接使用接口返回的 color，无则默认 gray */
 function getRiskColor(color?: string): string {
   return color || 'gray';
-}
-
-function proxyRiskTipsTagBind(item: ProxyItem) {
-  return poolRiskTipsTagProps({
-    riskTips: item.riskTips,
-    color: item.color,
-  });
 }
 
 /** 构建代理分页查询参数，与接口字段保持一致 */
@@ -357,32 +349,26 @@ defineExpose({
             @click.stop="toggleSelect(item, index)"
             @dragstart="onProxyDragStart($event, item)"
           >
-            <div class="card-info">
-              <span class="card-amount" :class="getRiskColor(item.surplusDaysColor)">
-                {{ item.surplusDays ?? '-' }}{{ $t('associationCenter.daySuffix') }}
-              </span>
-              <span class="card-area">{{ item.area || '-' }}</span>
-              <el-tooltip
-                v-if="item.ip"
-                :content="item.ip"
-                placement="top"
-              >
-                <span class="card-ip">
-                  {{ item.ip }}
+            <div class="proxy-card-main">
+              <div class="card-info">
+                <span class="card-amount" :class="getRiskColor(item.surplusDaysColor)">
+                  {{ item.surplusDays ?? '-' }}{{ $t('associationCenter.daySuffix') }}
                 </span>
-              </el-tooltip>
-              <span v-else class="card-ip">-</span>
-              <span class="card-count" :class="getRiskColor(item.color)">{{
-                item.bandingCount ?? 0
-              }}</span>
-              <el-tag
-                v-if="item.riskTips?.trim()"
-                class="proxy-risk-tag"
-                size="small"
-                v-bind="proxyRiskTipsTagBind(item) ?? { type: 'info', effect: 'plain' }"
-              >
-                {{ item.riskTips }}
-              </el-tag>
+                <span class="card-area">{{ item.area || '-' }}</span>
+                <el-tooltip
+                  v-if="item.ip"
+                  :content="item.ip"
+                  placement="top"
+                >
+                  <span class="card-ip">
+                    {{ item.ip }}
+                  </span>
+                </el-tooltip>
+                <span v-else class="card-ip">-</span>
+                <span class="card-count" :class="getRiskColor(item.color)">{{
+                  item.bandingCount ?? 0
+                }}</span>
+              </div>
             </div>
             <div
               class="status-bar"
@@ -479,13 +465,16 @@ defineExpose({
 
 .proxy-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(120px, 1fr));
   gap: 4px;
 }
 
 .proxy-card {
   display: flex;
   align-items: stretch;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 120px;
   background: var(--el-fill-color-blank);
   border: 1px solid var(--el-border-color-lighter);
   border-radius: 6px;
@@ -494,6 +483,21 @@ defineExpose({
   min-height: 44px;
   cursor: grab;
   user-select: none;
+}
+
+/* 与账号看板一致：占满单元格，避免内容短时触发区过窄 */
+.proxy-card-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: stretch;
+}
+
+.proxy-card-main :deep(.el-tooltip__trigger) {
+  flex: 1;
+  min-width: 0;
+  display: inline-flex !important;
+  align-items: center;
 }
 
 .proxy-card.selected {
@@ -507,13 +511,8 @@ defineExpose({
   flex-wrap: wrap;
   gap: 8px 12px;
   flex: 1;
+  width: 100%;
   min-width: 0;
-}
-
-.proxy-risk-tag {
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .card-amount {
@@ -626,13 +625,13 @@ defineExpose({
 
 @media (max-width: 1200px) {
   .proxy-grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(120px, 1fr));
   }
 }
 
 @media (max-width: 768px) {
   .proxy-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(120px, 1fr));
   }
 }
 </style>

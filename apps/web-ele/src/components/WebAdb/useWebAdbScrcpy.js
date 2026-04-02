@@ -1094,9 +1094,10 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
   );
 
   onMounted(() => {
-    const hostname =  import.meta.env.MODE === 'development' ? 'test.callfansai.cn' : window.location.hostname;
-    const connIp = `https://${hostname}/${hostname}/3333`;
-    httpPath.value = connIp;
+    const hostname = import.meta.env.MODE === 'development' ? 'test.callfansai.cn' : window.location.hostname;
+    const pathSegment = props.device?.connIp || hostname;
+    const wsUrl = `https://${hostname}/${pathSegment}/3333`;
+    httpPath.value = wsUrl;
     initWs();
     window.addEventListener('resize', handleResize, { signal: abortController.signal });
   });

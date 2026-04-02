@@ -507,19 +507,38 @@ function getDeviceProxyId(item: DeviceItem) {
 /** 构造单台设备的 deviceEnables 项（与正式启用接口结构一致） */
 function buildDeviceEnablePayload(
   item: DeviceItem,
-  overrides?: { accountIds?: string[]; proxyId?: string },
+  overrides?: {
+    accountIds?: string[];
+    proxyId?: string;
+    mode?: 'full' | 'accountBind' | 'proxyBind';
+  },
 ): DeviceEnableItem | null {
   const deviceId = getDeviceId(item);
   if (!deviceId) return null;
-  const accountIds =
-    overrides?.accountIds ?? getDeviceBoundAccountIds(item);
-  const proxyId = overrides?.proxyId ?? (getDeviceProxyId(item) || '');
-  return {
+  const mode = overrides?.mode ?? 'full';
+  const base: DeviceEnableItem = {
     deviceId,
     deviceIp: item.deviceIp ?? '',
-    accountIds,
-    proxyId,
   };
+
+  if (mode === 'accountBind') {
+    base.accountIds =
+      overrides?.accountIds ?? getDeviceBoundAccountIds(item);
+    return base;
+  }
+
+  if (mode === 'proxyBind') {
+    const pid = overrides?.proxyId ?? '';
+    if (!pid) return null;
+    base.proxyId = pid;
+    return base;
+  }
+
+  base.accountIds =
+    overrides?.accountIds ?? getDeviceBoundAccountIds(item);
+  base.proxyId =
+    overrides?.proxyId ?? (getDeviceProxyId(item) || '');
+  return base;
 }
 
 /** 点击设备：仅切换选中状态（用于自动关联） */
@@ -698,6 +717,7 @@ async function onCardDrop(ev: DragEvent, item: DeviceItem) {
       if (id && !nextAccountIds.includes(id)) nextAccountIds.push(id);
     }
     const deviceEnable = buildDeviceEnablePayload(target, {
+      mode: 'accountBind',
       accountIds: nextAccountIds,
     });
     if (!deviceEnable) {
@@ -729,6 +749,7 @@ async function onCardDrop(ev: DragEvent, item: DeviceItem) {
 
     const newProxyId = getProxyId(proxy) || '';
     const deviceEnable = buildDeviceEnablePayload(target, {
+      mode: 'proxyBind',
       proxyId: newProxyId,
     });
     if (!deviceEnable) {
