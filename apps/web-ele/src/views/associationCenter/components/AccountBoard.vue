@@ -400,10 +400,16 @@ defineExpose({
                 />
               </div>
               <div class="account-main">
-                <div class="account-id">
+                <div
+                  class="account-id"
+                  :title="item.userAccount || undefined"
+                >
                   {{ item.userAccount || '-' }}
                 </div>
-                <div class="account-name">
+                <div
+                  class="account-name"
+                  :title="item.nickName || undefined"
+                >
                   {{ item.nickName || '-' }}
                 </div>
               </div>
@@ -515,33 +521,39 @@ defineExpose({
   background: transparent;
 }
 
+/* minmax(0,1fr) 防止超长无空格字符串撑开列宽 */
 .account-list {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 4px;
 }
 
 @media (max-width: 1400px) {
   .account-list {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 992px) {
   .account-list {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 768px) {
   .account-list {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 .account-row {
   display: flex;
   align-items: stretch;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
   background: var(--el-fill-color-blank);
   border-radius: 6px;
   padding: 4px 10px;
@@ -563,6 +575,8 @@ defineExpose({
   align-items: center;
   gap: 8px;
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .platform-icon {
@@ -588,18 +602,30 @@ defineExpose({
 .account-main {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
 }
 
 .account-id {
   font-size: 13px;
   font-weight: 600;
   color: var(--el-text-color-primary);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .account-name {
   font-size: 11px;
   color: var(--el-text-color-secondary);
   margin-top: 1px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .growth-rate {

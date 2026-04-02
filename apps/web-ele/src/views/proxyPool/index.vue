@@ -5,7 +5,7 @@ import { onMounted, ref } from 'vue';
 
 import { Page, useVbenModal } from '@vben/common-ui';
 
-import { ElMessage } from 'element-plus';
+import { ElMessage, ElMessageBox } from 'element-plus';
 
 import {
   batchDeleteProxyApi,
@@ -204,7 +204,7 @@ async function onDownloadTemplate() {
   }
 }
 
-async function onBatchDelete() {
+function onBatchDelete() {
   const records = (gridApi as any).grid.getCheckboxRecords?.() || [];
   const proxyIds = records.map((item: any) => item.proxyId).filter(Boolean);
 
@@ -213,18 +213,30 @@ async function onBatchDelete() {
     return;
   }
 
-  try {
-    const res = await batchDeleteProxyApi(proxyIds);
-    if (res?.code === 100000) {
-      ElMessage.success($t('proxyPool.message.batchDeleteSuccess'));
-      gridApi.reload();
-      await loadProxyPoolNum();
-    }
-    // 非成功：proxyClient 已按业务 code 弹出 msg，此处不再提示成功、不刷新列表
-  } catch (error) {
-    console.error('[proxyPool] 批量删除代理失败:', error);
-    ElMessage.error($t('proxyPool.message.batchDeleteFailed'));
-  }
+  const count = proxyIds.length;
+
+  ElMessageBox.confirm(
+    $t('proxyPool.message.batchDeleteConfirm', { count }),
+    $t('proxyPool.message.batchDeleteConfirmTitle'),
+    { type: 'warning' },
+  )
+    .then(async () => {
+      try {
+        const res = await batchDeleteProxyApi(proxyIds);
+        if (res?.code === 100000) {
+          ElMessage.success($t('proxyPool.message.batchDeleteSuccess'));
+          gridApi.reload();
+          await loadProxyPoolNum();
+        }
+        // 非成功：proxyClient 已按业务 code 弹出 msg，此处不再提示成功、不刷新列表
+      } catch (error) {
+        console.error('[proxyPool] 批量删除代理失败:', error);
+        ElMessage.error($t('proxyPool.message.batchDeleteFailed'));
+      }
+    })
+    .catch(() => {
+      // 用户取消
+    });
 }
 
 function getSelectedProxyIds() {
@@ -258,6 +270,7 @@ onMounted(() => {
 function onCreateSuccess() {
   gridApi.reload();
   loadProxyPoolNum();
+  void loadRegionOptions();
 }
 
 const [FormModal, formModalApi] = useVbenModal({

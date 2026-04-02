@@ -1,14 +1,18 @@
 <script lang="ts" setup>
-import type { AddProxyParams } from '#/api/core/asset';
+import type { AddProxyParams, DeviceItem } from '#/api/core/asset';
 
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 
 import { useVbenModal } from '@vben/common-ui';
 
 import { ElMessage } from 'element-plus';
 
 import { useVbenForm } from '#/adapter/form';
-import { addProxyApi, intelligentRecognitionApi } from '#/api/core/asset';
+import {
+  addProxyApi,
+  getDeviceListApi,
+  intelligentRecognitionApi,
+} from '#/api/core/asset';
 import { $t } from '#/locales';
 
 interface ProxyFormValues {
@@ -29,6 +33,23 @@ const emit = defineEmits<{
 }>();
 
 const creating = ref(false);
+/** 与接口 records 项结构一致，直接交给 ElSelectV2 */
+const deviceNodeOptions = ref<DeviceItem[]>([]);
+
+async function loadDeviceNodeOptions() {
+  deviceNodeOptions.value = [];
+  try {
+    const res = await getDeviceListApi<DeviceItem>();
+    deviceNodeOptions.value = res.records ?? [];
+  } catch (error) {
+    console.error('[proxyPool] 加载设备列表失败:', error);
+    ElMessage.error($t('proxyPool.message.deviceListLoadFailed'));
+    deviceNodeOptions.value = [];
+  }
+}
+
+/** 与账号表单 Select 一致，用 computed 保证异步拉取后选项刷新 */
+const deviceNodeSelectOptions = computed(() => deviceNodeOptions.value);
 
 function getDefaultValues(): ProxyFormValues {
   return {
@@ -47,7 +68,7 @@ function getDefaultValues(): ProxyFormValues {
 
 async function onNetworkLinkBlur(event: FocusEvent) {
   const target = event.target as HTMLInputElement;
-  const networkLink = target?.value
+  const networkLink = target?.value;
   if (!networkLink) return;
   try {
     const res = await intelligentRecognitionApi({ networkLink });
@@ -55,7 +76,7 @@ async function onNetworkLinkBlur(event: FocusEvent) {
       ElMessage.error(res?.msg);
       return;
     }
-    const data = res?.data
+    const data = res?.data;
     await formApi.setValues({
       networkLink,
       ip: data.proxyLinkIp,
@@ -123,7 +144,8 @@ const [Form, formApi] = useVbenForm({
         type: 'password',
         showPassword: true,
         placeholder: '',
-        disabled: true,
+        /** disabled 时眼睛无法切换；只读仍可展示识别结果且可点小眼睛查看明文 */
+        readonly: true,
       },
     },
     {
@@ -137,12 +159,19 @@ const [Form, formApi] = useVbenForm({
       },
     },
     {
-      component: 'Input',
+      component: 'Select',
       fieldName: 'phoneIp',
       label: $t('proxyPool.form.phoneIp'),
       componentProps: {
         placeholder: $t('proxyPool.form.phoneIpPlaceholder'),
         clearable: true,
+        filterable: true,
+        options: deviceNodeSelectOptions,
+        props: {
+          label: 'deviceIp',
+          value: 'deviceIp',
+          disabled: 'disabled',
+        },
       },
     },
     {
@@ -183,6 +212,7 @@ const [Modal, modalApi] = useVbenModal({
   },
   onOpenChange: async (isOpen) => {
     if (isOpen) {
+      await loadDeviceNodeOptions();
       await formApi.resetForm();
       await formApi.setValues(getDefaultValues());
       return;

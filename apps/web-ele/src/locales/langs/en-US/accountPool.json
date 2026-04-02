@@ -35,7 +35,8 @@
     "accountGroup": "Account Group",
     "associatedDevices": "Associated Devices",
     "deviceIp": "Associated Device",
-    "associatedAgents": "Associated Agents"
+    "associatedAgents": "Associated Agents",
+    "clickToCopy": "Click to copy"
   },
   "action": {
     "add": "Add",
@@ -114,6 +115,7 @@
     "emailLengthExceeded": "Email supports up to 50 characters",
     "emailPasswordLengthExceeded": "Email password supports up to 20 characters",
     "twiceCheckLengthExceeded": "Second verification supports up to 50 characters",
-    "remarkLengthExceeded": "Remark supports up to 50 characters"
+    "remarkLengthExceeded": "Remark supports up to 50 characters",
+    "copySuccess": "Copied"
   }
 }

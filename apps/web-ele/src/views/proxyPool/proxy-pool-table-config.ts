@@ -7,6 +7,7 @@ import { ElCascader, ElMessage } from 'element-plus';
 import { getProxyAssetPageApi } from '#/api/core/asset';
 
 import { $t } from '#/locales';
+import { renderPoolRiskTipsCell } from '#/utils/risk-tips-display';
 
 export type ProxyPoolSortOption = { label: string; value: string };
 export type ProxyPoolGroupOption = { id: string; suiteName: string; suiteDesc?: string };
@@ -214,6 +215,14 @@ export const useColumns = () => [
     formatter: ({ cellValue }: { cellValue: string[] | string }) =>
       renderArrayText(cellValue),
   },
-  { field: 'riskTips', title: $t('proxyPool.table.riskAlert'), minWidth: 140 },
+  {
+    field: 'riskTips',
+    title: $t('proxyPool.table.riskAlert'),
+    minWidth: 140,
+    slots: {
+      default: ({ row }: { row: ProxyPoolRow }) =>
+        renderPoolRiskTipsCell(row),
+    },
+  },
 ];
 
