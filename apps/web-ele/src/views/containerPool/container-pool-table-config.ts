@@ -34,7 +34,7 @@ export async function getContainerPoolListApi(_params: {
   containerFilter?: string;
   containerSearch?: string;
   containerGroup?: string[];
-  sortCondition?: string;
+  sortType?: string;
   [key: string]: any;
 }) {
   const {
@@ -43,7 +43,7 @@ export async function getContainerPoolListApi(_params: {
     containerFilter,
     containerSearch,
     containerGroup,
-    sortCondition,
+    sortType,
   } = _params;
 
   const data = await getContainerAssetPageApi({
@@ -52,7 +52,7 @@ export async function getContainerPoolListApi(_params: {
     screening: containerFilter,
     search: containerSearch,
     suiteIds: containerGroup,
-    sortType: sortCondition,
+    sortType: sortType,
   });
 
   const list = (data.records || []) as ContainerPoolRow[];
@@ -104,10 +104,10 @@ export const getFormOptions = (
     },
     {
       component: 'Select',
-      fieldName: 'sortCondition',
-      label: $t('containerPool.filter.sortCondition'),
+      fieldName: 'sortType',
+      label: $t('containerPool.filter.sortType'),
       componentProps: {
-        placeholder: $t('containerPool.filter.sortConditionPlaceholder'),
+        placeholder: $t('containerPool.filter.sortTypePlaceholder'),
         clearable: true,
         options: sortOptions,
       },

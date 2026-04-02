@@ -14,8 +14,8 @@
     "accountSearchPlaceholder": "请输入账号关键词",
     "accountGroup": "账号分组",
     "accountGroupPlaceholder": "请选择账号分组",
-    "sortCondition": "排序条件",
-    "sortConditionPlaceholder": "请选择排序"
+    "sortType": "排序条件",
+    "sortTypePlaceholder": "请选择排序"
   },
   "table": {
     "platform": "所属平台",

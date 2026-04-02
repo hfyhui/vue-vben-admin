@@ -16,8 +16,8 @@
     "containerGroupPlaceholder": "请选择容器分组",
     "accountGroup": "账号分组",
     "accountGroupPlaceholder": "请选择账号分组",
-    "sortCondition": "排序条件",
-    "sortConditionPlaceholder": "请选择排序"
+    "sortType": "排序条件",
+    "sortTypePlaceholder": "请选择排序"
   },
   "table": {
     "deviceId": "设备ID",

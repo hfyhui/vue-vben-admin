@@ -104,7 +104,7 @@ export async function getAccountPoolListApi(_params: {
   platform?: string[];
   accountSearch?: string;
   accountGroup?: string[];
-  sortCondition?: string;
+  sortType?: string;
   [key: string]: any;
 }) {
   const {
@@ -113,7 +113,7 @@ export async function getAccountPoolListApi(_params: {
     platform,
     accountSearch,
     accountGroup,
-    sortCondition,
+    sortType,
   } = _params;
 
   const reqParams: Record<string, any> = {
@@ -124,7 +124,7 @@ export async function getAccountPoolListApi(_params: {
   if (accountSearch) reqParams.accountName = accountSearch;
   if (accountGroup?.length) reqParams.suiteIds = accountGroup;
   if (platform?.length) reqParams.appIds = platform;
-  if (sortCondition) reqParams.sortCondition = sortCondition;
+  if (sortType) reqParams.sortType = sortType;
 
   const data = await getAccountAssetPageApi(reqParams);
 
@@ -187,10 +187,10 @@ export const getFormOptions = (
     },
     {
       component: 'Select',
-      fieldName: 'sortCondition',
-      label: $t('accountPool.filter.sortCondition'),
+      fieldName: 'sortType',
+      label: $t('accountPool.filter.sortType'),
       componentProps: {
-        placeholder: $t('accountPool.filter.sortConditionPlaceholder'),
+        placeholder: $t('accountPool.filter.sortTypePlaceholder'),
         clearable: true,
         options: sortOptions,
       },

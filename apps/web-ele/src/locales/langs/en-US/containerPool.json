@@ -16,8 +16,8 @@
     "containerGroupPlaceholder": "Select container group",
     "accountGroup": "Account Group",
     "accountGroupPlaceholder": "Select account group",
-    "sortCondition": "Sort Condition",
-    "sortConditionPlaceholder": "Select sort"
+    "sortType": "Sort Condition",
+    "sortTypePlaceholder": "Select sort"
   },
   "table": {
     "deviceId": "Device ID",
