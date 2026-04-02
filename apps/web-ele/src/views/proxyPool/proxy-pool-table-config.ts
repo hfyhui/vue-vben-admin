@@ -225,6 +225,8 @@ export const useColumns = (
       default: ({ row }: { row: ProxyPoolRow }) => {
         const proxyId = String(row.proxyId ?? row.id ?? '');
         const remark = row.remark ?? '';
+        // 备注为空时给一个不可见占位，确保 hover 区域和单元格高度一致
+        const displayRemark = remark ? remark : '\u00A0';
         const editingProxyId = options.getEditingRemarkProxyId?.() ?? null;
         const isEditing =
           !!editingProxyId && proxyId === editingProxyId;
@@ -246,7 +248,6 @@ export const useColumns = (
             onBlur: () => options.onConfirmEditRemark?.(),
             onKeydown: (event: KeyboardEvent) => {
               if (event.key === 'Enter') options.onConfirmEditRemark?.();
-              if (event.key === 'Escape') options.onCancelEditRemark?.();
             },
           });
         }
@@ -256,14 +257,26 @@ export const useColumns = (
           {
             title: remark,
             style:
-              'display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;color:var(--el-color-primary);',
+              'display:block;width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;color:var(--el-color-primary);' +
+              'background-color:transparent;border-radius:4px;' +
+              'padding:2px 6px;transition:background-color 0.15s;',
+            onMouseenter: (event: MouseEvent) => {
+              const el = event.currentTarget as HTMLElement;
+              if (!el) return;
+              el.style.backgroundColor = 'var(--el-fill-color-light)';
+            },
+            onMouseleave: (event: MouseEvent) => {
+              const el = event.currentTarget as HTMLElement;
+              if (!el) return;
+              el.style.backgroundColor = 'transparent';
+            },
             onDblclick: (event: Event) => {
               event.stopPropagation();
               event.preventDefault();
               options.onStartEditRemark?.(row);
             },
           },
-          remark,
+          displayRemark,
         );
       },
     },
