@@ -56,6 +56,9 @@ const pagination = reactive({
 const list = ref<AccountItem[]>([]);
 const selectedIds = ref<string[]>([]);
 const platformOptions = ref<Array<{ label: string; value: string }>>([]);
+const boardContentRef = ref<HTMLElement | null>(null);
+/** 按行决定气泡在上看板上半区用 top、下半区用 bottom，避免贴边被裁切 */
+const tooltipPlacementByRow = reactive<Record<string, 'top' | 'bottom'>>({});
 /** 根据接口的 logoPath 拼出完整图片 URL */
 function getLogoUrl(logoPath?: string) {
   return formatProcessUrl(logoPath);
@@ -110,6 +113,32 @@ function applyReverseQueryAccounts(accounts: AccountItem[] | null | undefined) {
 /** 右侧色条颜色，直接使用接口返回的 color，无则默认 gray */
 function getRiskColor(color?: string): string {
   return color || 'gray';
+}
+
+/** 图标悬停：与卡片展示一致的应用名称（有则出提示） */
+function accountPlatformHoverText(item: AccountItem) {
+  const raw = item.appName || item.appCode || item.platform;
+  return raw != null && String(raw).trim() !== '' ? String(raw).trim() : '';
+}
+
+function rowUiKey(item: AccountItem, index: number) {
+  return String(item.accountId ?? `account-row-${index}`);
+}
+
+function lineTooltipPlacement(item: AccountItem, index: number) {
+  return tooltipPlacementByRow[rowUiKey(item, index)] ?? 'top';
+}
+
+function updateLineTooltipPlacement(ev: MouseEvent, item: AccountItem, index: number) {
+  const board = boardContentRef.value;
+  const target = ev.currentTarget as HTMLElement | null;
+  if (!board || !target) return;
+  const br = board.getBoundingClientRect();
+  const tr = target.getBoundingClientRect();
+  const triggerMidY = tr.top + tr.height / 2;
+  const boardMidY = br.top + br.height / 2;
+  tooltipPlacementByRow[rowUiKey(item, index)] =
+    triggerMidY < boardMidY ? 'top' : 'bottom';
 }
 
 /** 构建请求参数，与接口文档一致 */
@@ -374,6 +403,7 @@ defineExpose({
     </div>
 
     <div
+      ref="boardContentRef"
       v-infinite-scroll="handleLoadMore"
       class="board-content"
       :infinite-scroll-distance="200"
@@ -390,27 +420,57 @@ defineExpose({
             @click.stop="toggleSelect(item, index)"
             @dragstart="onAccountDragStart($event, item, index)"
           >
-            <div class="account-info">
-              <div class="platform-icon">
-                <img
-                  v-if="item.logoPath"
-                  :src="getLogoUrl(item.logoPath)"
-                  class="platform-logo"
-                  alt="logo"
-                />
-              </div>
-              <div class="account-main">
-                <div
-                  class="account-id"
-                  :title="item.userAccount || undefined"
+            <div class="account-row-main">
+              <div class="account-info">
+                <el-tooltip
+                  :placement="lineTooltipPlacement(item, index)"
+                  effect="light"
+                  :show-after="200"
+                  :content="accountPlatformHoverText(item)"
+                  :disabled="!accountPlatformHoverText(item)"
+                  popper-class="account-board-line-tooltip"
                 >
-                  {{ item.userAccount || '-' }}
-                </div>
-                <div
-                  class="account-name"
-                  :title="item.nickName || undefined"
-                >
-                  {{ item.nickName || '-' }}
+                  <div
+                    class="platform-icon"
+                    @mouseenter="updateLineTooltipPlacement($event, item, index)"
+                  >
+                    <img
+                      v-if="item.logoPath"
+                      :src="getLogoUrl(item.logoPath)"
+                      class="platform-logo"
+                      alt="logo"
+                    />
+                  </div>
+                </el-tooltip>
+                <div class="account-main">
+                  <el-tooltip
+                    :placement="lineTooltipPlacement(item, index)"
+                    effect="light"
+                    :show-after="200"
+                    :content="item.userAccount != null && String(item.userAccount).trim() !== '' ? String(item.userAccount) : '-'"
+                    popper-class="account-board-line-tooltip"
+                  >
+                    <div
+                      class="account-id"
+                      @mouseenter="updateLineTooltipPlacement($event, item, index)"
+                    >
+                      {{ item.userAccount || '-' }}
+                    </div>
+                  </el-tooltip>
+                  <el-tooltip
+                    :placement="lineTooltipPlacement(item, index)"
+                    effect="light"
+                    :show-after="200"
+                    :content="item.nickName != null && String(item.nickName).trim() !== '' ? String(item.nickName) : '-'"
+                    popper-class="account-board-line-tooltip"
+                  >
+                    <div
+                      class="account-name"
+                      @mouseenter="updateLineTooltipPlacement($event, item, index)"
+                    >
+                      {{ item.nickName || '-' }}
+                    </div>
+                  </el-tooltip>
                 </div>
               </div>
             </div>
@@ -521,28 +581,28 @@ defineExpose({
   background: transparent;
 }
 
-/* minmax(0,1fr) 防止超长无空格字符串撑开列宽 */
+/* minmax 下限保证字少时单列仍有可点宽度；minmax(0,1fr) 防止超长无空格字符串撑开列宽 */
 .account-list {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(120px, 1fr));
   gap: 4px;
 }
 
 @media (max-width: 1400px) {
   .account-list {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(120px, 1fr));
   }
 }
 
 @media (max-width: 992px) {
   .account-list {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(120px, 1fr));
   }
 }
 
 @media (max-width: 768px) {
   .account-list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(120px, 1fr));
   }
 }
 
@@ -552,7 +612,8 @@ defineExpose({
   box-sizing: border-box;
   width: 100%;
   max-width: 100%;
-  min-width: 0;
+  /* 与网格 minmax 一致，避免字极少时整卡视觉上过窄、难对准 */
+  min-width: 120px;
   overflow: hidden;
   background: var(--el-fill-color-blank);
   border-radius: 6px;
@@ -570,13 +631,38 @@ defineExpose({
   box-shadow: 0 0 0 1px var(--el-color-primary-light-5);
 }
 
+/* 占满网格单元格剩余宽度，避免字少时 el-tooltip 触发器收缩成窄条、难点难悬停 */
+.account-row-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: stretch;
+}
+
 .account-info {
   display: flex;
   align-items: center;
   gap: 8px;
   flex: 1;
+  width: 100%;
   min-width: 0;
   overflow: hidden;
+}
+
+.account-info > .el-tooltip {
+  flex-shrink: 0;
+  display: inline-flex;
+}
+
+.account-info > .el-tooltip :deep(.el-tooltip__trigger) {
+  display: flex;
+  align-items: center;
+}
+
+.account-main :deep(.el-tooltip__trigger) {
+  display: block;
+  width: 100%;
+  min-width: 0;
 }
 
 .platform-icon {
@@ -601,7 +687,8 @@ defineExpose({
 
 .account-main {
   flex: 1;
-  min-width: 0;
+  /* 文本区保底宽度，避免两行都是短数字时缩成一条 */
+  min-width: 96px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -619,9 +706,9 @@ defineExpose({
 }
 
 .account-name {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--el-text-color-secondary);
-  margin-top: 1px;
+  padding:1px;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -674,5 +761,23 @@ defineExpose({
 
 .board-loading .el-icon {
   margin-right: 6px;
+}
+</style>
+
+<!-- 白底 + 最小宽度（与 effect=light 配合） -->
+<style>
+.account-board-line-tooltip.el-popper {
+  background: #fff !important;
+  color: var(--el-text-color-primary) !important;
+  border: 1px solid var(--el-border-color-lighter) !important;
+  box-shadow: var(--el-box-shadow-light) !important;
+  min-width: 120px;
+  max-width: min(420px, 92vw);
+  padding: 8px 12px !important;
+}
+
+.account-board-line-tooltip .el-popper__arrow::before {
+  background: #fff !important;
+  border: 1px solid var(--el-border-color-lighter) !important;
 }
 </style>
