@@ -206,12 +206,26 @@ function getBoundAccounts(item: DeviceItem): BoundAccountRow[] {
                       </el-tooltip>
                     </div>
                     <div class="bound-account-text">
-                      <div class="bound-account-line1">
-                        {{ acc.userAccount }}
-                      </div>
-                      <div class="bound-account-line2">
-                        {{ acc.accountNickname }}
-                      </div>
+                      <el-tooltip
+                        :content="acc.userAccount"
+                        placement="top"
+                        popper-class="account-board-line-tooltip"
+                        :disabled="!acc.userAccount"
+                      >
+                        <div class="bound-account-line1">
+                          {{ acc.userAccount }}
+                        </div>
+                      </el-tooltip>
+                      <el-tooltip
+                        :content="acc.accountNickname"
+                        placement="bottom"
+                        popper-class="account-board-line-tooltip"
+                        :disabled="!acc.accountNickname"
+                      >
+                        <div class="bound-account-line2">
+                          {{ acc.accountNickname }}
+                        </div>
+                      </el-tooltip>
                     </div>
                   </div>
                   <span
@@ -340,7 +354,7 @@ function getBoundAccounts(item: DeviceItem): BoundAccountRow[] {
 .card-body {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 3px;
   padding-left: 4px;
 }
 
@@ -435,7 +449,7 @@ function getBoundAccounts(item: DeviceItem): BoundAccountRow[] {
 .bound-account-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  /* gap: 6px; */
   width: 100%;
   min-width: 0;
 }
@@ -489,12 +503,23 @@ function getBoundAccounts(item: DeviceItem): BoundAccountRow[] {
 
 .bound-account-text {
   flex: 1;
-  /* 与账号看板一致：短数字/短昵称时仍保留可点、可读的文本区宽度 */
-  min-width: 96px;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 2px;
   line-height: 1.2;
+}
+
+.bound-account-text > .el-tooltip {
+  display: block;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.bound-account-text :deep(.el-tooltip__trigger) {
+  display: block;
+  width: 100%;
+  min-width: 0;
 }
 
 .bound-account-line1,
@@ -513,10 +538,12 @@ function getBoundAccounts(item: DeviceItem): BoundAccountRow[] {
 
 .account-color-pill {
   flex-shrink: 0;
-  width: 4px;
+  width: 3px;
   min-height: 28px;
   align-self: stretch;
-  border-radius: 4px;
+  /* margin-left: 6px; */
+  border-radius: 999px;
+  opacity: 0.85;
 }
 
 .account-color-pill.gray {

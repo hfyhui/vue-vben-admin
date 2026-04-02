@@ -9,6 +9,7 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 
 import {
   batchDeleteProxyApi,
+  addProxyRemarkApi,
   downloadProxyTemplateApi,
   getAssetGroupApi,
   getProxyPoolNumApi,
@@ -50,6 +51,10 @@ const statsData = ref([
   { key: 'riskControlProxies', value: 0 },
 ]);
 
+const editingRemarkProxyId = ref<string | null>(null);
+const editingRemarkValue = ref('');
+const savingRemark = ref(false);
+
 async function loadProxyPoolNum() {
   try {
     const response = await getProxyPoolNumApi();
@@ -81,7 +86,47 @@ function mapRegionTree(
 const [Grid, gridApi] = useVbenVxeGrid({
   formOptions: getFormOptions([], [], []),
   gridOptions: {
-    columns: useColumns(),
+    columns: useColumns({
+      getEditingRemarkProxyId: () => editingRemarkProxyId.value,
+      getEditingRemarkValue: () => editingRemarkValue.value,
+      onStartEditRemark(row) {
+        const proxyId = row.proxyId ?? row.id;
+        if (!proxyId) {
+          ElMessage.warning($t('proxyPool.message.missingProxyId'));
+          return;
+        }
+        editingRemarkProxyId.value = String(proxyId);
+        editingRemarkValue.value = row.remark ?? '';
+      },
+      onChangeEditingRemarkValue(value) {
+        editingRemarkValue.value = value;
+      },
+      async onConfirmEditRemark() {
+        if (!editingRemarkProxyId.value || savingRemark.value) return;
+        savingRemark.value = true;
+        const proxyId = editingRemarkProxyId.value;
+        const remark = String(editingRemarkValue.value ?? '').trim();
+        try {
+          const res = await addProxyRemarkApi({ proxyId, remark });
+          if (res?.code === 100000) {
+            ElMessage.success($t('proxyPool.message.editRemarkSuccess'));
+            gridApi.reload();
+            await loadProxyPoolNum();
+          }
+        } catch (error) {
+          console.error('[proxyPool] 更新代理备注失败:', error);
+          ElMessage.error($t('proxyPool.message.editRemarkFailed'));
+        } finally {
+          savingRemark.value = false;
+          editingRemarkProxyId.value = null;
+          editingRemarkValue.value = '';
+        }
+      },
+      onCancelEditRemark() {
+        editingRemarkProxyId.value = null;
+        editingRemarkValue.value = '';
+      },
+    }),
     pagerConfig: {
       enabled: true,
       pageSize: 10,

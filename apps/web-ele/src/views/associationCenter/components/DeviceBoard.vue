@@ -925,6 +925,38 @@ async function autoAssociateWithSelections(
     return;
   }
 
+  const deviceEnablesForCheck: DeviceEnableItem[] = [];
+  for (let i = 0; i < bindCount; i++) {
+    const target = devices[i];
+    if (!target) continue;
+    const deviceId = getDeviceId(target);
+    if (!deviceId) continue;
+    const accountIds = [...getDeviceBoundAccountIds(target)];
+    if (hasAccounts) {
+      const account = accounts[i];
+      const aid = account?.accountId;
+      if (aid && !accountIds.includes(aid)) accountIds.push(aid);
+    }
+    let proxyId = '';
+    if (hasProxies) {
+      const proxy = usedProxies[i];
+      if (proxy) proxyId = getProxyId(proxy);
+    } else {
+      proxyId = getDeviceProxyId(target) || '';
+    }
+    deviceEnablesForCheck.push({
+      deviceId,
+      deviceIp: target.deviceIp ?? '',
+      accountIds,
+      proxyId,
+    });
+  }
+
+  if (props.checkDropDeviceEnables && deviceEnablesForCheck.length) {
+    const ok = await props.checkDropDeviceEnables(deviceEnablesForCheck);
+    if (!ok) return;
+  }
+
   for (let i = 0; i < bindCount; i++) {
     const target = devices[i];
     if (!target) continue;

@@ -93,7 +93,13 @@
     "selectBeforeGrouping": "请先选择要分组的代理",
     "groupSetSuccess": "代理分组成功",
     "groupSetFailed": "代理分组失败",
-    "deviceListLoadFailed": "设备列表加载失败，请稍后重试"
+    "deviceListLoadFailed": "设备列表加载失败，请稍后重试",
+    "missingProxyId": "代理ID缺失",
+    "editRemark": "请输入代理备注",
+    "editRemarkTitle": "编辑代理备注",
+    "editRemarkPlaceholder": "请输入备注",
+    "editRemarkSuccess": "备注更新成功",
+    "editRemarkFailed": "备注更新失败"
   }
 }
 

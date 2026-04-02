@@ -84,6 +84,8 @@
   "containerResetFailed": "容器重置失败",
   "officialEnableSuccess": "正式启用成功",
   "officialEnableFailed": "正式启用失败",
+  "checkAccountDeviceNeedConfirmTitle": "关联校验提示",
+  "checkAccountDeviceNeedConfirmMessage": "当前绑定存在风险或冲突提示，是否仍要继续关联？",
   "dropBindCheckFailed": "拖拽关联校验未通过",
   "deviceMissingForBind": "设备缺少标识，无法完成校验",
   "accountDragParseFailed": "拖拽账号数据解析失败",

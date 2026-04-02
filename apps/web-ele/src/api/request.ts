@@ -207,7 +207,12 @@ function createBackendClient(baseURL: string) {
           const { code, msg } = responseData;
           if (backendSuccessCodes.has(Number(code))) {
             return responseData;
-          } else if (msg) {
+          }
+          // POST /platform/asset/check/account-device：500511 由关联中心二次确认，不在此自动 toast
+          const reqUrl = response.config?.url ?? '';
+          const isAccountDeviceCheck = reqUrl.includes('check/account-device');
+          const needConfirmCode = Number(code) === 500511;
+          if (msg && !(isAccountDeviceCheck && needConfirmCode)) {
             ElMessage.error(msg);
           }
           return responseData;

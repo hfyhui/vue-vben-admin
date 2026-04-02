@@ -42,6 +42,21 @@ export interface ProxyPoolRow {
   suiteName?: string;
 }
 
+export type ProxyPoolTableConfigOptions = {
+  /** 获取当前正在编辑的代理备注 proxyId（保证响应式） */
+  getEditingRemarkProxyId?: () => string | null;
+  /** 获取当前编辑中的备注值（保证响应式） */
+  getEditingRemarkValue?: () => string;
+  /** 双击进入编辑 */
+  onStartEditRemark?: (row: ProxyPoolRow) => void;
+  /** 更新输入框值 */
+  onChangeEditingRemarkValue?: (value: string) => void;
+  /** 提交编辑 */
+  onConfirmEditRemark?: () => void;
+  /** 取消编辑 */
+  onCancelEditRemark?: () => void;
+};
+
 async function copyText(text: string) {
   if (!text) return;
   try {
@@ -168,12 +183,14 @@ export const getFormOptions = (
   submitOnEnter: true,
 });
 
-export const useColumns = () => [
+export const useColumns = (
+  options: ProxyPoolTableConfigOptions = {},
+) => [
   { type: 'checkbox', width: 50, align: 'center' },
   { field: 'area', title: $t('proxyPool.table.region'), minWidth: 120 },
   { field: 'inputTime', title: $t('proxyPool.table.loginTime'), minWidth: 160 },
   { field: 'protocol', title: $t('proxyPool.table.protocol'), minWidth: 100 },
-  { field: 'proxyLinkIp', title: $t('proxyPool.table.deviceIp'), minWidth: 140 },
+  { field: 'ip', title: $t('proxyPool.table.deviceIp'), minWidth: 140 },
   { field: 'proxyLinkPort', title: $t('proxyPool.table.port'), minWidth: 100 },
   { field: 'username', title: $t('proxyPool.table.username'), minWidth: 120 },
   { field: 'password', title: $t('proxyPool.table.password'), minWidth: 120 },
@@ -200,7 +217,57 @@ export const useColumns = () => [
   },
   { field: 'expireTime', title: $t('proxyPool.table.expireTime'), minWidth: 160 },
   { field: 'suiteName', title: $t('proxyPool.table.proxyGroup'), minWidth: 120 },
-  { field: 'remark', title: $t('proxyPool.table.remarks'), minWidth: 120 },
+  {
+    field: 'remark',
+    title: $t('proxyPool.table.remarks'),
+    minWidth: 120,
+    slots: {
+      default: ({ row }: { row: ProxyPoolRow }) => {
+        const proxyId = String(row.proxyId ?? row.id ?? '');
+        const remark = row.remark ?? '';
+        const editingProxyId = options.getEditingRemarkProxyId?.() ?? null;
+        const isEditing =
+          !!editingProxyId && proxyId === editingProxyId;
+
+        if (isEditing) {
+          return h('input', {
+            value: options.getEditingRemarkValue?.() ?? '',
+            autofocus: true,
+            spellcheck: false,
+            maxlength: 20,
+            style:
+              'width:100%;height:28px;padding:0 8px;border:1px solid var(--el-border-color);border-radius:4px;outline:none;',
+            placeholder: $t('proxyPool.message.editRemarkPlaceholder'),
+            onInput: (e: Event) => {
+              const target = e.target as HTMLInputElement;
+              const value = target.value.slice(0, 20);
+              options.onChangeEditingRemarkValue?.(value);
+            },
+            onBlur: () => options.onConfirmEditRemark?.(),
+            onKeydown: (event: KeyboardEvent) => {
+              if (event.key === 'Enter') options.onConfirmEditRemark?.();
+              if (event.key === 'Escape') options.onCancelEditRemark?.();
+            },
+          });
+        }
+
+        return h(
+          'span',
+          {
+            title: remark,
+            style:
+              'display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;color:var(--el-color-primary);',
+            onDblclick: (event: Event) => {
+              event.stopPropagation();
+              event.preventDefault();
+              options.onStartEditRemark?.(row);
+            },
+          },
+          remark,
+        );
+      },
+    },
+  },
   {
     field: 'deviceIp',
     title: $t('proxyPool.table.associatedDevices'),

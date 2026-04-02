@@ -2,7 +2,7 @@
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
-import { ElMessage } from 'element-plus';
+import { ElMessage, ElMessageBox } from 'element-plus';
 import { TopRight } from '@element-plus/icons-vue';
 
 import {
@@ -35,6 +35,9 @@ const overviewStats = ref([
 const sharedGroupOptions = ref<Array<{ id: string; suiteName: string }>>([]);
 const sharedSortOptions = ref<Array<{ label: string; value: string }>>([]);
 const assetEnumsStore = useAssetEnumsStore();
+
+/** 与后端 POST /asset/check/account-device 约定：需二次确认后方可继续绑定 */
+const ACCOUNT_DEVICE_CHECK_NEED_CONFIRM_CODE = 500511;
 
 function toSafeNumber(value: unknown) {
   const num = Number(value ?? 0);
@@ -111,17 +114,37 @@ async function onDeviceBoardRefreshProxyList() {
   await proxyBoardRef.value?.refreshProxyList?.();
 }
 
+async function confirmAccountDeviceCheckWarning(msg: string | undefined) {
+  try {
+    await ElMessageBox.confirm(
+      msg || $t('associationCenter.checkAccountDeviceNeedConfirmMessage'),
+      $t('associationCenter.checkAccountDeviceNeedConfirmTitle'),
+      {
+        type: 'warning',
+        confirmButtonText: $t('associationCenter.confirmButtonText'),
+        cancelButtonText: $t('associationCenter.cancelButtonText'),
+      },
+    );
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** 拖拽账号/代理到容器前：校验账号-容器、代理-容器关系 */
 async function checkDropDeviceEnables(deviceEnables: DeviceEnableItem[]) {
   try {
     const checkResponse = await checkAccountDeviceApi({ deviceEnables });
-    if (checkResponse?.code !== 100000) {
-      if (!checkResponse?.msg) {
-        ElMessage.error($t('associationCenter.dropBindCheckFailed'));
-      }
-      return false;
+    if (checkResponse?.code === 100000) {
+      return true;
     }
-    return true;
+    if (Number(checkResponse?.code) === ACCOUNT_DEVICE_CHECK_NEED_CONFIRM_CODE) {
+      return confirmAccountDeviceCheckWarning(checkResponse?.msg);
+    }
+    if (!checkResponse?.msg) {
+      ElMessage.error($t('associationCenter.dropBindCheckFailed'));
+    }
+    return false;
   } catch (error) {
     console.error('[associationCenter] 拖拽关联校验失败:', error);
     ElMessage.error($t('associationCenter.dropBindCheckFailed'));
@@ -160,9 +183,6 @@ async function onContainerReset() {
 }
 
 async function onOfficialEnable() {
-  const boardList = deviceBoardRef.value?.getDeviceBoardList?.() || [];
-  console.log('[associationCenter] 设备看板列表数据:', boardList);
-
   const deviceEnables = deviceBoardRef.value?.getSelectedDeviceEnables?.() || [];
   if (!deviceEnables.length) {
     ElMessage.warning($t('associationCenter.selectDeviceBeforeOfficialEnable'));
@@ -170,14 +190,6 @@ async function onOfficialEnable() {
   }
 
   try {
-    const checkResponse = await checkAccountDeviceApi({ deviceEnables });
-    if (checkResponse?.code !== 100000) {
-      if (!checkResponse?.msg) {
-        ElMessage.error($t('associationCenter.officialEnableFailed'));
-      }
-      return;
-    }
-
     const response = await enableAssetApi({ deviceEnables });
     if (response?.code === 100000) {
       ElMessage.success(

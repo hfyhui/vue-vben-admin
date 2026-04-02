@@ -202,6 +202,13 @@ export interface AddProxyParams {
   password?: string;
 }
 
+export interface AddProxyRemarkParams {
+  /** 代理ID */
+  proxyId?: string;
+  /** 代理备注 */
+  remark?: string;
+}
+
 export interface AddProxyGroupParams {
   suiteId?: string;
   suiteName?: string;
@@ -232,6 +239,7 @@ function resolvePageResult<T>(
   fallback: { current: number; size: number },
 ): PageResult<T> {
   const page = response?.data ?? response ?? {};
+
   return {
     records: Array.isArray(page.records) ? page.records : [],
     total: Number(page.total ?? 0),
@@ -467,6 +475,13 @@ export async function addProxyApi(
   params: AddProxyParams,
 ): Promise<ApiResponse<null>> {
   return proxyClient.post<ApiResponse<null>>('/asset/add/proxy', params);
+}
+
+/** 新增代理备注 POST /asset/add/proxy-remark */
+export async function addProxyRemarkApi(
+  params: AddProxyRemarkParams,
+): Promise<ApiResponse<null>> {
+  return proxyClient.post<ApiResponse<null>>('/asset/add/proxy-remark', params);
 }
 
 /** 新增代理分组 POST /asset/add/proxy-group */

@@ -82,6 +82,8 @@
   "containerResetFailed": "Container reset failed",
   "officialEnableSuccess": "Official enable succeeded",
   "officialEnableFailed": "Official enable failed",
+  "checkAccountDeviceNeedConfirmTitle": "Association check",
+  "checkAccountDeviceNeedConfirmMessage": "The server reported a risk or conflict. Continue associating anyway?",
   "dropBindCheckFailed": "Drag-and-drop association check failed",
   "deviceMissingForBind": "Device identifier is missing; cannot verify binding",
   "accountDragParseFailed": "Failed to parse dragged account data",
