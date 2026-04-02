@@ -234,13 +234,13 @@ export const useColumns = (
             value: options.getEditingRemarkValue?.() ?? '',
             autofocus: true,
             spellcheck: false,
-            maxlength: 20,
+            maxlength: 50,
             style:
               'width:100%;height:28px;padding:0 8px;border:1px solid var(--el-border-color);border-radius:4px;outline:none;',
             placeholder: $t('proxyPool.message.editRemarkPlaceholder'),
             onInput: (e: Event) => {
               const target = e.target as HTMLInputElement;
-              const value = target.value.slice(0, 20);
+              const value = target.value.slice(0, 50);
               options.onChangeEditingRemarkValue?.(value);
             },
             onBlur: () => options.onConfirmEditRemark?.(),
