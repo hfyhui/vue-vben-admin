@@ -1,8 +1,93 @@
 import type { VbenFormProps } from '#/adapter/form';
 
+import { h } from 'vue';
+
+import { ElMessage, ElTooltip } from 'element-plus';
+
 import { getAccountAssetPageApi } from '#/api/core/asset';
 
 import { $t } from '#/locales';
+import { renderPoolRiskTipsCell } from '#/utils/risk-tips-display';
+
+const SENSITIVE_DOT_COUNT = 4;
+
+async function copyAccountPoolSensitive(text: string) {
+  const value = String(text ?? '');
+  if (!value) return;
+  try {
+    await navigator.clipboard.writeText(value);
+    ElMessage.success($t('accountPool.message.copySuccess'));
+  } catch {
+    const input = document.createElement('textarea');
+    input.value = value;
+    input.style.position = 'fixed';
+    input.style.opacity = '0';
+    document.body.appendChild(input);
+    input.select();
+    document.execCommand('copy');
+    document.body.removeChild(input);
+    ElMessage.success($t('accountPool.message.copySuccess'));
+  }
+}
+
+/** 账号池：敏感字段用小圆点展示，悬停提示单击复制，点击复制真实值 */
+export function renderAccountPoolSensitiveCell(raw: unknown) {
+  const text = raw === undefined || raw === null ? '' : String(raw);
+  const hasValue = text.trim() !== '';
+  if (!hasValue) {
+    return h(
+      'span',
+      { style: { color: 'var(--el-text-color-placeholder)' } },
+      '—',
+    );
+  }
+  const tooltip = $t('accountPool.table.clickToCopy');
+  const dots = Array.from({ length: SENSITIVE_DOT_COUNT }, (_, i) =>
+    h('span', {
+      key: i,
+      style: {
+        width: '7px',
+        height: '7px',
+        borderRadius: '50%',
+        backgroundColor: 'var(--el-color-primary)',
+        flexShrink: 0,
+        display: 'inline-block',
+      },
+    }),
+  );
+  return h(
+    ElTooltip,
+    { content: tooltip, placement: 'top' },
+    {
+      default: () =>
+        h(
+          'span',
+          {
+            style: {
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '5px',
+              cursor: 'pointer',
+              userSelect: 'none',
+              verticalAlign: 'middle',
+            },
+            onClick: (e: MouseEvent) => {
+              e.stopPropagation();
+              void copyAccountPoolSensitive(text);
+            },
+          },
+          dots,
+        ),
+    },
+  );
+}
+
+export interface AccountPoolRow {
+  riskTips?: string;
+  color?: string;
+  loginStatusName?: string;
+  [key: string]: any;
+}
 
 /** 与 GET /platform/asset/group（getAssetGroupApi）返回项一致，用于筛选下拉 */
 export type AccountPoolGroupOption = {
@@ -44,7 +129,7 @@ export async function getAccountPoolListApi(_params: {
   const data = await getAccountAssetPageApi(reqParams);
 
   return {
-    list: data.records ?? [],
+    list: (data.records ?? []) as AccountPoolRow[],
     total: Number(data.total ?? 0),
   };
 }
@@ -120,11 +205,21 @@ export const useColumns = () => [
   { type: 'checkbox', width: 50, align: 'center' },
   { field: 'platform', title: $t('accountPool.table.platform'), minWidth: 120 },
   { field: 'inputTime', title: $t('accountPool.table.entryTime'), minWidth: 160 },
-  { field: 'riskTips', title: $t('accountPool.table.riskAlert'), minWidth: 100 },
   {
-    field: 'loginStatus',
+    field: 'riskTips',
+    title: $t('accountPool.table.riskAlert'),
+    minWidth: 100,
+    slots: {
+      default: ({ row }: { row: AccountPoolRow }) =>
+        renderPoolRiskTipsCell(row),
+    },
+  },
+  {
+    field: 'loginStatusName',
     title: $t('accountPool.table.loginStatus'),
     minWidth: 120,
+    formatter: ({ row }: { row: AccountPoolRow }) =>
+      row.loginStatusName ?? row.loginStatus ?? '',
   },
   { field: 'account', title: $t('accountPool.table.account'), minWidth: 120 },
   { field: 'accountId', title: $t('accountPool.table.accountId'), minWidth: 120 },
@@ -136,7 +231,11 @@ export const useColumns = () => [
   {
     field: 'accountPassword',
     title: $t('accountPool.table.accountPassword'),
-    minWidth: 120,
+    minWidth: 100,
+    slots: {
+      default: ({ row }: { row: AccountPoolRow }) =>
+        renderAccountPoolSensitiveCell(row.accountPassword),
+    },
   },
   {
     field: 'email',
@@ -146,12 +245,20 @@ export const useColumns = () => [
   {
     field: 'emailPassword',
     title: $t('accountPool.table.emailPassword'),
-    minWidth: 120,
+    minWidth: 100,
+    slots: {
+      default: ({ row }: { row: AccountPoolRow }) =>
+        renderAccountPoolSensitiveCell(row.emailPassword),
+    },
   },
   {
     field: 'twiceCheck',
     title: $t('accountPool.table.twiceCheck'),
-    minWidth: 120,
+    minWidth: 100,
+    slots: {
+      default: ({ row }: { row: AccountPoolRow }) =>
+        renderAccountPoolSensitiveCell(row.twiceCheck),
+    },
   },
   { field: 'remark', title: $t('accountPool.table.remarks'), minWidth: 120 },
   {

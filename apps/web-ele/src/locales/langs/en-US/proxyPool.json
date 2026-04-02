@@ -64,7 +64,7 @@
     "area": "Area",
     "areaPlaceholder": "Enter area",
     "phoneIp": "Node IP",
-    "phoneIpPlaceholder": "Enter node IP",
+    "phoneIpPlaceholder": "Select node IP",
     "agreement": "Agreement",
     "agreementPlaceholder": "Enter agreement",
     "networkLink": "Link",
@@ -72,7 +72,7 @@
     "networkStatus": "Network Status",
     "networkStatusPlaceholder": "Select network status",
     "statusLeisure": "Leisure",
-    "statusBinding": "Binding",
+    "statusBinding": "Bound",
     "statusArrearage": "Arrearage",
     "statusInvalid": "Invalid",
     "expirationTime": "Expiration Time",
@@ -92,7 +92,8 @@
     "needLinkRecognition": "Enter the link and blur the field to recognize and fill port, username, and password",
     "selectBeforeGrouping": "Please select proxies before grouping",
     "groupSetSuccess": "Proxy grouping succeeded",
-    "groupSetFailed": "Proxy grouping failed"
+    "groupSetFailed": "Proxy grouping failed",
+    "deviceListLoadFailed": "Failed to load device list. Please try again."
   }
 }
 

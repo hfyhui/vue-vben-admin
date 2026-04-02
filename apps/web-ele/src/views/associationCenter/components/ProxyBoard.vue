@@ -6,6 +6,7 @@ import { Box, Loading } from '@element-plus/icons-vue';
 
 import { $t } from '#/locales';
 import { useAssetEnumsStore } from '#/store';
+import { poolRiskTipsTagProps } from '#/utils/risk-tips-display';
 
 import {
   getProxyAssetPageApi,
@@ -138,6 +139,13 @@ function applyReverseQueryProxies(proxies: ProxyItem[] | null | undefined) {
 /** 右侧色条颜色，直接使用接口返回的 color，无则默认 gray */
 function getRiskColor(color?: string): string {
   return color || 'gray';
+}
+
+function proxyRiskTipsTagBind(item: ProxyItem) {
+  return poolRiskTipsTagProps({
+    riskTips: item.riskTips,
+    color: item.color,
+  });
 }
 
 /** 构建代理分页查询参数，与接口字段保持一致 */
@@ -367,6 +375,14 @@ defineExpose({
               <span class="card-count" :class="getRiskColor(item.color)">{{
                 item.bandingCount ?? 0
               }}</span>
+              <el-tag
+                v-if="item.riskTips?.trim()"
+                class="proxy-risk-tag"
+                size="small"
+                v-bind="proxyRiskTipsTagBind(item) ?? { type: 'info', effect: 'plain' }"
+              >
+                {{ item.riskTips }}
+              </el-tag>
             </div>
             <div
               class="status-bar"
@@ -488,10 +504,16 @@ defineExpose({
 .card-info {
   display: flex;
   align-items: center;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: 8px 12px;
   flex: 1;
   min-width: 0;
+}
+
+.proxy-risk-tag {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .card-amount {

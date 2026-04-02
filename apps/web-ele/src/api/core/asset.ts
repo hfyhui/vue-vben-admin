@@ -2,10 +2,13 @@ import { proxyClient } from '../request';
 
 /** 设备资产项，与接口 POST /asset/device/page 返回的 records 结构一致 */
 export interface DeviceItem {
+  deviceId?: string;
   server?: string;
   inputTime?: string;
   chip?: string;
   deviceIp?: string;
+  /** 设备列表等接口：true 时下拉等场景不可选 */
+  disabled?: boolean;
   romVersion?: string;
   phoneBrand?: string;
   phoneModel?: string;
@@ -297,6 +300,17 @@ export async function getContainerAssetPageApi<T = DeviceItem>(
     current: reqParams.current,
     size: reqParams.size,
   });
+}
+
+/** 设备列表 POST /asset/device/list（一次返回全量，默认不传分页字段） */
+export async function getDeviceListApi<T = DeviceItem>(
+  body: Record<string, any> = {},
+): Promise<PageResult<T>> {
+  const response = await proxyClient.post<PageResult<T>>(
+    '/asset/device/list',
+    body,
+  );
+  return resolvePageResult<T>(response, { current: 1, size: 0 });
 }
 
 // 兼容已有调用命名

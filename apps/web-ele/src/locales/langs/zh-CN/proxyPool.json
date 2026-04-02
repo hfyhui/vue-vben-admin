@@ -64,7 +64,7 @@
     "area": "地区",
     "areaPlaceholder": "请输入地区",
     "phoneIp": "节点IP",
-    "phoneIpPlaceholder": "请输入节点IP",
+    "phoneIpPlaceholder": "请选择节点IP",
     "agreement": "协议",
     "agreementPlaceholder": "请输入协议",
     "networkLink": "链接",
@@ -92,7 +92,8 @@
     "needLinkRecognition": "请先输入链接并失焦完成识别，以填充端口、用户名和密码",
     "selectBeforeGrouping": "请先选择要分组的代理",
     "groupSetSuccess": "代理分组成功",
-    "groupSetFailed": "代理分组失败"
+    "groupSetFailed": "代理分组失败",
+    "deviceListLoadFailed": "设备列表加载失败，请稍后重试"
   }
 }
 
