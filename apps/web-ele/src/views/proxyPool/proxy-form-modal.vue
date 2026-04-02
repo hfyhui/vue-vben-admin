@@ -7,7 +7,7 @@ import { useVbenModal } from '@vben/common-ui';
 
 import { ElMessage } from 'element-plus';
 
-import { useVbenForm } from '#/adapter/form';
+import { useVbenForm, z } from '#/adapter/form';
 import {
   addProxyApi,
   getDeviceListApi,
@@ -25,7 +25,8 @@ interface ProxyFormValues {
   proxyLinkPort?: number;
   username?: string;
   password?: string;
-  phoneIp?: string;
+  /** 节点 IP，多选 */
+  phoneIp?: string[];
 }
 
 const emit = defineEmits<{
@@ -36,11 +37,14 @@ const creating = ref(false);
 /** 与接口 records 项结构一致，直接交给 ElSelectV2 */
 const deviceNodeOptions = ref<DeviceItem[]>([]);
 
+const PAGE_SIZE = 100;
 async function loadDeviceNodeOptions() {
-  deviceNodeOptions.value = [];
   try {
-    const res = await getDeviceListApi<DeviceItem>();
-    deviceNodeOptions.value = res.records ?? [];
+    const res = await getDeviceListApi<DeviceItem>({
+      current: 1,
+      size: PAGE_SIZE,
+    });
+    deviceNodeOptions.value = res?.records ?? [];
   } catch (error) {
     console.error('[proxyPool] 加载设备列表失败:', error);
     ElMessage.error($t('proxyPool.message.deviceListLoadFailed'));
@@ -58,7 +62,7 @@ function getDefaultValues(): ProxyFormValues {
     agreement: '',
     expirationTime: '',
     networkLink: '',
-    phoneIp: '',
+    phoneIp: [],
     proxyLinkIp: '',
     proxyLinkPort: undefined,
     username: '',
@@ -105,6 +109,8 @@ const [Form, formApi] = useVbenForm({
       componentProps: {
         placeholder: $t('proxyPool.form.smartRecognitionPlaceholder'),
         clearable: true,
+        maxlength: 2000,
+        showWordLimit: true,
         onBlur: onNetworkLinkBlur,
       },
     },
@@ -144,8 +150,7 @@ const [Form, formApi] = useVbenForm({
         type: 'password',
         showPassword: true,
         placeholder: '',
-        /** disabled 时眼睛无法切换；只读仍可展示识别结果且可点小眼睛查看明文 */
-        readonly: true,
+        disabled: true,
       },
     },
     {
@@ -156,6 +161,8 @@ const [Form, formApi] = useVbenForm({
       componentProps: {
         placeholder: $t('proxyPool.form.areaPlaceholder'),
         clearable: true,
+        maxlength: 20,
+        showWordLimit: true,
       },
     },
     {
@@ -166,6 +173,9 @@ const [Form, formApi] = useVbenForm({
         placeholder: $t('proxyPool.form.phoneIpPlaceholder'),
         clearable: true,
         filterable: true,
+        multiple: true,
+        collapseTags: true,
+        collapseTagsTooltip: true,
         options: deviceNodeSelectOptions,
         props: {
           label: 'deviceIp',
@@ -182,6 +192,8 @@ const [Form, formApi] = useVbenForm({
       componentProps: {
         placeholder: $t('proxyPool.form.agreementPlaceholder'),
         clearable: true,
+        maxlength: 200,
+        showWordLimit: true,
       },
     },
     {
@@ -236,13 +248,9 @@ async function onSubmit(values: ProxyFormValues) {
       proxyLinkPort: values.proxyLinkPort,
       username: values.username,
       password: values.password,
-      phones: values.phoneIp
-        ? [
-            {
-              phoneIp: values.phoneIp,
-            },
-          ]
-        : [],
+      phones: (Array.isArray(values.phoneIp) ? values.phoneIp : [])
+        .filter((ip) => ip != null && ip !== '')
+        .map((phoneIp) => ({ phoneIp: phoneIp })),
     };
     const res = await addProxyApi(payload);
     if (res?.code === 100000) {

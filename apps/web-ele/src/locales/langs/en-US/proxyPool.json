@@ -93,7 +93,13 @@
     "selectBeforeGrouping": "Please select proxies before grouping",
     "groupSetSuccess": "Proxy grouping succeeded",
     "groupSetFailed": "Proxy grouping failed",
-    "deviceListLoadFailed": "Failed to load device list. Please try again."
+    "deviceListLoadFailed": "Failed to load device list. Please try again.",
+    "missingProxyId": "Missing proxyId",
+    "editRemark": "Enter proxy remark",
+    "editRemarkTitle": "Edit proxy remark",
+    "editRemarkPlaceholder": "Enter remark",
+    "editRemarkSuccess": "Remark updated successfully",
+    "editRemarkFailed": "Failed to update remark"
   }
 }
 
