@@ -86,10 +86,10 @@ export async function getProxyPoolListApi(_params: {
   areaPath?: string[][];
   proxySearch?: string;
   proxyGroup?: string[];
-  sortCondition?: string;
+  sortType?: string;
   [key: string]: any;
 }) {
-  const { page, pageSize, areaPath, proxySearch, proxyGroup, sortCondition } =
+  const { page, pageSize, areaPath, proxySearch, proxyGroup, sortType } =
     _params;
 
   const reqParams: Record<string, any> = {
@@ -103,7 +103,7 @@ export async function getProxyPoolListApi(_params: {
   }
   if (proxySearch) reqParams.proxy = proxySearch;
   if (proxyGroup?.length) reqParams.suiteIds = proxyGroup;
-  if (sortCondition) reqParams.sortType = sortCondition;
+  if (sortType) reqParams.sortType = sortType;
 
   const data = await getProxyAssetPageApi(reqParams);
   const list = (data.records || []) as ProxyPoolRow[];
@@ -169,10 +169,10 @@ export const getFormOptions = (
     },
     {
       component: 'Select',
-      fieldName: 'sortCondition',
-      label: $t('proxyPool.filter.sortCondition'),
+      fieldName: 'sortType',
+      label: $t('proxyPool.filter.sortType'),
       componentProps: {
-        placeholder: $t('proxyPool.filter.sortConditionPlaceholder'),
+        placeholder: $t('proxyPool.filter.sortTypePlaceholder'),
         options: sortOptions,
         virtualized: false,
       },

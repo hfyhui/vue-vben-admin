@@ -14,8 +14,8 @@
     "proxySearchPlaceholder": "请输入代理关键词",
     "proxyGroup": "代理分组",
     "proxyGroupPlaceholder": "请选择代理分组",
-    "sortCondition": "排序条件",
-    "sortConditionPlaceholder": "请选择排序",
+    "sortType": "排序条件",
+    "sortTypePlaceholder": "请选择排序",
     "sortByRisk": "按风险排序（低风险优先）",
     "sortByInputTime": "按录入时间排序（新录入优先）"
   },

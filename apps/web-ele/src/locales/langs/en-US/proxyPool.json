@@ -14,8 +14,8 @@
     "proxySearchPlaceholder": "Enter proxy keyword",
     "proxyGroup": "Proxy Group",
     "proxyGroupPlaceholder": "Select proxy group",
-    "sortCondition": "Sort Condition",
-    "sortConditionPlaceholder": "Select sort",
+    "sortType": "Sort Condition",
+    "sortTypePlaceholder": "Select sort",
     "sortByRisk": "Sort by risk (low risk first)",
     "sortByInputTime": "Sort by input time (newest first)"
   },

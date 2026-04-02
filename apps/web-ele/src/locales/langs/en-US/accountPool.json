@@ -14,8 +14,8 @@
     "accountSearchPlaceholder": "Enter account keyword",
     "accountGroup": "Account Group",
     "accountGroupPlaceholder": "Select account group",
-    "sortCondition": "Sort Condition",
-    "sortConditionPlaceholder": "Select sort"
+    "sortType": "Sort Condition",
+    "sortTypePlaceholder": "Select sort"
   },
   "table": {
     "platform": "Platform",

@@ -309,10 +309,10 @@ defineExpose({
         </el-select>
       </div>
       <div class="filter-item">
-        <label class="filter-label">{{ $t('associationCenter.sortCondition') }}</label>
+        <label class="filter-label">{{ $t('associationCenter.sortType') }}</label>
         <el-select
           v-model="filterForm.sortType"
-          :placeholder="$t('associationCenter.sortConditionPlaceholder')"
+          :placeholder="$t('associationCenter.sortTypePlaceholder')"
           class="filter-input"
           clearable
           @change="handleSearch"
