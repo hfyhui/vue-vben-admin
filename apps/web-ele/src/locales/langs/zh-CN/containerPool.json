@@ -21,22 +21,20 @@
     "sortTypePlaceholder": "请选择排序"
   },
   "table": {
-    "deviceId": "设备ID",
+    "server": "所属服务器",
+    "inputTime": "录入时间",
+    "chip": "所属芯片",
     "deviceIp": "设备IP",
-    "deviceStatus": "设备状态",
-    "deviceVersion": "设备版本",
-    "brand": "设备品牌",
-    "deviceAliases": "设备别名",
-    "deviceNum": "设备号",
-    "deviceIdx": "设备序号",
-    "connIp": "连接IP",
-    "connPort": "连接端口",
-    "proxy": "网络代理",
-    "proxyIp": "代理IP",
-    "proxyId": "代理ID",
-    "assId": "代理关联ID",
+    "romVersion": "ROM版本",
+    "phoneBrand": "手机品牌",
+    "phoneModel": "手机型号",
+    "operator": "运营商",
+    "phoneNumber": "手机号码",
+    "deviceGroup": "设备分组",
     "remark": "备注",
-    "devicePrompt": "设备提示词"
+    "account": "关联账号",
+    "proxy": "关联代理",
+    "status": "状态"
   },
   "action": {
     "add": "新增",
@@ -79,6 +77,29 @@
     "missingDeviceId": "设备缺少 deviceId，无法编辑备注",
     "editRemarkPlaceholder": "请输入备注",
     "editRemarkSuccess": "备注更新成功",
-    "editRemarkFailed": "备注更新失败"
+    "editRemarkFailed": "备注更新失败",
+    "selectOneDeviceForQuickNew": "一键新机只能选择一台设备，请先取消多余勾选"
+  },
+  "quickNew": {
+    "title": "一键新机",
+    "pleaseInput": "请输入",
+    "pleaseSelect": "请选择",
+    "deviceIp": "设备IP",
+    "brand": "手机品牌",
+    "model": "手机型号",
+    "netOperator": "运营商",
+    "phoneNumber": "手机号码",
+    "serialNumber": "序列号",
+    "imei": "IMEI",
+    "imsi": "IMSI",
+    "sn": "SN",
+    "iccid": "ICCID",
+    "battery": "电量",
+    "confirmTitle": "一键新机确认",
+    "confirmMessage": "确定对该设备执行一键新机吗？",
+    "success": "新机创建成功",
+    "failed": "新机创建失败",
+    "loadDetailFailed": "获取设备详情失败",
+    "loadProductFailed": "获取设备产品列表失败"
   }
 }

@@ -27,6 +27,7 @@ import {
   useColumns,
 } from './container-pool-table-config';
 import * as DeviceGroupModalModule from './device-group-modal.vue';
+import * as QuickNewDeviceModalModule from './quick-new-device-modal.vue';
 
 const sortOptions = ref<ContainerPoolSortOption[]>([]);
 const groupOptions = ref<AssetGroupItem[]>([]);
@@ -199,17 +200,33 @@ function uniqueIds(values: string[]) {
   return [...new Set(values)];
 }
 
-function getSelectedDeviceIds() {
+function getSelectedDeviceRecords() {
   const grid = (gridApi as any).grid;
   const current = grid.getCheckboxRecords?.() || [];
   const reserve = grid.getCheckboxReserveRecords?.() || [];
-  const records = [...reserve, ...current] as Array<Record<string, any>>;
+  return [...reserve, ...current] as Array<Record<string, any>>;
+}
+
+function getSelectedDeviceIds() {
+  const records = getSelectedDeviceRecords();
   return uniqueIds(
     records
       .map((item) => item?.deviceId)
       .filter((id): id is string => Boolean(id))
       .map((id) => String(id)),
   );
+}
+
+/** 一键新机：仅允许勾选一台设备，按 deviceId 去重后取唯一一行 */
+function getSingleSelectedRowForQuickNew(): Record<string, any> | null {
+  const records = getSelectedDeviceRecords();
+  const map = new Map<string, Record<string, any>>();
+  for (const row of records) {
+    const id = row?.deviceId;
+    if (id) map.set(String(id), row);
+  }
+  if (map.size !== 1) return null;
+  return map.values().next().value ?? null;
 }
 
 /** 设备分组：传给接口 `mobiles` 的列表数据（仅取必要字段） */
@@ -224,10 +241,10 @@ function getSelectedDeviceMobiles() {
     id: item?.deviceId,
     deviceId: item?.deviceId,
     deviceIp: item?.deviceIp,
-    deviceCategory: item?.brand,
+    deviceCategory: item?.phoneBrand ?? item?.brand,
     deviceStatus: item?.deviceStatus,
-    deviceIdx: item?.deviceIdx,
-    deviceAliases: item?.deviceAliases,
+    deviceIdx: item?.deviceIdx ?? '',
+    deviceAliases: item?.deviceAliases ?? item?.phoneModel ?? '',
   }));
 }
 
@@ -336,7 +353,22 @@ async function onDeviceReset() {
 }
 
 function onQuickNewDevice() {
-  ElMessage.info($t('containerPool.action.quickNewDevice'));
+  const row = getSingleSelectedRowForQuickNew();
+  if (!row) {
+    ElMessage.warning($t('containerPool.message.selectOneDeviceForQuickNew'));
+    return;
+  }
+  if (!row.deviceId) {
+    ElMessage.warning($t('containerPool.message.missingDeviceId'));
+    return;
+  }
+  quickNewDeviceModalApi.setData({ row }).open();
+}
+
+function onQuickNewDeviceSuccess() {
+  (gridApi as any).grid.clearCheckboxReserve?.();
+  gridApi.reload();
+  void loadContainerPoolNum();
 }
 
 function onDeviceGroup() {
@@ -361,6 +393,11 @@ function onDeviceGroupSuccess() {
 const [DeviceGroupModalComp, deviceGroupModalApi] = useVbenModal({
   connectedComponent:
     (DeviceGroupModalModule as any).default ?? DeviceGroupModalModule,
+});
+
+const [QuickNewDeviceModalComp, quickNewDeviceModalApi] = useVbenModal({
+  connectedComponent:
+    (QuickNewDeviceModalModule as any).default ?? QuickNewDeviceModalModule,
 });
 
 onMounted(() => {
@@ -422,6 +459,7 @@ onMounted(() => {
         </template>
       </Grid>
       <DeviceGroupModalComp @success-after="onDeviceGroupSuccess" />
+      <QuickNewDeviceModalComp @success-after="onQuickNewDeviceSuccess" />
     </div>
   </Page>
 </template>

@@ -21,22 +21,20 @@
     "sortTypePlaceholder": "Select sort"
   },
   "table": {
-    "deviceId": "Device ID",
+    "server": "Server",
+    "inputTime": "Input time",
+    "chip": "Chip",
     "deviceIp": "Device IP",
-    "deviceStatus": "Device Status",
-    "deviceVersion": "Device Version",
-    "brand": "Brand",
-    "deviceAliases": "Device Alias",
-    "deviceNum": "Device Number",
-    "deviceIdx": "Device Index",
-    "connIp": "Connection IP",
-    "connPort": "Connection Port",
-    "proxy": "Proxy",
-    "proxyIp": "Proxy IP",
-    "proxyId": "Proxy ID",
-    "assId": "Proxy Association ID",
+    "romVersion": "ROM version",
+    "phoneBrand": "Phone brand",
+    "phoneModel": "Phone model",
+    "operator": "Carrier",
+    "phoneNumber": "Phone number",
+    "deviceGroup": "Device group",
     "remark": "Remark",
-    "devicePrompt": "Device Prompt"
+    "account": "Linked account",
+    "proxy": "Linked proxy",
+    "status": "Status"
   },
   "action": {
     "add": "Add",
@@ -79,6 +77,29 @@
     "missingDeviceId": "Device has no deviceId; cannot edit remark",
     "editRemarkPlaceholder": "Enter remark",
     "editRemarkSuccess": "Remark updated successfully",
-    "editRemarkFailed": "Failed to update remark"
+    "editRemarkFailed": "Failed to update remark",
+    "selectOneDeviceForQuickNew": "Quick new device allows only one device. Please uncheck extra rows."
+  },
+  "quickNew": {
+    "title": "Quick New Device",
+    "pleaseInput": "Please enter",
+    "pleaseSelect": "Please select",
+    "deviceIp": "Device IP",
+    "brand": "Brand",
+    "model": "Model",
+    "netOperator": "Carrier",
+    "phoneNumber": "Phone number",
+    "serialNumber": "Serial number",
+    "imei": "IMEI",
+    "imsi": "IMSI",
+    "sn": "SN",
+    "iccid": "ICCID",
+    "battery": "Battery",
+    "confirmTitle": "Confirm quick new device",
+    "confirmMessage": "Create new device profile for this device?",
+    "success": "New device created successfully",
+    "failed": "Failed to create new device",
+    "loadDetailFailed": "Failed to load device details",
+    "loadProductFailed": "Failed to load product list"
   }
 }

@@ -8,29 +8,29 @@ import { $t } from '#/locales';
 
 export type ContainerPoolSortOption = { label: string; value: string };
 
+/** 与 POST /asset/container/page 返回 records 项一致（容器池列表） */
 export interface ContainerPoolRow {
-  id?: string;
-  deviceId?: string;
+  server?: string;
+  inputTime?: string;
+  chip?: string;
   deviceIp?: string;
-  deviceCategory?: string;
-  deviceStatus?: string;
-  deviceVersion?: string;
-  brand?: string;
-  deviceAliases?: string;
-  deviceNum?: string;
-  deviceIdx?: string;
-  connIp?: string;
-  connPort?: string;
-  proxy?: string;
-  proxyIp?: string;
-  proxyId?: string;
-  assId?: string;
+  deviceId?: string;
+  romVersion?: string;
+  phoneBrand?: string;
+  phoneModel?: string;
+  operator?: string;
+  phoneNumber?: string;
+  deviceGroup?: string[];
   remark?: string;
-  devicePrompt?: string;
-  suiteNames?: string[];
-  accountInfos?: Array<Record<string, any>>;
+  account?: string;
+  proxy?: string;
+  deviceStatus?: string;
+  color?: string;
+  /** 锁定等扩展字段 */
+  isLock?: boolean;
   [key: string]: any;
 }
+
 
 export type ContainerPoolTableConfigOptions = {
   getEditingRemarkDeviceId?: () => string | null;
@@ -134,27 +134,27 @@ export const getFormOptions = (
 
 export const useColumns = (options: ContainerPoolTableConfigOptions = {}) => [
   { type: 'checkbox', width: 50, align: 'center' },
-  { field: 'deviceId', title: $t('containerPool.table.deviceId'), minWidth: 200 },
-  { field: 'deviceIp', title: $t('containerPool.table.deviceIp'), minWidth: 120 },
-  { field: 'deviceStatus', title: $t('containerPool.table.deviceStatus'), minWidth: 120 },
-  { field: 'deviceVersion', title: $t('containerPool.table.deviceVersion'), minWidth: 120 },
-  { field: 'brand', title: $t('containerPool.table.brand'), minWidth: 120 },
-  { field: 'deviceAliases', title: $t('containerPool.table.deviceAliases'), minWidth: 120 },
-  { field: 'deviceNum', title: $t('containerPool.table.deviceNum'), minWidth: 120 },
-  { field: 'deviceIdx', title: $t('containerPool.table.deviceIdx'), minWidth: 120 },
-  { field: 'connIp', title: $t('containerPool.table.connIp'), minWidth: 120 },
-  { field: 'connPort', title: $t('containerPool.table.connPort'), minWidth: 100 },
-  { field: 'proxy', title: $t('containerPool.table.proxy'), minWidth: 160 },
-  { field: 'proxyIp', title: $t('containerPool.table.proxyIp'), minWidth: 120 },
-  { field: 'proxyId', title: $t('containerPool.table.proxyId'), minWidth: 140 },
-  { field: 'assId', title: $t('containerPool.table.assId'), minWidth: 140 },
+  { field: 'server', title: $t('containerPool.table.server'), minWidth: 140 },
+  { field: 'inputTime', title: $t('containerPool.table.inputTime'), minWidth: 170 },
+  { field: 'chip', title: $t('containerPool.table.chip'), minWidth: 120 },
+  { field: 'deviceIp', title: $t('containerPool.table.deviceIp'), minWidth: 130 },
+  { field: 'romVersion', title: $t('containerPool.table.romVersion'), minWidth: 100 },
+  { field: 'phoneBrand', title: $t('containerPool.table.phoneBrand'), minWidth: 110 },
+  { field: 'phoneModel', title: $t('containerPool.table.phoneModel'), minWidth: 110 },
+  { field: 'operator', title: $t('containerPool.table.operator'), minWidth: 100 },
+  { field: 'phoneNumber', title: $t('containerPool.table.phoneNumber'), minWidth: 120 },
+  {
+    field: 'deviceGroup',
+    title: $t('containerPool.table.deviceGroup'),
+    minWidth: 160,
+  },
   {
     field: 'remark',
     title: $t('containerPool.table.remark'),
     minWidth: 160,
     slots: {
       default: ({ row }: { row: ContainerPoolRow }) => {
-        const deviceId = String(row.deviceId ?? '');
+        const deviceId = row.deviceId;
         const remark = row.remark ?? '';
         const displayRemark = remark ? remark : '\u00A0';
         const editingId = options.getEditingRemarkDeviceId?.() ?? null;
@@ -212,6 +212,8 @@ export const useColumns = (options: ContainerPoolTableConfigOptions = {}) => [
       },
     },
   },
-  { field: 'devicePrompt', title: $t('containerPool.table.devicePrompt'), minWidth: 160 },
+  { field: 'account', title: $t('containerPool.table.account'), minWidth: 120 },
+  { field: 'proxy', title: $t('containerPool.table.proxy'), minWidth: 160 },
+  { field: 'deviceStatus', title: $t('containerPool.table.status'), minWidth: 100 },
 ];
 
