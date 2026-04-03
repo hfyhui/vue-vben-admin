@@ -332,10 +332,6 @@ async function onDeviceReset() {
               done();
               return;
             }
-
-            ElMessage.error(
-              response?.msg || $t('containerPool.message.resetFailed'),
-            );
             done(false);
           } catch (error) {
             console.error('[containerPool] 容器重置失败:', error);
