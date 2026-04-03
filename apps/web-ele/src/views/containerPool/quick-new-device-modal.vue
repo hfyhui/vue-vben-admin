@@ -125,7 +125,7 @@ async function loadBrandModels(chip: string) {
       ? await getAssetAiboxDeviceModelsApi()
       : await getAssetCloudDeviceModelsApi();
   if (res?.code !== 100000) {
-    ElMessage.error(res?.msg || $t('containerPool.quickNew.loadProductFailed'));
+    // ElMessage.error(res?.msg || $t('containerPool.quickNew.loadProductFailed'));
     brandList.value = [];
     modelList.value = [];
     return;
@@ -154,7 +154,7 @@ async function loadDeviceData(row: ListRow) {
     }
   } catch (error) {
     console.error('[containerPool] 一键新机加载失败:', error);
-    ElMessage.error($t('containerPool.quickNew.loadDetailFailed'));
+    // ElMessage.error($t('containerPool.quickNew.loadDetailFailed'));
   } finally {
     loading.value = false;
   }
@@ -224,11 +224,11 @@ async function onQuickNew() {
       modalApi.close();
       emit('success-after');
     } else {
-      ElMessage.error(res?.msg || $t('containerPool.quickNew.failed'));
+      // ElMessage.error(res?.msg || $t('containerPool.quickNew.failed'));
     }
   } catch (error) {
     console.error('[containerPool] 一键新机提交失败:', error);
-    ElMessage.error($t('containerPool.quickNew.failed'));
+    // ElMessage.error($t('containerPool.quickNew.failed'));
   } finally {
     submitting.value = false;
     modalApi.unlock();
