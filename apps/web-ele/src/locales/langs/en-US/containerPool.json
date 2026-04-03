@@ -35,6 +35,7 @@
     "proxyIp": "Proxy IP",
     "proxyId": "Proxy ID",
     "assId": "Proxy Association ID",
+    "remark": "Remark",
     "devicePrompt": "Device Prompt"
   },
   "action": {
@@ -47,6 +48,13 @@
     "deviceGroup": "Device Group",
     "deviceReset": "Device Reset",
     "placeholder": "???"
+  },
+  "groupForm": {
+    "title": "Device Grouping",
+    "groupName": "Group Name",
+    "groupNamePlaceholder": "Select or enter device group",
+    "groupDesc": "Group Description",
+    "groupDescPlaceholder": "Enter group description"
   },
   "message": {
     "selectDeviceBeforeReset": "Please select devices to reset first",
@@ -64,6 +72,13 @@
     "resetConfirm": "Reset the selected {count} device(s)?",
     "resetConfirmTitle": "Confirm container reset",
     "confirmButtonText": "OK",
-    "cancelButtonText": "Cancel"
+    "cancelButtonText": "Cancel",
+    "selectBeforeGrouping": "Select devices first",
+    "groupSetSuccess": "Device group updated successfully",
+    "groupSetFailed": "Failed to set device group",
+    "missingDeviceId": "Device has no deviceId; cannot edit remark",
+    "editRemarkPlaceholder": "Enter remark",
+    "editRemarkSuccess": "Remark updated successfully",
+    "editRemarkFailed": "Failed to update remark"
   }
 }

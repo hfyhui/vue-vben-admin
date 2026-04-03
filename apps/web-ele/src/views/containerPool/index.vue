@@ -3,11 +3,12 @@ import type { VxeTableGridOptions } from '#/adapter/vxe-table';
 
 import { onMounted, ref } from 'vue';
 
-import { Page } from '@vben/common-ui';
+import { Page, useVbenModal } from '@vben/common-ui';
 
 import { ElMessage, ElMessageBox } from 'element-plus';
 
 import {
+  addDeviceRemarkApi,
   getAssetGroupApi,
   getContainerPoolNumApi,
   lockDeviceApi,
@@ -25,6 +26,7 @@ import {
   getFormOptions,
   useColumns,
 } from './container-pool-table-config';
+import * as DeviceGroupModalModule from './device-group-modal.vue';
 
 const sortOptions = ref<ContainerPoolSortOption[]>([]);
 const groupOptions = ref<AssetGroupItem[]>([]);
@@ -50,6 +52,10 @@ const statsData = ref<ContainerStatRow[]>(
   containerNumStatKeys.map((key) => ({ key, value: 0 })),
 );
 
+const editingRemarkDeviceId = ref<string | null>(null);
+const editingRemarkValue = ref('');
+const savingRemark = ref(false);
+
 async function loadContainerPoolNum() {
   try {
     const response = await getContainerPoolNumApi();
@@ -67,7 +73,51 @@ const [Grid, gridApi] = useVbenVxeGrid({
   formOptions: getFormOptions([], []),
   showSearchForm: true,
   gridOptions: {
-    columns: useColumns(),
+    columns: useColumns({
+      getEditingRemarkDeviceId: () => editingRemarkDeviceId.value,
+      getEditingRemarkValue: () => editingRemarkValue.value,
+      onStartEditRemark(row) {
+        const deviceId = row.deviceId;
+        if (!deviceId) {
+          ElMessage.warning($t('containerPool.message.missingDeviceId'));
+          return;
+        }
+        editingRemarkDeviceId.value = String(deviceId);
+        editingRemarkValue.value = row.remark ?? '';
+      },
+      onChangeEditingRemarkValue(value) {
+        editingRemarkValue.value = value;
+      },
+      async onConfirmEditRemark() {
+        if (!editingRemarkDeviceId.value || savingRemark.value) return;
+        savingRemark.value = true;
+        const deviceId = editingRemarkDeviceId.value;
+        const trimmed = editingRemarkValue.value.trim();
+        const remark = trimmed ? trimmed : undefined;
+        try {
+          const res = await addDeviceRemarkApi({ deviceId, remark });
+          if (res?.code === 100000) {
+            ElMessage.success($t('containerPool.message.editRemarkSuccess'));
+            gridApi.query?.();
+          } else {
+            ElMessage.error(
+              res?.msg || $t('containerPool.message.editRemarkFailed'),
+            );
+          }
+        } catch (error) {
+          console.error('[containerPool] 更新设备备注失败:', error);
+          ElMessage.error($t('containerPool.message.editRemarkFailed'));
+        } finally {
+          savingRemark.value = false;
+          editingRemarkDeviceId.value = null;
+          editingRemarkValue.value = '';
+        }
+      },
+      onCancelEditRemark() {
+        editingRemarkDeviceId.value = null;
+        editingRemarkValue.value = '';
+      },
+    }),
     pagerConfig: {
       enabled: true,
       pageSize: 10,
@@ -77,8 +127,12 @@ const [Grid, gridApi] = useVbenVxeGrid({
     checkboxConfig: {
       reserve: true,
     },
+    rowClassName: ({ row }: { row: Record<string, any> }) =>
+      row.isLock ? 'account-row--locked' : '',
     rowConfig: {
       keyField: 'deviceId',
+      rowClassName: ({ row }: { row: Record<string, any> }) =>
+        row.isLock ? 'account-row--locked' : '',
     },
     proxyConfig: {
       response: {
@@ -126,7 +180,14 @@ async function loadSortOptions() {
 async function loadGroupOptions() {
   try {
     const response = await getAssetGroupApi();
-    groupOptions.value = response?.data;
+    const groups = Array.isArray(response?.data) ? response.data : [];
+    groupOptions.value = groups
+      .filter((item) => Boolean(item?.id))
+      .map((item) => ({
+        id: item.id as string,
+        suiteName: item.suiteName ?? '',
+        suiteDesc: item.suiteDesc ?? '',
+      }));
   } catch (error) {
     console.error('[containerPool] 获取分组失败:', error);
     groupOptions.value = [];
@@ -149,6 +210,25 @@ function getSelectedDeviceIds() {
       .filter((id): id is string => Boolean(id))
       .map((id) => String(id)),
   );
+}
+
+/** 设备分组：传给接口 `mobiles` 的列表数据（仅取必要字段） */
+function getSelectedDeviceMobiles() {
+  const grid = (gridApi as any).grid;
+  const current = grid.getCheckboxRecords?.() || [];
+  const reserve = grid.getCheckboxReserveRecords?.() || [];
+  const records = [...reserve, ...current] as Array<Record<string, any>>;
+
+  // 给“设备分组”接口的 mobiles 只保留必要字段，避免透传整行数据
+  return records.map((item) => ({
+    id: item?.deviceId,
+    deviceId: item?.deviceId,
+    deviceIp: item?.deviceIp,
+    deviceCategory: item?.brand,
+    deviceStatus: item?.deviceStatus,
+    deviceIdx: item?.deviceIdx,
+    deviceAliases: item?.deviceAliases,
+  }));
 }
 
 function onBatchLock(isLock: boolean) {
@@ -260,8 +340,28 @@ function onQuickNewDevice() {
 }
 
 function onDeviceGroup() {
-  ElMessage.info($t('containerPool.action.deviceGroup'));
+  const mobiles = getSelectedDeviceMobiles();
+  if (!mobiles.length) {
+    ElMessage.warning($t('containerPool.message.selectBeforeGrouping'));
+    return;
+  }
+  deviceGroupModalApi
+    .setData({
+      mobiles,
+      groupOptions: groupOptions.value,
+    })
+    .open();
 }
+
+function onDeviceGroupSuccess() {
+  gridApi.reload();
+  void loadGroupOptions();
+}
+
+const [DeviceGroupModalComp, deviceGroupModalApi] = useVbenModal({
+  connectedComponent:
+    (DeviceGroupModalModule as any).default ?? DeviceGroupModalModule,
+});
 
 onMounted(() => {
   loadGroupOptions();
@@ -321,6 +421,7 @@ onMounted(() => {
           </div>
         </template>
       </Grid>
+      <DeviceGroupModalComp @success-after="onDeviceGroupSuccess" />
     </div>
   </Page>
 </template>
@@ -363,6 +464,15 @@ onMounted(() => {
 
 :deep(.vxe-table--empty-content) {
   padding: 40px 0 !important;
+}
+
+/* 锁定行置灰，与账号池 accountPool/index.vue 一致 */
+:deep(tr.account-row--locked td.vxe-body--column) {
+  background-color: var(--el-fill-color-light) !important;
+}
+
+:deep(tr.account-row--locked .vxe-cell) {
+  color: var(--el-text-color-placeholder) !important;
 }
 </style>
 

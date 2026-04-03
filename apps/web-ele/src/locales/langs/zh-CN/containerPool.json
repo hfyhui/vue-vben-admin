@@ -35,6 +35,7 @@
     "proxyIp": "代理IP",
     "proxyId": "代理ID",
     "assId": "代理关联ID",
+    "remark": "备注",
     "devicePrompt": "设备提示词"
   },
   "action": {
@@ -47,6 +48,13 @@
     "deviceGroup": "设备分组",
     "deviceReset": "设备重置",
     "placeholder": "???"
+  },
+  "groupForm": {
+    "title": "设备分组",
+    "groupName": "分组名称",
+    "groupNamePlaceholder": "请选择或输入设备分组",
+    "groupDesc": "分组描述",
+    "groupDescPlaceholder": "请输入分组描述"
   },
   "message": {
     "selectDeviceBeforeReset": "请先选择需要重置的设备",
@@ -64,6 +72,13 @@
     "resetConfirm": "确定要将选中的 {count} 台设备执行容器重置操作吗？",
     "resetConfirmTitle": "容器重置确认",
     "confirmButtonText": "确定",
-    "cancelButtonText": "取消"
+    "cancelButtonText": "取消",
+    "selectBeforeGrouping": "请先勾选设备",
+    "groupSetSuccess": "设备分组设置成功",
+    "groupSetFailed": "设备分组设置失败",
+    "missingDeviceId": "设备缺少 deviceId，无法编辑备注",
+    "editRemarkPlaceholder": "请输入备注",
+    "editRemarkSuccess": "备注更新成功",
+    "editRemarkFailed": "备注更新失败"
   }
 }

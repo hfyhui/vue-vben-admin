@@ -83,11 +83,6 @@ async function loadGroupOptions() {
     const response = await getAssetGroupApi();
     const groups = Array.isArray(response?.data) ? response.data : [];
     sharedGroupOptions.value = groups
-      .filter((item) => Boolean(item?.id))
-      .map((item) => ({
-        id: item.id as string,
-        suiteName: item.suiteName ?? '',
-      }));
   } catch (error) {
     console.error('[associationCenter] 获取分组失败:', error);
   }

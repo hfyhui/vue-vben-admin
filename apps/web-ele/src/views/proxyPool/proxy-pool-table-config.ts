@@ -257,7 +257,7 @@ export const useColumns = (
           {
             title: remark,
             style:
-              'display:block;width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;color:var(--el-color-primary);' +
+              'display:block;width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;' +
               'background-color:transparent;border-radius:4px;' +
               'padding:2px 6px;transition:background-color 0.15s;',
             onMouseenter: (event: MouseEvent) => {

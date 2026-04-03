@@ -219,6 +219,12 @@ export interface AddProxyRemarkParams {
   remark?: string;
 }
 
+/** 新增/修改设备备注 POST /asset/device/remark */
+export interface AddDeviceRemarkParams {
+  deviceId?: string;
+  remark?: string;
+}
+
 export interface AddProxyGroupParams {
   suiteId?: string;
   suiteName?: string;
@@ -231,6 +237,15 @@ export interface AddAccountGroupParams {
   suiteName?: string;
   suiteDesc?: string;
   accountIds?: string[];
+}
+
+/** 设备分组 POST /asset/add/device-group */
+export interface AddDeviceGroupParams {
+  suiteId?: string;
+  suiteName?: string;
+  suiteDesc?: string;
+  /** mobiles 列表数据（后端定义为 object[]） */
+  mobiles?: any[];
 }
 
 export interface IntelligentRecognitionParams {
@@ -501,6 +516,13 @@ export async function addProxyRemarkApi(
   return proxyClient.post<ApiResponse<null>>('/asset/add/proxy-remark', params);
 }
 
+/** 新增/修改设备备注 POST /asset/device/remark */
+export async function addDeviceRemarkApi(
+  params: AddDeviceRemarkParams,
+): Promise<ApiResponse<null>> {
+  return proxyClient.post<ApiResponse<null>>('/asset/device/remark', params);
+}
+
 /** 新增代理分组 POST /asset/add/proxy-group */
 export async function addProxyGroupApi(
   params: AddProxyGroupParams,
@@ -513,6 +535,13 @@ export async function addAccountGroupApi(
   params: AddAccountGroupParams,
 ): Promise<ApiResponse<null>> {
   return proxyClient.post<ApiResponse<null>>('/asset/add/account-group', params);
+}
+
+/** 设备分组 POST /asset/add/device-group */
+export async function addDeviceGroupApi(
+  params: AddDeviceGroupParams,
+): Promise<ApiResponse<null>> {
+  return proxyClient.post<ApiResponse<null>>('/asset/add/device-group', params);
 }
 
 /** 智能识别 POST /asset/intelligent/recognition */

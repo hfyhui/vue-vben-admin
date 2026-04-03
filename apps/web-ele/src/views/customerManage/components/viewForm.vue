@@ -62,7 +62,7 @@ function handleClose() {
         <!-- 基本信息 -->
         <ElDescriptionsItem :label="$t('customerManage.form.name')">
           <span class="font-medium">{{
-            props.modelValue.customersName || '-'
+            props.modelValue.customersName ?? ''
           }}</span>
         </ElDescriptionsItem>
         <ElDescriptionsItem :label="$t('customerManage.form.type')">
@@ -75,22 +75,22 @@ function handleClose() {
         <template v-if="props.modelValue.customersType === 'COMPANY'">
           <ElDescriptionsItem :label="$t('customerManage.form.creditCode')">
             <span class="font-medium">{{
-              props.modelValue.unifiedSocialCreditCode || '-'
+              props.modelValue.unifiedSocialCreditCode ?? ''
             }}</span>
           </ElDescriptionsItem>
           <ElDescriptionsItem :label="$t('customerManage.form.legalName')">
             <span class="font-medium">{{
-              props.modelValue.legalPerson || '-'
+              props.modelValue.legalPerson ?? ''
             }}</span>
           </ElDescriptionsItem>
           <ElDescriptionsItem :label="$t('customerManage.form.legalIdType')">
             <span class="font-medium">{{
-              getIdTypeName(props.modelValue.legalPersonIdType) || '-'
+              getIdTypeName(props.modelValue.legalPersonIdType) ?? ''
             }}</span>
           </ElDescriptionsItem>
           <ElDescriptionsItem :label="$t('customerManage.form.legalIdNo')">
             <span class="font-medium">{{
-              props.modelValue.legalPersonIdNumber || '-'
+              props.modelValue.legalPersonIdNumber ?? ''
             }}</span>
           </ElDescriptionsItem>
         </template>
@@ -99,7 +99,7 @@ function handleClose() {
         <template v-if="props.modelValue.customersType === 'ORGANIZATION'">
           <ElDescriptionsItem :label="$t('customerManage.form.individualBusinessLicenseCode')">
             <span class="font-medium">{{
-              props.modelValue.individualBusinessLicenseCode || '-'
+              props.modelValue.individualBusinessLicenseCode ?? ''
             }}</span>
           </ElDescriptionsItem>
         </template>
@@ -108,12 +108,12 @@ function handleClose() {
         <template v-if="props.modelValue.customersType === 'PERSONAL'">
           <ElDescriptionsItem :label="$t('customerManage.form.personIdType')">
             <span class="font-medium">{{
-              getIdTypeName(props.modelValue.personalIdType) || '-'
+              getIdTypeName(props.modelValue.personalIdType) ?? ''
             }}</span>
           </ElDescriptionsItem>
           <ElDescriptionsItem :label="$t('customerManage.form.personIdNo')">
             <span class="font-medium">{{
-              props.modelValue.personalIdNumber || '-'
+              props.modelValue.personalIdNumber ?? ''
             }}</span>
           </ElDescriptionsItem>
         </template>
