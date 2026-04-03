@@ -892,25 +892,32 @@ async function autoAssociateWithSelections(
       )
     : [];
 
-  if (hasAccounts && devices.length > 1) {
-    if (selectedAppIds.length > 1) {
-      ElMessage.error($t('associationCenter.multiAppOnlyOneDevice'));
-      return;
-    }
-  }
-
+  /** 多台设备 + 多应用：不再前端拦截，按索引 1v1 配对后走 checkAccountDevice 校验 */
   if (hasAccounts && devices.length > 1 && selectedAppIds.length === 1 && accounts.length !== devices.length) {
     ElMessage.error($t('associationCenter.samePlatformCountMismatch'));
     return;
   }
 
-  // 自动关联要求账号与设备严格 1v1，数量必须一致
-  if (hasAccounts && accounts.length !== devices.length) {
+  // 单台设备：可将多个不同应用的账号同时关联到该设备；所选账号中同一应用不能重复
+  if (hasAccounts && devices.length === 1 && accounts.length > 1) {
+    const appIds = accounts
+      .map((item) => getAccountAppId(item as Record<string, any>))
+      .filter(Boolean);
+    if (appIds.length !== new Set(appIds).size) {
+      ElMessage.error($t('associationCenter.duplicateAppAccountsSingleDevice'));
+      return;
+    }
+  }
+
+  // 多台设备：账号数与设备数须 1v1；单台设备时账号数可大于 1（多应用）
+  if (hasAccounts && devices.length > 1 && accounts.length !== devices.length) {
     ElMessage.error($t('associationCenter.autoAssociateCountMismatch'));
     return;
   }
 
   const bindCount = devices.length;
+  const isSingleDeviceMultiAccounts =
+    hasAccounts && bindCount === 1 && accounts.length > 1;
   let usedProxies: BoundProxy[] = [];
   if (hasProxies) {
     const allocatedProxies = await allocateProxiesForAutoAssociate(
@@ -926,30 +933,51 @@ async function autoAssociateWithSelections(
   }
 
   const deviceEnablesForCheck: DeviceEnableItem[] = [];
-  for (let i = 0; i < bindCount; i++) {
-    const target = devices[i];
-    if (!target) continue;
-    const deviceId = getDeviceId(target);
-    if (!deviceId) continue;
-    const accountIds = [...getDeviceBoundAccountIds(target)];
-    if (hasAccounts) {
-      const account = accounts[i];
-      const aid = account?.accountId;
-      if (aid && !accountIds.includes(aid)) accountIds.push(aid);
+  if (isSingleDeviceMultiAccounts) {
+    const target = devices[0];
+    if (target) {
+      const deviceId = getDeviceId(target);
+      if (deviceId) {
+        const accountIds = [...getDeviceBoundAccountIds(target)];
+        for (const acc of accounts) {
+          const aid = acc.accountId;
+          if (aid && !accountIds.includes(aid)) accountIds.push(aid);
+        }
+        const proxyIdFromSelection =
+          hasProxies && usedProxies[0] ? getProxyId(usedProxies[0]!) : '';
+        const proxyIdFromDevice = getDeviceProxyId(target) || '';
+        const proxyId = proxyIdFromSelection || proxyIdFromDevice;
+        deviceEnablesForCheck.push({
+          deviceId,
+          deviceIp: target.deviceIp ?? '',
+          accountIds,
+          proxyId,
+        });
+      }
     }
-    let proxyId = '';
-    if (hasProxies) {
-      const proxy = usedProxies[i];
-      if (proxy) proxyId = getProxyId(proxy);
-    } else {
-      proxyId = getDeviceProxyId(target) || '';
+  } else {
+    for (let i = 0; i < bindCount; i++) {
+      const target = devices[i];
+      if (!target) continue;
+      const deviceId = getDeviceId(target);
+      if (!deviceId) continue;
+      const accountIds = [...getDeviceBoundAccountIds(target)];
+      if (hasAccounts) {
+        const account = accounts[i];
+        const aid = account?.accountId;
+        if (aid && !accountIds.includes(aid)) accountIds.push(aid);
+      }
+      const proxyIdFromSelection =
+        hasProxies && usedProxies[i] ? getProxyId(usedProxies[i]!) : '';
+      const proxyIdFromDevice = getDeviceProxyId(target) || '';
+      const proxyId = proxyIdFromSelection || proxyIdFromDevice;
+      deviceEnablesForCheck.push({
+        deviceId,
+        deviceIp: target.deviceIp ?? '',
+        accountIds,
+        proxyId,
+      });
     }
-    deviceEnablesForCheck.push({
-      deviceId,
-      deviceIp: target.deviceIp ?? '',
-      accountIds,
-      proxyId,
-    });
   }
 
   if (props.checkDropDeviceEnables && deviceEnablesForCheck.length) {
@@ -957,40 +985,81 @@ async function autoAssociateWithSelections(
     if (!ok) return;
   }
 
-  for (let i = 0; i < bindCount; i++) {
-    const target = devices[i];
-    if (!target) continue;
-
-    if (hasAccounts) {
-      const account = accounts[i];
-      if (!account) continue;
+  if (isSingleDeviceMultiAccounts) {
+    const target = devices[0];
+    if (target) {
       const existingAccounts = getMergedBoundAccounts(target);
-      const existingAppIds = getDeviceBoundAppIds(target);
-      const accountAppId = getAccountAppId(account as Record<string, any>);
-      if (accountAppId && existingAppIds.includes(accountAppId)) {
-        ElMessage.error(
-          $t('associationCenter.deviceAlreadyBoundAppId', {
-            deviceIp: target.deviceIp,
-          }),
-        );
-        return;
+      let existingAppIds = new Set(getDeviceBoundAppIds(target));
+      for (const account of accounts) {
+        const accountAppId = getAccountAppId(account as Record<string, any>);
+        if (accountAppId && existingAppIds.has(accountAppId)) {
+          ElMessage.error(
+            $t('associationCenter.deviceAlreadyBoundAppId', {
+              deviceIp: target.deviceIp,
+            }),
+          );
+          return;
+        }
+        if (accountAppId) existingAppIds.add(accountAppId);
       }
       target.boundAccounts = [
         ...existingAccounts,
-        { ...account, fromServer: false },
+        ...accounts.map((a) => ({ ...a, fromServer: false })),
       ];
       syncAccountInfosFromBound(target);
+      if (hasProxies) {
+        const proxy = usedProxies[0];
+        if (proxy) {
+          const displayProxy = getProxyDisplayText(proxy);
+          target.boundProxies = [
+            {
+              ...proxy,
+              proxy: displayProxy,
+              proxyArea: proxy.area,
+              fromServer: false,
+            },
+          ];
+          target.proxy = displayProxy;
+          target.proxyArea = proxy.area;
+        }
+      }
     }
+  } else {
+    for (let i = 0; i < bindCount; i++) {
+      const target = devices[i];
+      if (!target) continue;
 
-    if (hasProxies) {
-      const proxy = usedProxies[i];
-      if (!proxy) continue;
-      const displayProxy = getProxyDisplayText(proxy);
-      target.boundProxies = [
-        { ...proxy, proxy: displayProxy, proxyArea: proxy.area, fromServer: false },
-      ];
-      target.proxy = displayProxy;
-      target.proxyArea = proxy.area;
+      if (hasAccounts) {
+        const account = accounts[i];
+        if (!account) continue;
+        const existingAccounts = getMergedBoundAccounts(target);
+        const existingAppIds = getDeviceBoundAppIds(target);
+        const accountAppId = getAccountAppId(account as Record<string, any>);
+        if (accountAppId && existingAppIds.includes(accountAppId)) {
+          ElMessage.error(
+            $t('associationCenter.deviceAlreadyBoundAppId', {
+              deviceIp: target.deviceIp,
+            }),
+          );
+          return;
+        }
+        target.boundAccounts = [
+          ...existingAccounts,
+          { ...account, fromServer: false },
+        ];
+        syncAccountInfosFromBound(target);
+      }
+
+      if (hasProxies) {
+        const proxy = usedProxies[i];
+        if (!proxy) continue;
+        const displayProxy = getProxyDisplayText(proxy);
+        target.boundProxies = [
+          { ...proxy, proxy: displayProxy, proxyArea: proxy.area, fromServer: false },
+        ];
+        target.proxy = displayProxy;
+        target.proxyArea = proxy.area;
+      }
     }
   }
 
@@ -1016,6 +1085,14 @@ async function autoAssociateWithSelections(
       );
       return;
     }
+  }
+  if (isSingleDeviceMultiAccounts) {
+    ElMessage.success(
+      $t('associationCenter.autoAssociateSuccessSingleDeviceMultiAccounts', {
+        accountCount: accounts.length,
+      }),
+    );
+    return;
   }
   ElMessage.success($t('associationCenter.autoAssociateSuccess', { bindCount }));
 }

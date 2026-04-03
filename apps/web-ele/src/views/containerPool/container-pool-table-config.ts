@@ -23,7 +23,7 @@ export interface ContainerPoolRow {
   proxyId?: string;
   assId?: string;
   devicePrompt?: string;
-  groups?: string[];
+  suiteNames?: string[];
   accountInfos?: Array<Record<string, any>>;
   [key: string]: any;
 }
