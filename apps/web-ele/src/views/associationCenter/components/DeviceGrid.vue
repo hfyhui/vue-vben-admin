@@ -80,10 +80,6 @@ function getDeviceKey(item: DeviceItem) {
   return item.deviceIp || '';
 }
 
-function getGroupDisplay(item: DeviceItem) {
-  return (item.groups as string[]).join(',');
-}
-
 function getPhoneDisplay(item: DeviceItem) {
   return item.deviceNum;
 }
@@ -145,10 +141,12 @@ function getBoundAccounts(item: DeviceItem): BoundAccountRow[] {
             <div class="card-row">
               <span class="card-label">{{ $t('associationCenter.groupInfo') }}:</span>
               <el-tooltip
-                :content="getGroupDisplay(item)"
+                :content="item.suiteNames?.join(',')"
                 placement="top"
               >
-                <span class="card-text-ellipsis">{{ getGroupDisplay(item) }}</span>
+                <span class="card-text-ellipsis">{{
+                  item.suiteNames?.join(',')
+                }}</span>
               </el-tooltip>
             </div>
             <div class="card-row card-proxy-row">

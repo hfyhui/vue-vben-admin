@@ -15,6 +15,8 @@ export interface DeviceItem {
   operator?: string;
   phoneNumber?: string;
   deviceGroup?: string;
+  /** 设备所属分组名称列表 */
+  suiteNames?: string[];
   remark?: string;
   account?: string;
   proxy?: string;

@@ -25,11 +25,6 @@ function getLogoUrl(logoPath?: string) {
   return formatProcessUrl(logoPath);
 }
 
-function getGroupDisplay(row: DeviceItem) {
-  if (Array.isArray(row.groups)) return row.groups.filter(Boolean).join(',');
-  return row.deviceGroup
-}
-
 function getProxyDisplay(row: DeviceItem) {
   const bound = (row.boundProxies as BoundProxy[] | undefined) || [];
   if (bound.length > 0) {
@@ -138,7 +133,7 @@ function onUnbindProxy(ev: Event, row: DeviceItem) {
       />
       <el-table-column :label="$t('associationCenter.groupInfo')" min-width="100">
         <template #default="{ row }">
-          {{ getGroupDisplay(row) }}
+          {{ row.suiteNames?.join(',') }}
         </template>
       </el-table-column>
       <el-table-column :label="$t('associationCenter.networkProxy')" min-width="260">
