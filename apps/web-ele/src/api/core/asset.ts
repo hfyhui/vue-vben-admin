@@ -116,6 +116,7 @@ export interface ProxyPoolNumData {
   proxyTotalNum?: string;
   proxyUsedNum?: string;
   proxyWaitNum?: string;
+  deviceRiskNum?: string;
   proxyRiskNum?: string;
 }
 
@@ -123,6 +124,7 @@ export interface ContainerPoolNumData {
   deviceTotalNum?: string;
   deviceUsedNum?: string;
   deviceWaitingNum?: string;
+  deviceRiskNum?: string;
 }
 
 export interface ReverseQueryParams {

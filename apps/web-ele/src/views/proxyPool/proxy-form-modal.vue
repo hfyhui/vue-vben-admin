@@ -147,8 +147,6 @@ const [Form, formApi] = useVbenForm({
       fieldName: 'password',
       label: $t('proxyPool.form.password'),
       componentProps: {
-        type: 'password',
-        showPassword: true,
         placeholder: '',
         disabled: true,
       },

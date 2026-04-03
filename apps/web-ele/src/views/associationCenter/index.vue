@@ -26,7 +26,15 @@ const router = useRouter();
 const accountBoardRef = ref<InstanceType<typeof AccountBoard> | null>(null);
 const proxyBoardRef = ref<InstanceType<typeof ProxyBoard> | null>(null);
 const deviceBoardRef = ref<InstanceType<typeof DeviceBoard> | null>(null);
-const overviewStats = ref([
+
+type OverviewStatRow = { key: string; current: number; total: number };
+
+function toSafeNumber(value: unknown) {
+  const num = Number(value ?? 0);
+  return Number.isFinite(num) ? num : 0;
+}
+
+const overviewStats = ref<OverviewStatRow[]>([
   { key: 'containerPool', current: 0, total: 0 },
   { key: 'accountPool', current: 0, total: 0 },
   { key: 'proxyPool', current: 0, total: 0 },
@@ -38,11 +46,6 @@ const assetEnumsStore = useAssetEnumsStore();
 
 /** 与后端 POST /asset/check/account-device 约定：需二次确认后方可继续绑定 */
 const ACCOUNT_DEVICE_CHECK_NEED_CONFIRM_CODE = 500511;
-
-function toSafeNumber(value: unknown) {
-  const num = Number(value ?? 0);
-  return Number.isFinite(num) ? num : 0;
-}
 
 async function loadAssetSummary() {
   try {
@@ -80,6 +83,11 @@ async function loadGroupOptions() {
     const response = await getAssetGroupApi();
     const groups = Array.isArray(response?.data) ? response.data : [];
     sharedGroupOptions.value = groups
+      .filter((item) => Boolean(item?.id))
+      .map((item) => ({
+        id: item.id as string,
+        suiteName: item.suiteName ?? '',
+      }));
   } catch (error) {
     console.error('[associationCenter] 获取分组失败:', error);
   }
@@ -166,19 +174,54 @@ async function onContainerReset() {
     return;
   }
 
+  const count = deviceIds.length;
   try {
-    const response = await resetContainerApi({ deviceIds });
-    if (response?.code === 100000) {
-      ElMessage.success(
-        response.msg || $t('associationCenter.containerResetSuccess'),
-      );
-      await loadAssetSummary();
-      await deviceBoardRef.value?.refreshDeviceList?.();
-      return;
-    }
-  } catch (error) {
-    console.error('[associationCenter] 容器重置失败:', error);
-    ElMessage.error($t('associationCenter.containerResetFailed'));
+    await ElMessageBox.confirm(
+      `确定要将选中的 ${count} 台设备执行容器重置操作吗？`,
+      $t('associationCenter.containerReset'),
+      {
+        type: 'warning',
+        confirmButtonText: $t('associationCenter.confirmButtonText'),
+        cancelButtonText: $t('associationCenter.cancelButtonText'),
+        closeOnClickModal: false,
+        beforeClose: async (action: string, instance: any, done: any) => {
+          if (action !== 'confirm') {
+            done();
+            return;
+          }
+
+          instance.confirmButtonLoading = true;
+          try {
+            const response = await resetContainerApi({ deviceIds });
+            if (response?.code === 100000) {
+              ElMessage.success(
+                response.msg || $t('associationCenter.containerResetSuccess'),
+              );
+              // 重置成功后，刷新代理看板与汇总区
+              await proxyBoardRef.value?.refreshProxyList?.();
+              await loadAssetSummary();
+              // 保留刷新设备列表（避免设备看板仍显示旧绑定状态）
+              await deviceBoardRef.value?.refreshDeviceList?.();
+              done();
+              return;
+            }
+
+            ElMessage.error(
+              response?.msg || $t('associationCenter.containerResetFailed'),
+            );
+            done(false);
+          } catch (error) {
+            console.error('[associationCenter] 容器重置失败:', error);
+            ElMessage.error($t('associationCenter.containerResetFailed'));
+            done(false);
+          } finally {
+            instance.confirmButtonLoading = false;
+          }
+        },
+      },
+    );
+  } catch {
+    // 用户取消，不做任何处理
   }
 }
 

@@ -262,17 +262,19 @@ async function onDownloadTemplate() {
   }
 }
 
-const statsData = ref([
-  { key: 'accountPool', value: 56 },
-  { key: 'runningAccounts', value: 20 },
-  { key: 'pendingAccounts', value: 36 },
-  { key: 'riskControlAccounts', value: 3 },
-]);
+type AccountStatRow = { key: string; value: number };
 
 function toSafeNumber(value: unknown) {
   const num = Number(value ?? 0);
   return Number.isFinite(num) ? num : 0;
 }
+
+const statsData = ref<AccountStatRow[]>([
+  { key: 'accountPool', value: 56 },
+  { key: 'runningAccounts', value: 20 },
+  { key: 'pendingAccounts', value: 36 },
+  { key: 'riskControlAccounts', value: 3 },
+]);
 
 async function loadAccountPoolNum() {
   try {
