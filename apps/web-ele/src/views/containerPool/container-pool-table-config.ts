@@ -24,6 +24,7 @@ export interface ContainerPoolRow {
   remark?: string;
   account?: string;
   proxy?: string;
+  proxyIp?: string;
   deviceStatus?: string;
   color?: string;
   /** 锁定等扩展字段 */
@@ -213,7 +214,7 @@ export const useColumns = (options: ContainerPoolTableConfigOptions = {}) => [
     },
   },
   { field: 'account', title: $t('containerPool.table.account'), minWidth: 120 },
-  { field: 'proxy', title: $t('containerPool.table.proxy'), minWidth: 160 },
+  { field: 'proxyIp', title: $t('containerPool.table.proxy'), minWidth: 160 },
   { field: 'deviceStatus', title: $t('containerPool.table.status'), minWidth: 100 },
 ];
 

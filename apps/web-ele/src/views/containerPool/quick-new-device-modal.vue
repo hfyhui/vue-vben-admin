@@ -8,6 +8,8 @@ import {
   getAssetAiboxDeviceModelsApi,
   getAssetCloudDeviceModelsApi,
   getAssetDeviceDetailApi,
+  getAssetOperatorListApi,
+  type AssetOperatorItem,
   type MobileDeviceBrandItem,
   type MobileDeviceCategoryItem,
   newDeviceApi,
@@ -33,6 +35,30 @@ function catLabel(c: MobileDeviceCategoryItem) {
   return c.deiceName ?? c.title ?? c.deviceName ?? c.model ?? c.category ?? '';
 }
 
+function operatorOptionLabel(item: AssetOperatorItem) {
+  return (
+    item.allName ??
+    item.operatorZhName ??
+    item.operatorEnName ??
+    item.id ??
+    ''
+  );
+}
+
+/** 详情里 netOperator 可能是 id 或历史文本，统一为下拉可选的 id */
+function normalizeNetOperatorToId() {
+  const v = form.netOperator;
+  if (!v || !operatorList.value.length) return;
+  if (operatorList.value.some((o) => o.id === v)) return;
+  const match = operatorList.value.find(
+    (o) =>
+      o.allName === v ||
+      o.operatorZhName === v ||
+      o.operatorEnName === v,
+  );
+  if (match?.id) form.netOperator = match.id;
+}
+
 const listRow = ref<ListRow | null>(null);
 const loading = ref(false);
 const submitting = ref(false);
@@ -40,6 +66,7 @@ const chipCode = ref('');
 const productMode = ref<'basic' | 'cloud' | 'aibox'>('cloud');
 const brandList = ref<MobileDeviceBrandItem[]>([]);
 const modelList = ref<MobileDeviceCategoryItem[]>([]);
+const operatorList = ref<AssetOperatorItem[]>([]);
 
 const form = reactive({
   deviceIp: '',
@@ -63,6 +90,7 @@ function resetState() {
   productMode.value = 'cloud';
   brandList.value = [];
   modelList.value = [];
+  operatorList.value = [];
   Object.assign(form, {
     deviceIp: '',
     brand: '',
@@ -140,7 +168,15 @@ async function loadDeviceData(row: ListRow) {
       ElMessage.warning($t('containerPool.message.missingDeviceId'));
       return;
     }
-    const detailRes = await getAssetDeviceDetailApi(row.deviceId);
+    const [detailRes, operatorRes] = await Promise.all([
+      getAssetDeviceDetailApi(row.deviceId),
+      getAssetOperatorListApi(),
+    ]);
+    if (operatorRes?.code === 100000 && Array.isArray(operatorRes.data)) {
+      operatorList.value = operatorRes.data.filter((o) => o.id);
+    } else {
+      operatorList.value = [];
+    }
     if (detailRes?.code === 100000) {
       const detail = detailRes.data ?? {};
       const chip = row.chip ?? detail.chipCode ?? '';
@@ -148,6 +184,7 @@ async function loadDeviceData(row: ListRow) {
 
       await loadBrandModels(chip);
       applyDetail(detail);
+      normalizeNetOperatorToId();
       if (productMode.value !== 'basic') {
         updateModelList();
       }
@@ -291,11 +328,20 @@ async function onQuickNew() {
           </el-select>
         </el-form-item>
         <el-form-item :label="$t('containerPool.quickNew.netOperator')">
-          <el-input
+          <el-select
             v-model="form.netOperator"
-            :placeholder="$t('containerPool.quickNew.pleaseInput')"
+            filterable
             clearable
-          />
+            :placeholder="$t('containerPool.quickNew.pleaseSelect')"
+            style="width: 100%"
+          >
+            <el-option
+              v-for="(item, index) in operatorList"
+              :key="index"
+              :label="operatorOptionLabel(item)"
+              :value="item.id ?? ''"
+            />
+          </el-select>
         </el-form-item>
         <el-form-item :label="$t('containerPool.quickNew.phoneNumber')">
           <el-input
