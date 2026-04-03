@@ -1,8 +1,9 @@
 {
   "stats": {
-    "devicePool": "Container pool total",
-    "runningDevices": "In use",
-    "pendingDevices": "Pending devices"
+    "deviceTotalNum": "Container pool total",
+    "deviceUsedNum": "In use",
+    "deviceWaitingNum": "Pending devices",
+    "deviceRiskNum": "Risk control devices"
   },
   "filter": {
     "containerFilter": "Container Filter",

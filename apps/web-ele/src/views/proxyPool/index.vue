@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import type { VxeTableGridOptions } from '#/adapter/vxe-table';
 
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 
 import { Page, useVbenModal } from '@vben/common-ui';
 
@@ -15,6 +15,7 @@ import {
   getProxyPoolNumApi,
   importProxyApi,
   getProxyRegionTreeApi,
+  type ProxyPoolNumData,
 } from '#/api/core/asset';
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import { $t } from '#/locales';
@@ -44,12 +45,29 @@ const importFileInputRef = ref<HTMLInputElement>();
 const importing = ref(false);
 const assetEnumsStore = useAssetEnumsStore();
 
-const statsData = ref([
-  { key: 'proxyPool', value: 0 },
-  { key: 'runningProxies', value: 0 },
-  { key: 'pendingProxies', value: 0 },
-  { key: 'riskControlProxies', value: 0 },
-]);
+function toSafeNumber(value: unknown) {
+  const num = Number(value ?? 0);
+  return Number.isFinite(num) ? num : 0;
+}
+
+/** 与 GET /asset/proxy/num 返回字段一致 */
+const proxyNumStatKeys: (keyof ProxyPoolNumData)[] = [
+  'proxyTotalNum',
+  'proxyUsedNum',
+  'proxyWaitNum',
+  'deviceRiskNum',
+  'proxyRiskNum',
+];
+
+type ProxyStatRow = { key: keyof ProxyPoolNumData; value: number };
+
+const statsData = ref<ProxyStatRow[]>(
+  proxyNumStatKeys.map((key) => ({ key, value: 0 })),
+);
+
+/** 首项为总量，后四项与账号池一致四等分 */
+const summaryStat = computed(() => statsData.value[0]);
+const detailStats = computed(() => statsData.value.slice(1));
 
 const editingRemarkProxyId = ref<string | null>(null);
 const editingRemarkValue = ref('');
@@ -59,12 +77,10 @@ async function loadProxyPoolNum() {
   try {
     const response = await getProxyPoolNumApi();
     const data = response?.data ?? {};
-    statsData.value = [
-      { key: 'proxyPool', value: data.proxyTotalNum },
-      { key: 'runningProxies', value: data.proxyUsedNum },
-      { key: 'pendingProxies', value: data.proxyWaitNum },
-      { key: 'riskControlProxies', value: data.proxyRiskNum },
-    ];
+    statsData.value = proxyNumStatKeys.map((key) => ({
+      key,
+      value: toSafeNumber(data[key]),
+    }));
   } catch (error) {
     console.error('[proxyPool] 获取代理池数量失败:', error);
   }
@@ -349,9 +365,19 @@ const [GroupModal, groupModalApi] = useVbenModal({
   <Page auto-content-height>
     <div class="proxy-pool-page">
       <div class="stats-overview">
-        <el-row :gutter="16">
+        <el-row v-if="summaryStat" :gutter="16" class="stats-row-summary">
+          <el-col :xs="24">
+            <el-card class="stat-card" shadow="hover">
+              <div class="stat-title">
+                {{ $t(`proxyPool.stats.${summaryStat.key}`) }}
+              </div>
+              <div class="stat-value">{{ summaryStat.value }}</div>
+            </el-card>
+          </el-col>
+        </el-row>
+        <el-row :gutter="16" class="stats-row-detail">
           <el-col
-            v-for="item in statsData"
+            v-for="item in detailStats"
             :key="item.key"
             :xs="24"
             :sm="12"
@@ -412,6 +438,10 @@ const [GroupModal, groupModalApi] = useVbenModal({
 
 .stats-overview {
   margin-bottom: 24px;
+}
+
+.stats-row-summary {
+  margin-bottom: 16px;
 }
 
 .stat-card {

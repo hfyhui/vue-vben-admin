@@ -11,6 +11,7 @@ import {
   getAssetGroupApi,
   getContainerPoolNumApi,
   resetContainerApi,
+  type ContainerPoolNumData,
 } from '#/api/core/asset';
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import { $t } from '#/locales';
@@ -28,21 +29,33 @@ const sortOptions = ref<ContainerPoolSortOption[]>([]);
 const groupOptions = ref<ContainerPoolGroupOption[]>([]);
 const assetEnumsStore = useAssetEnumsStore();
 
-const statsData = ref([
-  { key: 'devicePool', value: 0 },
-  { key: 'runningDevices', value: 0 },
-  { key: 'pendingDevices', value: 0 },
-]);
+function toSafeNumber(value: unknown) {
+  const num = Number(value ?? 0);
+  return Number.isFinite(num) ? num : 0;
+}
+
+/** 与 GET /asset/container/num 返回字段一致 */
+const containerNumStatKeys: (keyof ContainerPoolNumData)[] = [
+  'deviceTotalNum',
+  'deviceUsedNum',
+  'deviceWaitingNum',
+  'deviceRiskNum',
+];
+
+type ContainerStatRow = { key: keyof ContainerPoolNumData; value: number };
+
+const statsData = ref<ContainerStatRow[]>(
+  containerNumStatKeys.map((key) => ({ key, value: 0 })),
+);
 
 async function loadContainerPoolNum() {
   try {
     const response = await getContainerPoolNumApi();
     const data = response?.data ?? {};
-    statsData.value = [
-      { key: 'devicePool', value: data.deviceTotalNum },
-      { key: 'runningDevices', value: data.deviceUsedNum },
-      { key: 'pendingDevices', value: data.deviceWaitingNum },
-    ];
+    statsData.value = containerNumStatKeys.map((key) => ({
+      key,
+      value: toSafeNumber(data[key]),
+    }));
   } catch (error) {
     console.error('[containerPool] 获取容器池数量失败:', error);
   }

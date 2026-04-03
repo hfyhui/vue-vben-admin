@@ -1,9 +1,10 @@
 {
   "stats": {
-    "proxyPool": "代理池",
-    "runningProxies": "运行中代理",
-    "pendingProxies": "待使用代理",
-    "riskControlProxies": "风控代理"
+    "proxyTotalNum": "代理池",
+    "proxyUsedNum": "运行中代理",
+    "proxyWaitNum": "待使用代理",
+    "deviceRiskNum": "风控设备",
+    "proxyRiskNum": "风控代理"
   },
   "filter": {
     "regionFilter": "地区筛选",
