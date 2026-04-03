@@ -404,6 +404,21 @@ export async function getAssetAiboxDeviceModelsApi(): Promise<
   return proxyClient.get<ApiResponse<MobileDeviceModelsData>>('/asset/aibox-device');
 }
 
+/** 运营商项 GET /asset/operator */
+export interface AssetOperatorItem {
+  id?: string;
+  operatorZhName?: string;
+  operatorEnName?: string;
+  allName?: string;
+}
+
+/** 查询运营商列表 GET /asset/operator */
+export async function getAssetOperatorListApi(): Promise<
+  ApiResponse<AssetOperatorItem[]>
+> {
+  return proxyClient.get<ApiResponse<AssetOperatorItem[]>>('/asset/operator');
+}
+
 /** 新机 POST /asset/new-device */
 export interface NewDeviceParams {
   deviceId?: string;
