@@ -3,7 +3,6 @@
     "proxyTotalNum": "代理池",
     "proxyUsedNum": "运行中代理",
     "proxyWaitNum": "待使用代理",
-    "deviceRiskNum": "风控设备",
     "proxyRiskNum": "风控代理"
   },
   "filter": {

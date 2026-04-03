@@ -41,7 +41,8 @@
     "add": "新增",
     "import": "导入",
     "batchDelete": "批量删除",
-    "disableLock": "禁用锁定",
+    "lock": "锁定",
+    "unlock": "解锁",
     "quickNewDevice": "一键新机",
     "deviceGroup": "设备分组",
     "deviceReset": "设备重置",
@@ -49,7 +50,20 @@
   },
   "message": {
     "selectDeviceBeforeReset": "请先选择需要重置的设备",
+    "selectBeforeLock": "请先选择要操作的设备",
+    "batchLockConfirm": "确定要锁定选中的 {count} 台设备吗？",
+    "batchUnlockConfirm": "确定要解锁选中的 {count} 台设备吗？",
+    "batchLockConfirmTitle": "批量锁定确认",
+    "batchUnlockConfirmTitle": "批量解锁确认",
+    "batchLockSuccess": "成功锁定 {count} 台设备",
+    "batchUnlockSuccess": "成功解锁 {count} 台设备",
+    "batchLockFailed": "批量锁定失败",
+    "batchUnlockFailed": "批量解锁失败",
     "resetSuccess": "容器重置成功",
-    "resetFailed": "容器重置失败"
+    "resetFailed": "容器重置失败",
+    "resetConfirm": "确定要将选中的 {count} 台设备执行容器重置操作吗？",
+    "resetConfirmTitle": "容器重置确认",
+    "confirmButtonText": "确定",
+    "cancelButtonText": "取消"
   }
 }

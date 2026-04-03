@@ -148,6 +148,12 @@ export interface LockAccountParams {
   lock?: boolean;
 }
 
+/** 锁定/解锁设备 POST /asset/lock-device */
+export interface LockDeviceParams {
+  deviceIds?: string[];
+  isLock?: boolean;
+}
+
 /** 解绑账号 POST /asset/account/unbind */
 export interface AccountUnbindParams {
   accountIds?: string[];
@@ -412,6 +418,13 @@ export async function lockAccountApi(
   params: LockAccountParams,
 ): Promise<ApiResponse<null>> {
   return proxyClient.post<ApiResponse<null>>('/asset/lock-account', params);
+}
+
+/** 锁定/解锁设备 POST /asset/lock-device */
+export async function lockDeviceApi(
+  params: LockDeviceParams,
+): Promise<ApiResponse<null>> {
+  return proxyClient.post<ApiResponse<null>>('/asset/lock-device', params);
 }
 
 /** 批量删除代理 DELETE /asset/batch/del-proxy */
