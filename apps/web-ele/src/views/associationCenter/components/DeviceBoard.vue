@@ -892,7 +892,13 @@ async function autoAssociateWithSelections(
       )
     : [];
 
-  /** 多台设备 + 多应用：不再前端拦截，按索引 1v1 配对后走 checkAccountDevice 校验 */
+  /** 账号和设备二方配置：当账号覆盖多个 appId 时，只允许选单台设备 */
+  if (hasAccounts && !hasProxies && devices.length > 1 && selectedAppIds.length > 1) {
+    ElMessage.error($t('associationCenter.multiAppOnlyOneDevice'));
+    return;
+  }
+
+  /** 多台设备 + 单一应用：账号数与设备数须 1v1 */
   if (hasAccounts && devices.length > 1 && selectedAppIds.length === 1 && accounts.length !== devices.length) {
     ElMessage.error($t('associationCenter.samePlatformCountMismatch'));
     return;

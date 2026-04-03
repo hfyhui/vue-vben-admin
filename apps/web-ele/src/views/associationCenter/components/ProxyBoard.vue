@@ -352,9 +352,15 @@ defineExpose({
             <div class="proxy-card-main">
               <div class="card-info">
                 <span class="card-amount" :class="getRiskColor(item.surplusDaysColor)">
-                  {{ item.surplusDays ?? '-' }}{{ $t('associationCenter.daySuffix') }}
+                  {{
+                    item.surplusDays != null ? item.surplusDays : ''
+                  }}{{
+                    item.surplusDays != null
+                      ? $t('associationCenter.daySuffix')
+                      : ''
+                  }}
                 </span>
-                <span class="card-area">{{ item.area || '-' }}</span>
+                <span class="card-area">{{ item.area ?? '' }}</span>
                 <el-tooltip
                   v-if="item.ip"
                   :content="item.ip"
@@ -364,7 +370,7 @@ defineExpose({
                     {{ item.ip }}
                   </span>
                 </el-tooltip>
-                <span v-else class="card-ip">-</span>
+                <span v-else class="card-ip"></span>
                 <span class="card-count" :class="getRiskColor(item.color)">{{
                   item.bandingCount ?? 0
                 }}</span>

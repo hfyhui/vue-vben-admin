@@ -152,7 +152,7 @@ onMounted(() => {
   <div v-if="props.data" class="license-detail">
     <ElDescriptions :column="1" :label-width="160" border class="license-descriptions">
       <ElDescriptionsItem :label="$t('licenseManage.form.customer')">
-        <span class="font-medium">{{ actualData?.customerName || '-' }}</span>
+        <span class="font-medium">{{ actualData?.customerName ?? '' }}</span>
       </ElDescriptionsItem>
 
       <ElDescriptionsItem :label="$t('licenseManage.form.licenseType')">
@@ -167,7 +167,7 @@ onMounted(() => {
           {{
             actualData?.authorizationTypeName ||
             actualData?.authorizationType ||
-            '-'
+            ''
           }}
         </ElTag>
       </ElDescriptionsItem>
@@ -203,7 +203,7 @@ onMounted(() => {
 
       <ElDescriptionsItem :label="$t('licenseManage.form.expireTime')">
         <span class="font-medium text-red-500">{{
-          actualData?.expirationTime || '-'
+          actualData?.expirationTime ?? ''
         }}</span>
       </ElDescriptionsItem>
 
@@ -213,7 +213,7 @@ onMounted(() => {
             actualData?.concurrentUsers !== undefined &&
             actualData?.concurrentUsers !== null
               ? actualData.concurrentUsers
-              : '-'
+              : ''
           }}
           人
         </span>
@@ -223,9 +223,7 @@ onMounted(() => {
         <ElTag
           size="small"
         >
-          {{
-            actualData?.licenseStatusName || '-'
-          }}
+          {{ actualData?.licenseStatusName ?? '' }}
         </ElTag>
       </ElDescriptionsItem>
 

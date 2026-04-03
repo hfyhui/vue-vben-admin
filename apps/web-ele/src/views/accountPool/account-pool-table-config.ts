@@ -38,7 +38,7 @@ export function renderAccountPoolSensitiveCell(raw: unknown) {
     return h(
       'span',
       { style: { color: 'var(--el-text-color-placeholder)' } },
-      '—',
+      '',
     );
   }
   const tooltip = $t('accountPool.table.clickToCopy');

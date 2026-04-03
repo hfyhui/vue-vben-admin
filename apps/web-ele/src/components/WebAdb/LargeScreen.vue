@@ -100,10 +100,12 @@ const deviceTitle = computed(
     props.device?.deviceAliases ||
     props.device?.deviceIdx ||
     props.device?.serial ||
-    '-',
+    '',
 );
 
-const deviceIp = computed(() => props.device?.deviceIp || props.device?.connIp || '-');
+const deviceIp = computed(
+  () => props.device?.deviceIp || props.device?.connIp || '',
+);
 
 const isWebAdbConnected = computed(() => {
   const inst = webAdbRef.value;
