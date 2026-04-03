@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import type { VxeTableGridOptions } from '#/adapter/vxe-table';
 
-import { computed, onMounted, ref } from 'vue';
+import { onMounted, ref } from 'vue';
 
 import { Page, useVbenModal } from '@vben/common-ui';
 
@@ -55,7 +55,6 @@ const proxyNumStatKeys: (keyof ProxyPoolNumData)[] = [
   'proxyTotalNum',
   'proxyUsedNum',
   'proxyWaitNum',
-  'deviceRiskNum',
   'proxyRiskNum',
 ];
 
@@ -64,10 +63,6 @@ type ProxyStatRow = { key: keyof ProxyPoolNumData; value: number };
 const statsData = ref<ProxyStatRow[]>(
   proxyNumStatKeys.map((key) => ({ key, value: 0 })),
 );
-
-/** 首项为总量，后四项与账号池一致四等分 */
-const summaryStat = computed(() => statsData.value[0]);
-const detailStats = computed(() => statsData.value.slice(1));
 
 const editingRemarkProxyId = ref<string | null>(null);
 const editingRemarkValue = ref('');
@@ -365,19 +360,9 @@ const [GroupModal, groupModalApi] = useVbenModal({
   <Page auto-content-height>
     <div class="proxy-pool-page">
       <div class="stats-overview">
-        <el-row v-if="summaryStat" :gutter="16" class="stats-row-summary">
-          <el-col :xs="24">
-            <el-card class="stat-card" shadow="hover">
-              <div class="stat-title">
-                {{ $t(`proxyPool.stats.${summaryStat.key}`) }}
-              </div>
-              <div class="stat-value">{{ summaryStat.value }}</div>
-            </el-card>
-          </el-col>
-        </el-row>
-        <el-row :gutter="16" class="stats-row-detail">
+        <el-row :gutter="16">
           <el-col
-            v-for="item in detailStats"
+            v-for="item in statsData"
             :key="item.key"
             :xs="24"
             :sm="12"
@@ -438,10 +423,6 @@ const [GroupModal, groupModalApi] = useVbenModal({
 
 .stats-overview {
   margin-bottom: 24px;
-}
-
-.stats-row-summary {
-  margin-bottom: 16px;
 }
 
 .stat-card {

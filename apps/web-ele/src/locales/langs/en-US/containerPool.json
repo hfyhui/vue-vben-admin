@@ -41,7 +41,8 @@
     "add": "Add",
     "import": "Import",
     "batchDelete": "Batch Delete",
-    "disableLock": "Disable Lock",
+    "lock": "Lock",
+    "unlock": "Unlock",
     "quickNewDevice": "Quick New Device",
     "deviceGroup": "Device Group",
     "deviceReset": "Device Reset",
@@ -49,7 +50,20 @@
   },
   "message": {
     "selectDeviceBeforeReset": "Please select devices to reset first",
+    "selectBeforeLock": "Please select devices to lock or unlock first",
+    "batchLockConfirm": "Lock the selected {count} device(s)?",
+    "batchUnlockConfirm": "Unlock the selected {count} device(s)?",
+    "batchLockConfirmTitle": "Confirm batch lock",
+    "batchUnlockConfirmTitle": "Confirm batch unlock",
+    "batchLockSuccess": "Locked {count} device(s)",
+    "batchUnlockSuccess": "Unlocked {count} device(s)",
+    "batchLockFailed": "Batch lock failed",
+    "batchUnlockFailed": "Batch unlock failed",
     "resetSuccess": "Container reset successful",
-    "resetFailed": "Container reset failed"
+    "resetFailed": "Container reset failed",
+    "resetConfirm": "Reset the selected {count} device(s)?",
+    "resetConfirmTitle": "Confirm container reset",
+    "confirmButtonText": "OK",
+    "cancelButtonText": "Cancel"
   }
 }

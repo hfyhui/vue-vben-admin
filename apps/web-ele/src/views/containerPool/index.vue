@@ -5,12 +5,14 @@ import { onMounted, ref } from 'vue';
 
 import { Page } from '@vben/common-ui';
 
-import { ElMessage } from 'element-plus';
+import { ElMessage, ElMessageBox } from 'element-plus';
 
 import {
   getAssetGroupApi,
   getContainerPoolNumApi,
+  lockDeviceApi,
   resetContainerApi,
+  type AssetGroupItem,
   type ContainerPoolNumData,
 } from '#/api/core/asset';
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
@@ -18,7 +20,6 @@ import { $t } from '#/locales';
 import { useAssetEnumsStore } from '#/store';
 
 import {
-  type ContainerPoolGroupOption,
   type ContainerPoolSortOption,
   getContainerPoolListApi,
   getFormOptions,
@@ -26,8 +27,9 @@ import {
 } from './container-pool-table-config';
 
 const sortOptions = ref<ContainerPoolSortOption[]>([]);
-const groupOptions = ref<ContainerPoolGroupOption[]>([]);
+const groupOptions = ref<AssetGroupItem[]>([]);
 const assetEnumsStore = useAssetEnumsStore();
+const locking = ref(false);
 
 function toSafeNumber(value: unknown) {
   const num = Number(value ?? 0);
@@ -124,22 +126,12 @@ async function loadSortOptions() {
 async function loadGroupOptions() {
   try {
     const response = await getAssetGroupApi();
-    const groups = Array.isArray(response?.data) ? response.data : [];
-    groupOptions.value = groups
-      .filter((item) => Boolean(item?.id))
-      .map((item) => ({
-        id: item.id as string,
-        suiteName: item.suiteName ?? '',
-      }));
+    groupOptions.value = response?.data;
   } catch (error) {
     console.error('[containerPool] 获取分组失败:', error);
     groupOptions.value = [];
   }
   applyFormOptions();
-}
-
-function onDisableLock() {
-  ElMessage.info($t('containerPool.action.disableLock'));
 }
 
 function uniqueIds(values: string[]) {
@@ -159,6 +151,53 @@ function getSelectedDeviceIds() {
   );
 }
 
+function onBatchLock(isLock: boolean) {
+  if (locking.value) return;
+  const deviceIds = getSelectedDeviceIds();
+  if (!deviceIds.length) {
+    ElMessage.warning($t('containerPool.message.selectBeforeLock'));
+    return;
+  }
+  const count = deviceIds.length;
+  const confirmMessage = isLock
+    ? $t('containerPool.message.batchLockConfirm', { count })
+    : $t('containerPool.message.batchUnlockConfirm', { count });
+  const confirmTitle = isLock
+    ? $t('containerPool.message.batchLockConfirmTitle')
+    : $t('containerPool.message.batchUnlockConfirmTitle');
+
+  ElMessageBox.confirm(confirmMessage, confirmTitle, { type: 'warning' })
+    .then(async () => {
+      locking.value = true;
+      try {
+        const res = await lockDeviceApi({ deviceIds, isLock });
+        if (res?.code === 100000) {
+          ElMessage.success(
+            isLock
+              ? $t('containerPool.message.batchLockSuccess', { count })
+              : $t('containerPool.message.batchUnlockSuccess', { count }),
+          );
+          (gridApi as any).grid.clearCheckboxReserve?.();
+          gridApi.reload();
+          await loadContainerPoolNum();
+          return;
+        }
+      } catch (error) {
+        console.error('[containerPool] 锁定/解锁设备失败:', error);
+        ElMessage.error(
+          isLock
+            ? $t('containerPool.message.batchLockFailed')
+            : $t('containerPool.message.batchUnlockFailed'),
+        );
+      } finally {
+        locking.value = false;
+      }
+    })
+    .catch(() => {
+      // 用户取消
+    });
+}
+
 async function onDeviceReset() {
   const deviceIds = getSelectedDeviceIds();
 
@@ -167,19 +206,52 @@ async function onDeviceReset() {
     return;
   }
 
+  const count = deviceIds.length;
   try {
-    const response = await resetContainerApi({ deviceIds });
-    if (response?.code === 100000) {
-      ElMessage.success(response.msg || $t('containerPool.message.resetSuccess'));
-      (gridApi as any).grid.clearCheckboxReserve?.();
-      gridApi.reload();
-      await loadContainerPoolNum();
-      return;
-    }
-    // 非 100000：proxyClient 已弹出业务 msg，不提示成功、不刷新
-  } catch (error) {
-    console.error('[containerPool] 容器重置失败:', error);
-    ElMessage.error($t('containerPool.message.resetFailed'));
+    await ElMessageBox.confirm(
+      $t('containerPool.message.resetConfirm', { count }),
+      $t('containerPool.message.resetConfirmTitle'),
+      {
+        type: 'warning',
+        confirmButtonText: $t('containerPool.message.confirmButtonText'),
+        cancelButtonText: $t('containerPool.message.cancelButtonText'),
+        closeOnClickModal: false,
+        beforeClose: async (action: string, instance: any, done: any) => {
+          if (action !== 'confirm') {
+            done();
+            return;
+          }
+
+          instance.confirmButtonLoading = true;
+          try {
+            const response = await resetContainerApi({ deviceIds });
+            if (response?.code === 100000) {
+              ElMessage.success(
+                response.msg || $t('containerPool.message.resetSuccess'),
+              );
+              (gridApi as any).grid.clearCheckboxReserve?.();
+              gridApi.reload();
+              await loadContainerPoolNum();
+              done();
+              return;
+            }
+
+            ElMessage.error(
+              response?.msg || $t('containerPool.message.resetFailed'),
+            );
+            done(false);
+          } catch (error) {
+            console.error('[containerPool] 容器重置失败:', error);
+            ElMessage.error($t('containerPool.message.resetFailed'));
+            done(false);
+          } finally {
+            instance.confirmButtonLoading = false;
+          }
+        },
+      },
+    );
+  } catch {
+    // 用户取消
   }
 }
 
@@ -226,8 +298,19 @@ onMounted(() => {
             <ElButton type="primary" @click="onDeviceReset">
               {{ $t('containerPool.action.deviceReset') }}
             </ElButton>
-            <ElButton type="primary" @click="onDisableLock">
-              {{ $t('containerPool.action.disableLock') }}
+            <ElButton
+              type="warning"
+              :loading="locking"
+              @click="onBatchLock(true)"
+            >
+              {{ $t('containerPool.action.lock') }}
+            </ElButton>
+            <ElButton
+              type="success"
+              :loading="locking"
+              @click="onBatchLock(false)"
+            >
+              {{ $t('containerPool.action.unlock') }}
             </ElButton>
             <ElButton type="primary" @click="onQuickNewDevice">
               {{ $t('containerPool.action.quickNewDevice') }}

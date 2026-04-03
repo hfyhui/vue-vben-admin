@@ -3,7 +3,6 @@
     "proxyTotalNum": "Proxy Pool",
     "proxyUsedNum": "Running Proxies",
     "proxyWaitNum": "Pending Proxies",
-    "deviceRiskNum": "Risk Control Devices",
     "proxyRiskNum": "Risk Control Proxies"
   },
   "filter": {

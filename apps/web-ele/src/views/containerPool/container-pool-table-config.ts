@@ -1,11 +1,10 @@
 import type { VbenFormProps } from '#/adapter/form';
 
-import { getContainerAssetPageApi } from '#/api/core/asset';
+import { getContainerAssetPageApi, type AssetGroupItem } from '#/api/core/asset';
 
 import { $t } from '#/locales';
 
 export type ContainerPoolSortOption = { label: string; value: string };
-export type ContainerPoolGroupOption = { id: string; suiteName: string };
 
 export interface ContainerPoolRow {
   deviceId?: string;
@@ -65,7 +64,7 @@ export async function getContainerPoolListApi(_params: {
 
 export const getFormOptions = (
   sortOptions: ContainerPoolSortOption[] = [],
-  groupOptions: ContainerPoolGroupOption[] = [],
+  groupOptions: AssetGroupItem[] = [],
 ): VbenFormProps => ({
   collapsed: false,
   schema: [
@@ -96,10 +95,11 @@ export const getFormOptions = (
         multiple: true,
         collapseTags: true,
         collapseTagsTooltip: true,
-        options: groupOptions.map((item) => ({
-          label: item.suiteName,
-          value: item.id,
-        })),
+        options: groupOptions
+          .map((item) => ({
+            label: item.suiteName ?? '',
+            value: item.id as string,
+          })),
       },
     },
     {
