@@ -1,6 +1,6 @@
 import { proxyClient } from '../request';
 
-/** 设备资产项，与接口 POST /asset/device/page 返回的 records 结构一致 */
+/** 设备资产项；容器池等与 POST /asset/container/page 等列表 records 对齐 */
 export interface DeviceItem {
   deviceId?: string;
   server?: string;
@@ -14,8 +14,8 @@ export interface DeviceItem {
   phoneModel?: string;
   operator?: string;
   phoneNumber?: string;
-  deviceGroup?: string;
-  /** 设备所属分组名称列表 */
+  deviceGroup?: string[];
+  /** 设备所属分组名称列表（部分接口） */
   suiteNames?: string[];
   remark?: string;
   account?: string;
@@ -358,6 +358,74 @@ export async function resetContainerApi(
   params: ContainerResetParams = {},
 ): Promise<ApiResponse<null>> {
   return proxyClient.post<ApiResponse<null>>('/asset/container/reset', params);
+}
+
+/** 查询设备详情 GET /asset/device/detail/{deviceId} */
+export async function getAssetDeviceDetailApi(
+  deviceId: string,
+): Promise<ApiResponse<Record<string, any>>> {
+  return proxyClient.get<ApiResponse<Record<string, any>>>(
+    `/asset/device/detail/${encodeURIComponent(deviceId)}`,
+  );
+}
+
+/** 手机产品项（cloud / aibox 接口 data.mobileDeviceModels） */
+export interface MobileDeviceCategoryItem {
+  model?: string;
+  category?: string;
+  deiceName?: string;
+  title?: string;
+  deviceName?: string;
+  [key: string]: any;
+}
+
+export interface MobileDeviceBrandItem {
+  brand?: string;
+  title?: string;
+  categories?: MobileDeviceCategoryItem[];
+  [key: string]: any;
+}
+
+export interface MobileDeviceModelsData {
+  mobileDeviceModels?: MobileDeviceBrandItem[];
+}
+
+/** 查询 cloud 设备产品列表 GET /asset/cloud-device */
+export async function getAssetCloudDeviceModelsApi(): Promise<
+  ApiResponse<MobileDeviceModelsData>
+> {
+  return proxyClient.get<ApiResponse<MobileDeviceModelsData>>('/asset/cloud-device');
+}
+
+/** 查询 aibox 设备产品列表 GET /asset/aibox-device */
+export async function getAssetAiboxDeviceModelsApi(): Promise<
+  ApiResponse<MobileDeviceModelsData>
+> {
+  return proxyClient.get<ApiResponse<MobileDeviceModelsData>>('/asset/aibox-device');
+}
+
+/** 新机 POST /asset/new-device */
+export interface NewDeviceParams {
+  deviceId?: string;
+  armId?: string;
+  nodeId?: string;
+  brand?: string;
+  category?: string;
+  phoneNumber?: string;
+  imei?: string;
+  serialNumber?: string;
+  battery?: string;
+  netOperator?: string;
+  imsi?: string;
+  sn?: string;
+  iccid?: string;
+  chipCode?: string;
+}
+
+export async function newDeviceApi(
+  params: NewDeviceParams,
+): Promise<ApiResponse<null>> {
+  return proxyClient.post<ApiResponse<null>>('/asset/new-device', params);
 }
 
 /** 正式启用设备绑定关系 POST /asset/enable */
