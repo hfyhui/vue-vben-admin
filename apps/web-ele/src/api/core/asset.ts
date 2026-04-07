@@ -404,6 +404,13 @@ export async function getAssetAiboxDeviceModelsApi(): Promise<
   return proxyClient.get<ApiResponse<MobileDeviceModelsData>>('/asset/aibox-device');
 }
 
+/** 查询未来云播设备产品列表 GET /asset/future-device */
+export async function getAssetFutureDeviceModelsApi(): Promise<
+  ApiResponse<MobileDeviceModelsData>
+> {
+  return proxyClient.get<ApiResponse<MobileDeviceModelsData>>('/asset/cloud-device');
+}
+
 /** 运营商项 GET /asset/operator */
 export interface AssetOperatorItem {
   id?: string;
@@ -429,6 +436,33 @@ export async function updateAssetOperatorApi(
   params: UpdateAssetOperatorParams,
 ): Promise<ApiResponse<null>> {
   return proxyClient.put<ApiResponse<null>>('/asset/operator/update', params);
+}
+
+/** 更新设备信息 POST /asset/update-device-info */
+export interface UpdateDeviceInfoParams {
+  deviceIds: string[];
+  operation?: 'MODIFY' | string;
+  imgId?: string;
+  modifyDeviceInfoReq?: {
+    brand?: string;
+    category?: string;
+    phoneNumber?: string;
+    imei?: string;
+    serialNumber?: string;
+    battery?: string;
+    netOperator?: string;
+    imsi?: string;
+    sn?: string;
+    iccid?: string;
+    [key: string]: any;
+  };
+  [key: string]: any;
+}
+
+export async function updateDeviceInfoApi(
+  params: UpdateDeviceInfoParams,
+): Promise<ApiResponse<null>> {
+  return proxyClient.post<ApiResponse<null>>('/asset/update-device-info', params);
 }
 
 /** 新机 POST /asset/new-device */
