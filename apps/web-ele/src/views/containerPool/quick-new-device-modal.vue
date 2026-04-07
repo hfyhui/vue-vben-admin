@@ -429,6 +429,7 @@ async function onSave() {
         <el-form-item :label="$t('containerPool.quickNew.serialNumber')">
           <el-input
             v-model="form.serialNumber"
+            :disabled="true"
             :placeholder="$t('containerPool.quickNew.pleaseInput')"
             clearable
           />

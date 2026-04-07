@@ -154,6 +154,7 @@ export const useColumns = (options: ContainerPoolTableConfigOptions = {}) => [
   {
     field: 'remark',
     title: $t('containerPool.table.remark'),
+    maxlength: 50,
     minWidth: 160,
     slots: {
       default: ({ row }: { row: ContainerPoolRow }) => {
@@ -168,13 +169,13 @@ export const useColumns = (options: ContainerPoolTableConfigOptions = {}) => [
             value: options.getEditingRemarkValue?.() ?? '',
             autofocus: true,
             spellcheck: false,
-            maxlength: 200,
+            maxlength: 50,
             style:
               'width:100%;height:28px;padding:0 8px;border:1px solid var(--el-border-color);border-radius:4px;outline:none;',
             placeholder: $t('containerPool.message.editRemarkPlaceholder'),
             onInput: (e: Event) => {
               const target = e.target as HTMLInputElement;
-              const value = target.value.slice(0, 200);
+              const value = target.value.slice(0, 50);
               options.onChangeEditingRemarkValue?.(value);
             },
             onBlur: () => options.onConfirmEditRemark?.(),
@@ -196,7 +197,6 @@ export const useColumns = (options: ContainerPoolTableConfigOptions = {}) => [
             onMouseenter: (event: MouseEvent) => {
               const el = event.currentTarget as HTMLElement;
               if (!el) return;
-              // 锁定行整格已是 fill-color-light，再用同色悬停会看不出变化，改用更深一档
               el.style.backgroundColor = 'var(--el-fill-color-dark)';
             },
             onMouseleave: (event: MouseEvent) => {
