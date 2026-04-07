@@ -419,6 +419,18 @@ export async function getAssetOperatorListApi(): Promise<
   return proxyClient.get<ApiResponse<AssetOperatorItem[]>>('/asset/operator');
 }
 
+/** 更新运营商 PUT /asset/operator/update */
+export interface UpdateAssetOperatorParams {
+  operatorId?: string;
+  [key: string]: any;
+}
+
+export async function updateAssetOperatorApi(
+  params: UpdateAssetOperatorParams,
+): Promise<ApiResponse<null>> {
+  return proxyClient.put<ApiResponse<null>>('/asset/operator/update', params);
+}
+
 /** 新机 POST /asset/new-device */
 export interface NewDeviceParams {
   deviceId?: string;

@@ -166,6 +166,7 @@ export const getFormOptions = (
       label: $t('accountPool.filter.accountSearch'),
       componentProps: {
         placeholder: $t('accountPool.filter.accountSearchPlaceholder'),
+        clearable: true,
       },
     },
     {
