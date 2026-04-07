@@ -89,6 +89,7 @@ export const getFormOptions = (
       label: $t('containerPool.filter.containerFilter'),
       componentProps: {
         placeholder: $t('containerPool.filter.containerFilterPlaceholder'),
+        clearable: true,
       },
     },
     {
@@ -97,6 +98,7 @@ export const getFormOptions = (
       label: $t('containerPool.filter.containerSearch'),
       componentProps: {
         placeholder: $t('containerPool.filter.containerSearchPlaceholder'),
+        clearable: true,
       },
     },
     {
@@ -143,9 +145,9 @@ export const useColumns = (options: ContainerPoolTableConfigOptions = {}) => [
   { field: 'phoneBrand', title: $t('containerPool.table.phoneBrand'), minWidth: 110 },
   { field: 'phoneModel', title: $t('containerPool.table.phoneModel'), minWidth: 110 },
   { field: 'operator', title: $t('containerPool.table.operator'), minWidth: 100 },
-  { field: 'phoneNumber', title: $t('containerPool.table.phoneNumber'), minWidth: 120 },
+  { field: 'phoneNum', title: $t('containerPool.table.phoneNumber'), minWidth: 120 },
   {
-    field: 'deviceGroup',
+    field: 'suiteNames',
     title: $t('containerPool.table.deviceGroup'),
     minWidth: 160,
   },
@@ -213,7 +215,7 @@ export const useColumns = (options: ContainerPoolTableConfigOptions = {}) => [
       },
     },
   },
-  { field: 'account', title: $t('containerPool.table.account'), minWidth: 120 },
+  { field: 'accountNames', title: $t('containerPool.table.account'), minWidth: 120 },
   { field: 'proxyIp', title: $t('containerPool.table.proxy'), minWidth: 160 },
   { field: 'deviceStatusName', title: $t('containerPool.table.status'), minWidth: 100 },
 ];

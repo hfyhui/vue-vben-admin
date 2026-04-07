@@ -147,6 +147,7 @@ export const getFormOptions = (
       label: $t('proxyPool.filter.proxySearch'),
       componentProps: {
         placeholder: $t('proxyPool.filter.proxySearchPlaceholder'),
+        clearable: true,
       },
     },
     {
@@ -173,6 +174,7 @@ export const getFormOptions = (
       label: $t('proxyPool.filter.sortType'),
       componentProps: {
         placeholder: $t('proxyPool.filter.sortTypePlaceholder'),
+        clearable: true,
         options: sortOptions,
         virtualized: false,
       },

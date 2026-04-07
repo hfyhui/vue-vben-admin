@@ -84,6 +84,7 @@
     "title": "Quick New Device",
     "pleaseInput": "Please enter",
     "pleaseSelect": "Please select",
+    "unsupportedChip": "This device does not support quick new device",
     "deviceIp": "Device IP",
     "brand": "Brand",
     "model": "Model",

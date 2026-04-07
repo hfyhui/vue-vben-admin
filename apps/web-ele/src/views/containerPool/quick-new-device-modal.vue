@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { reactive, ref } from 'vue';
+import { computed, reactive, ref } from 'vue';
 
 import { useVbenModal } from '@vben/common-ui';
 import { ElMessage, ElMessageBox } from 'element-plus';
@@ -13,6 +13,7 @@ import {
   type MobileDeviceBrandItem,
   type MobileDeviceCategoryItem,
   newDeviceApi,
+  updateAssetOperatorApi,
 } from '#/api/core/asset';
 import { $t } from '#/locales';
 
@@ -62,8 +63,13 @@ function normalizeNetOperatorToId() {
 const listRow = ref<ListRow | null>(null);
 const loading = ref(false);
 const submitting = ref(false);
+const saving = ref(false);
 const chipCode = ref('');
 const productMode = ref<'basic' | 'cloud' | 'aibox'>('cloud');
+// 对齐旧项目命名：productType = 芯片类型（AIBOX_L02 / C_ARM_392000 / ...）
+const productType = computed(() =>
+  chipCode.value
+);
 const brandList = ref<MobileDeviceBrandItem[]>([]);
 const modelList = ref<MobileDeviceCategoryItem[]>([]);
 const operatorList = ref<AssetOperatorItem[]>([]);
@@ -78,7 +84,6 @@ const form = reactive({
   imsi: '',
   sn: '',
   iccid: '',
-  battery: '',
   netOperator: '',
   nodeId: '',
   armId: '',
@@ -101,7 +106,6 @@ function resetState() {
     imsi: '',
     sn: '',
     iccid: '',
-    battery: '',
     netOperator: '',
     nodeId: '',
     armId: '',
@@ -119,7 +123,6 @@ function applyDetail(d: Record<string, any>) {
   form.imsi = d.imsi ?? '';
   form.sn = d.sn ?? '';
   form.iccid = d.iccid ?? '';
-  form.battery = d.battery ?? '';
   form.netOperator = d.netOperator ?? '';
   form.nodeId = d.nodeId ?? '';
   form.armId = d.armId ?? listRow.value?.armId ?? listRow.value?.server ?? '';
@@ -141,15 +144,22 @@ function onBrandChange() {
 }
 
 async function loadBrandModels(chip: string) {
-  if (chip === 'C_ARM_392000') {
+  const normalizedChip = String(chip ?? '').trim();
+  // 兼容列表里显示为 ARM_3588 的情况
+  const is3588 =
+    normalizedChip === 'C_ARM_392000' ||
+    normalizedChip === 'ARM_3588' ||
+    normalizedChip.includes('3588');
+
+  if (is3588) {
     productMode.value = 'basic';
     brandList.value = [];
     modelList.value = [];
     return;
   }
-  productMode.value = chip === 'AIBOX_L02' ? 'aibox' : 'cloud';
+  productMode.value = normalizedChip === 'AIBOX_L02' ? 'aibox' : 'cloud';
   const res =
-    chip === 'AIBOX_L02'
+    normalizedChip === 'AIBOX_L02'
       ? await getAssetAiboxDeviceModelsApi()
       : await getAssetCloudDeviceModelsApi();
   if (res?.code !== 100000) {
@@ -184,7 +194,10 @@ async function loadDeviceData(row: ListRow) {
 
       await loadBrandModels(chip);
       applyDetail(detail);
-      normalizeNetOperatorToId();
+      // 只有百度盒子运营商是下拉（值为 id），才需要把历史文本归一为 id
+      if (productType.value === 'AIBOX_L02') {
+        normalizeNetOperatorToId();
+      }
       if (productMode.value !== 'basic') {
         updateModelList();
       }
@@ -249,7 +262,6 @@ async function onQuickNew() {
       phoneNumber: form.phoneNumber,
       imei: form.imei,
       serialNumber: form.serialNumber,
-      battery: form.battery,
       netOperator: form.netOperator,
       imsi: form.imsi,
       sn: form.sn,
@@ -268,6 +280,30 @@ async function onQuickNew() {
     // ElMessage.error($t('containerPool.quickNew.failed'));
   } finally {
     submitting.value = false;
+    modalApi.unlock();
+  }
+}
+
+async function onSave() {
+  if (saving.value || loading.value) return;
+
+  const operatorId = form.netOperator?.trim();
+  const params = operatorId ? { operatorId } : {};
+
+  saving.value = true;
+  modalApi.lock();
+  try {
+    const res = await updateAssetOperatorApi(params);
+    if (res?.code === 100000) {
+      ElMessage.success(res.msg || '保存成功');
+      modalApi.close();
+      emit('success-after');
+    }
+  } catch (error) {
+    console.error('[containerPool] 保存运营商失败:', error);
+    ElMessage.error('保存失败');
+  } finally {
+    saving.value = false;
     modalApi.unlock();
   }
 }
@@ -329,6 +365,7 @@ async function onQuickNew() {
         </el-form-item>
         <el-form-item :label="$t('containerPool.quickNew.netOperator')">
           <el-select
+            v-if="productType === 'AIBOX_L02'"
             v-model="form.netOperator"
             filterable
             clearable
@@ -342,6 +379,12 @@ async function onQuickNew() {
               :value="item.id ?? ''"
             />
           </el-select>
+          <el-input
+            v-else
+            v-model="form.netOperator"
+            :placeholder="$t('containerPool.quickNew.pleaseInput')"
+            clearable
+          />
         </el-form-item>
         <el-form-item :label="$t('containerPool.quickNew.phoneNumber')">
           <el-input
@@ -385,25 +428,28 @@ async function onQuickNew() {
             clearable
           />
         </el-form-item>
-        <el-form-item :label="$t('containerPool.quickNew.battery')">
-          <el-input
-            v-model="form.battery"
-            :placeholder="$t('containerPool.quickNew.pleaseInput')"
-            clearable
-          />
-        </el-form-item>
       </el-form>
       <div class="quick-new-footer">
-        <el-button @click="modalApi.close()">
-          {{ $t('containerPool.message.cancelButtonText') }}
-        </el-button>
         <el-button
+          v-if="productType === 'AIBOX_L02' || productType === 'C_ARM_392000'"
           type="primary"
+          plain
           :loading="submitting"
           :disabled="loading"
           @click="onQuickNew"
         >
           {{ $t('containerPool.action.quickNewDevice') }}
+        </el-button>
+        <el-button @click="modalApi.close()">
+          {{ $t('containerPool.message.cancelButtonText') }}
+        </el-button>
+        <el-button
+          type="primary"
+          :loading="saving"
+          :disabled="loading"
+          @click="onSave"
+        >
+          {{ $t('common.save') }}
         </el-button>
       </div>
     </div>
