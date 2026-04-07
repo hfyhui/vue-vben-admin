@@ -215,6 +215,6 @@ export const useColumns = (options: ContainerPoolTableConfigOptions = {}) => [
   },
   { field: 'account', title: $t('containerPool.table.account'), minWidth: 120 },
   { field: 'proxyIp', title: $t('containerPool.table.proxy'), minWidth: 160 },
-  { field: 'deviceStatus', title: $t('containerPool.table.status'), minWidth: 100 },
+  { field: 'deviceStatusName', title: $t('containerPool.table.status'), minWidth: 100 },
 ];
 
