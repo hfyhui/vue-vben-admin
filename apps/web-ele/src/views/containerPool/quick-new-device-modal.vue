@@ -8,11 +8,13 @@ import {
   getAssetAiboxDeviceModelsApi,
   getAssetCloudDeviceModelsApi,
   getAssetDeviceDetailApi,
+  getAssetFutureDeviceModelsApi,
   getAssetOperatorListApi,
   type AssetOperatorItem,
   type MobileDeviceBrandItem,
   type MobileDeviceCategoryItem,
   newDeviceApi,
+  updateDeviceInfoApi,
   updateAssetOperatorApi,
 } from '#/api/core/asset';
 import { $t } from '#/locales';
@@ -68,7 +70,7 @@ const chipCode = ref('');
 const productMode = ref<'basic' | 'cloud' | 'aibox'>('cloud');
 // 对齐旧项目命名：productType = 芯片类型（AIBOX_L02 / C_ARM_392000 / ...）
 const productType = computed(() =>
-  chipCode.value
+  String(chipCode.value ?? '').trim().toUpperCase()
 );
 const brandList = ref<MobileDeviceBrandItem[]>([]);
 const modelList = ref<MobileDeviceCategoryItem[]>([]);
@@ -143,32 +145,51 @@ function onBrandChange() {
   updateModelList();
 }
 
-async function loadBrandModels(chip: string) {
-  const normalizedChip = String(chip ?? '').trim();
-  // 兼容列表里显示为 ARM_3588 的情况
-  const is3588 =
-    normalizedChip === 'C_ARM_392000' ||
-    normalizedChip === 'ARM_3588' ||
-    normalizedChip.includes('3588');
+function applyGeneratedInfo(data: Record<string, any>) {
+  form.phoneNumber = data?.phoneNum ?? form.phoneNumber;
+  form.serialNumber = data?.serialNumber ?? form.serialNumber;
+  form.imei = data?.imei ?? form.imei;
+  form.imsi = data?.imsi ?? form.imsi;
+  form.sn = data?.sn ?? form.sn;
+  form.iccid = data?.iccid ?? form.iccid;
+}
 
-  if (is3588) {
+async function onOperatorChange() {
+  const operatorId = String(form.netOperator ?? '').trim();
+  if (!operatorId) return;
+  try {
+    const res = await updateAssetOperatorApi({ operatorId });
+    if (res?.code === 100000 && res.data) {
+      applyGeneratedInfo(res.data as Record<string, any>);
+    }
+  } catch (error) {
+    console.error('[containerPool] 根据运营商回填设备信息失败:', error);
+  }
+}
+
+async function loadBrandModels(chip: string) {
+  const normalizedChip = String(chip ?? '').trim().toUpperCase();
+  if (normalizedChip === 'ARM_3588') {
     productMode.value = 'basic';
     brandList.value = [];
     modelList.value = [];
     return;
   }
   productMode.value = normalizedChip === 'AIBOX_L02' ? 'aibox' : 'cloud';
-  const res =
-    normalizedChip === 'AIBOX_L02'
-      ? await getAssetAiboxDeviceModelsApi()
-      : await getAssetCloudDeviceModelsApi();
+  const res = await (normalizedChip === 'AIBOX_L02'
+    ? getAssetAiboxDeviceModelsApi()
+    : normalizedChip === 'C_ARM_392000'
+      ? getAssetFutureDeviceModelsApi()
+      : getAssetCloudDeviceModelsApi());
   if (res?.code !== 100000) {
     // ElMessage.error(res?.msg || $t('containerPool.quickNew.loadProductFailed'));
     brandList.value = [];
     modelList.value = [];
     return;
   }
-  brandList.value = (res.data?.mobileDeviceModels ?? []).filter((b) => b.brand);
+  brandList.value = (res.data?.mobileDeviceModels ?? []).filter(
+    (b: MobileDeviceBrandItem) => b.brand,
+  );
 }
 
 async function loadDeviceData(row: ListRow) {
@@ -285,28 +306,39 @@ async function onQuickNew() {
 }
 
 async function onSave() {
-  if (saving.value || loading.value) return;
-
-  const operatorId = form.netOperator?.trim();
-  const params = operatorId ? { operatorId } : {};
-
+  if (!listRow.value?.deviceId || saving.value || loading.value) return;
   saving.value = true;
   modalApi.lock();
   try {
-    const res = await updateAssetOperatorApi(params);
+    const res = await updateDeviceInfoApi({
+      deviceIds: [String(listRow.value.deviceId)],
+      operation: 'MODIFY',
+      modifyDeviceInfoReq: {
+        brand: form.brand || '',
+        category: form.category || '',
+        phoneNumber: form.phoneNumber || '',
+        imei: form.imei || '',
+        serialNumber: form.serialNumber || '',
+        netOperator: form.netOperator || '',
+        imsi: form.imsi || '',
+        sn: form.sn || '',
+        iccid: form.iccid || '',
+      },
+    });
     if (res?.code === 100000) {
       ElMessage.success(res.msg || '保存成功');
       modalApi.close();
       emit('success-after');
     }
   } catch (error) {
-    console.error('[containerPool] 保存运营商失败:', error);
+    console.error('[containerPool] 保存设备信息失败:', error);
     ElMessage.error('保存失败');
   } finally {
     saving.value = false;
     modalApi.unlock();
   }
 }
+
 </script>
 
 <template>
@@ -371,6 +403,7 @@ async function onSave() {
             clearable
             :placeholder="$t('containerPool.quickNew.pleaseSelect')"
             style="width: 100%"
+            @change="onOperatorChange"
           >
             <el-option
               v-for="(item, index) in operatorList"
