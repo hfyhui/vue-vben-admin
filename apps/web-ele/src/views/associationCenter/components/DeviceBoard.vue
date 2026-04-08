@@ -6,6 +6,7 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import { TopRight } from '@element-plus/icons-vue';
 
 import { $t } from '#/locales';
+import { useAssetEnumsStore } from '#/store';
 
 import {
   getContainerAssetPageApi,
@@ -46,6 +47,8 @@ const filterForm = reactive({
 });
 
 const viewMode = ref<'grid' | 'table'>('grid');
+const associationStatusOptions = ref<Array<{ name: string; content: string }>>([]);
+const assetEnumsStore = useAssetEnumsStore();
 
 const tablePagination = reactive({
   current: 1,
@@ -607,6 +610,13 @@ function getSelectedDeviceIds() {
   }, [] as string[]);
 }
 
+async function loadAssociationStatusOptions() {
+  await assetEnumsStore.ensureAssetEnumsLoaded(true);
+  const enumMap = assetEnumsStore.enums as unknown as Record<string, any>;
+  const children = enumMap?.NEW_DEVICE_STATUS?.children;
+  associationStatusOptions.value = Array.isArray(children) ? children : [];
+}
+
 /** 应用反向查询结果（有数据则覆盖渲染，无数据则展示空） */
 function applyReverseQueryDevices(devices: DeviceItem[] | null | undefined) {
   const nextList = Array.isArray(devices) ? devices : [];
@@ -1117,6 +1127,7 @@ defineExpose({
 
 /** 组件初始化：生成 mock 数据并加载第一页 */
 onMounted(() => {
+  void loadAssociationStatusOptions();
   void fetchData();
 });
 </script>
@@ -1179,8 +1190,12 @@ onMounted(() => {
           class="filter-input"
           clearable
         >
-          <el-option :label="$t('associationCenter.associated')" value="associated" />
-          <el-option :label="$t('associationCenter.unassociated')" value="unassociated" />
+          <el-option
+            v-for="item in associationStatusOptions"
+            :key="item.name"
+            :label="item.content"
+            :value="item.name"
+          />
         </el-select>
       </div>
       <el-button type="primary" @click="handleSearch">
