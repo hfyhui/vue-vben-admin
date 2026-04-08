@@ -424,7 +424,6 @@ defineExpose({
               <div class="account-info">
                 <el-tooltip
                   :placement="lineTooltipPlacement(item, index)"
-                  effect="light"
                   :show-after="200"
                   :content="accountPlatformHoverText(item)"
                   :disabled="!accountPlatformHoverText(item)"
@@ -445,7 +444,6 @@ defineExpose({
                 <div class="account-main">
                   <el-tooltip
                     :placement="lineTooltipPlacement(item, index)"
-                    effect="light"
                     :show-after="200"
                     :content="item.userAccount != null && String(item.userAccount).trim() !== '' ? String(item.userAccount) : '-'"
                     popper-class="account-board-line-tooltip"
@@ -459,7 +457,6 @@ defineExpose({
                   </el-tooltip>
                   <el-tooltip
                     :placement="lineTooltipPlacement(item, index)"
-                    effect="light"
                     :show-after="200"
                     :content="item.nickName != null && String(item.nickName).trim() !== '' ? String(item.nickName) : '-'"
                     popper-class="account-board-line-tooltip"
@@ -673,9 +670,11 @@ defineExpose({
   align-items: center;
   justify-content: center;
   font-size: 11px;
-  color: #fff;
+  color: var(--el-text-color-secondary);
   flex-shrink: 0;
   background: var(--el-fill-color-light);
+  border: 1px solid var(--el-border-color-lighter);
+  box-sizing: border-box;
   overflow: hidden;
 }
 
@@ -764,10 +763,10 @@ defineExpose({
 }
 </style>
 
-<!-- 白底 + 最小宽度（与 effect=light 配合） -->
+<!-- 使用主题变量，避免暗色模式下仍强制白底导致文字/内容看不清或与页面冲突 -->
 <style>
 .account-board-line-tooltip.el-popper {
-  background: #fff !important;
+  background: var(--el-fill-color-blank) !important;
   color: var(--el-text-color-primary) !important;
   border: 1px solid var(--el-border-color-lighter) !important;
   box-shadow: var(--el-box-shadow-light) !important;
@@ -777,7 +776,7 @@ defineExpose({
 }
 
 .account-board-line-tooltip .el-popper__arrow::before {
-  background: #fff !important;
+  background: var(--el-fill-color-blank) !important;
   border: 1px solid var(--el-border-color-lighter) !important;
 }
 </style>
