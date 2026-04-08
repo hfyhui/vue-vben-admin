@@ -445,14 +445,14 @@ defineExpose({
                   <el-tooltip
                     :placement="lineTooltipPlacement(item, index)"
                     :show-after="200"
-                    :content="item.userAccount != null && String(item.userAccount).trim() !== '' ? String(item.userAccount) : '-'"
+                    :content="item.account"
                     popper-class="account-board-line-tooltip"
                   >
                     <div
                       class="account-id"
                       @mouseenter="updateLineTooltipPlacement($event, item, index)"
                     >
-                      {{ item.userAccount || '-' }}
+                      {{ item.account }}
                     </div>
                   </el-tooltip>
                   <el-tooltip
@@ -465,7 +465,7 @@ defineExpose({
                       class="account-name"
                       @mouseenter="updateLineTooltipPlacement($event, item, index)"
                     >
-                      {{ item.nickName || '-' }}
+                      {{ item.nickName }}
                     </div>
                   </el-tooltip>
                 </div>
