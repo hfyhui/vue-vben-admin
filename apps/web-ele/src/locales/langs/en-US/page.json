@@ -9,6 +9,9 @@
   "dashboard": {
     "title": "Dashboard",
     "applicationManage": "Application Management",
+    "systemManage": "System management",
+    "groupManage": "Group management",
+    "socialMediaAccount": "Social media accounts",
     "customerManage": "CustomerManage",
     "licenseManage": "LicenseManage",
     "productList": "ProductList",

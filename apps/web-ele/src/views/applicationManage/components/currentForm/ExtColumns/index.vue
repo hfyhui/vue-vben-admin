@@ -1,8 +1,11 @@
 <script lang="ts" setup>
+import { CirclePlus } from '@element-plus/icons-vue';
 import { computed, onMounted, ref, watch } from 'vue';
 
 import { ElMessage } from 'element-plus';
+
 import { getDynamicFormColumnConfigApi } from '#/api/core/application';
+import { $t } from '#/locales';
 
 const props = withDefaults(
   defineProps<{
@@ -61,12 +64,12 @@ function addEvent() {
     (item: Record<string, any>) => String(item.prop) === String(childProp),
   );
   if (!source?.prop) {
-    ElMessage.warning('请选择可添加的字段');
+    ElMessage.warning($t('applicationManage.currentForm.extColumns.selectValidField'));
     return;
   }
   const isExist = extColumns.value.some((item) => String(item?.prop) === String(source.prop));
   if (isExist) {
-    ElMessage.warning('请勿重复添加字段');
+    ElMessage.warning($t('applicationManage.currentForm.extColumns.duplicateField'));
     return;
   }
   const next = [...extColumns.value];
@@ -155,7 +158,7 @@ async function fetchDynamicColumnConfig() {
     });
   } catch {
     dynamicColumnConfig.value = [];
-    ElMessage.warning('加载动态字段配置失败');
+    ElMessage.warning($t('applicationManage.currentForm.extColumns.loadConfigFailed'));
   }
 }
 
@@ -174,9 +177,11 @@ onMounted(() => {
         clearable
         filterable
         style="width: 500px"
-        placeholder="请选择字段"
+        :placeholder="$t('applicationManage.currentForm.extColumns.selectFieldPlaceholder')"
       />
-      <el-button type="primary" @click="addEvent">新增</el-button>
+      <el-button type="primary" @click="addEvent">
+        {{ $t('applicationManage.currentForm.common.add') }}
+      </el-button>
     </div>
 
     <div class="columns-box">
@@ -198,16 +203,24 @@ onMounted(() => {
             trigger="click"
             @command="onDropdownCommand($event, item, index)"
           >
-            <el-button link type="primary">操作</el-button>
+            <span class="dropdown-trigger" @click.stop>
+              <el-icon class="dropdown-icon" :size="18">
+                <CirclePlus />
+              </el-icon>
+            </span>
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item
                   :command="item.status === 'disable' ? 'enable' : 'disable'"
                 >
-                  {{ item.status === 'disable' ? '启用' : '禁用' }}
+                  {{
+                    item.status === 'disable'
+                      ? $t('applicationManage.currentForm.common.enable')
+                      : $t('applicationManage.currentForm.common.disable')
+                  }}
                 </el-dropdown-item>
                 <el-dropdown-item v-if="!item.currentId" command="del">
-                  删除
+                  {{ $t('applicationManage.currentForm.common.delete') }}
                 </el-dropdown-item>
               </el-dropdown-menu>
             </template>
@@ -274,6 +287,17 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 8px;
+}
+
+.dropdown-trigger {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.dropdown-icon {
+  color: var(--el-color-primary);
 }
 
 .label {

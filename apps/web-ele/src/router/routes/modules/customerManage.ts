@@ -144,7 +144,38 @@ const routes: RouteRecordRaw[] = [
       icon: 'lucide:copyright',
       title: $t('page.dashboard.applicationManage'),
       order: 9999,
-    }
+    },
+  },
+  {
+    name: 'ApplicationSystemManage',
+    path: '/applicationSystem',
+    redirect: '/applicationSystem/groupManage',
+    component: () => import('#/views/systemManage/layout.vue'),
+    meta: {
+      icon: 'lucide:settings',
+      title: $t('page.dashboard.systemManage'),
+      order: 10000,
+    },
+    children: [
+      {
+        name: 'GroupManage',
+        path: 'groupManage',
+        component: () => import('#/views/systemManage/groupManage/index.vue'),
+        meta: {
+          title: $t('page.dashboard.groupManage'),
+          order: 1,
+        },
+      },
+      {
+        name: 'SocialMediaAccountManage',
+        path: 'socialMediaAccount',
+        component: () => import('#/views/systemManage/socialMediaAccount/index.vue'),
+        meta: {
+          title: $t('page.dashboard.socialMediaAccount'),
+          order: 2,
+        },
+      },
+    ],
   },
   {
     name: 'DemosPage',

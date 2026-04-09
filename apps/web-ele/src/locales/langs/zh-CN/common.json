@@ -1,6 +1,7 @@
 {
   "error": {
-    "loadFailed": "加载失败"
+    "loadFailed": "加载失败",
+    "submitFailed": "提交失败"
   },
   "add": "新增",
   "edit": "编辑",
@@ -18,7 +19,9 @@
   "prompt": "提示",
   "view": "预览",
   "detail": "详情",
+  "details": "详情",
   "search": "搜索",
+  "query": "查询",
   "reset": "重置",
   "loading": "加载中...",
   "noData": "暂无数据",

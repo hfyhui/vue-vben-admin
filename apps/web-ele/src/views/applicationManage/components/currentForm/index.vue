@@ -1,6 +1,8 @@
 <script lang="ts" setup>
 import { computed, ref } from 'vue';
 
+import { $t } from '#/locales';
+
 import ExtColumns from './ExtColumns/index.vue';
 import Form from './Form/index.vue';
 import FormJSON from './FormJSON/index.vue';
@@ -45,13 +47,23 @@ const extColumnList = computed<Record<string, any>[]>({
 <template>
   <div class="current-form-wrap">
     <el-tabs v-model="activeTab">
-      <el-tab-pane label="form" name="form" />
-      <el-tab-pane label="formJSON" name="formJSON" />
-      <el-tab-pane label="ext-columns" name="ext-columns" />
+      <el-tab-pane :label="$t('applicationManage.currentForm.tabs.form')" name="form" />
+      <el-tab-pane :label="$t('applicationManage.currentForm.tabs.formJson')" name="formJSON" />
+      <el-tab-pane :label="$t('applicationManage.currentForm.tabs.extColumns')" name="ext-columns" />
     </el-tabs>
 
-    <Form v-if="activeTab === 'form'" v-model="baseColumns" />
-    <FormJSON v-else-if="activeTab === 'formJSON'" v-model="baseColumns" />
+    <Form
+      v-if="activeTab === 'form'"
+      v-model="baseColumns"
+      :ext-columns="extColumnList"
+      @update:ext-columns="extColumnList = $event"
+    />
+    <FormJSON
+      v-else-if="activeTab === 'formJSON'"
+      v-model="baseColumns"
+      :ext-columns="extColumnList"
+      @update:ext-columns="extColumnList = $event"
+    />
     <ExtColumns v-else v-model="extColumnList" :base-columns="baseColumns" />
   </div>
 </template>
