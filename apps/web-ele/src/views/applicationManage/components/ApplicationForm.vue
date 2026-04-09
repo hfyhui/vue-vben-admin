@@ -46,8 +46,19 @@ watch(
     submitData.packageName = row.packageName;
     submitData.activityName = row.activityName;
     submitData.orderNum = row.orderNum;
-    submitData.programType = row.programIds || [];
-    submitData.programTypeDetail = row.programType || [];
+    // 与 social_media_web CEModal 提交逻辑一致：programIds = programType.map(el => el.programIds || el.id)
+    const pt = Array.isArray(row.programType) ? row.programType : [];
+    submitData.programTypeDetail = pt;
+    if (Array.isArray(row.programIds) && row.programIds.length) {
+      submitData.programType = row.programIds.map((id: unknown) => String(id)).filter(Boolean);
+    } else {
+      submitData.programType = pt
+        .map((el: Record<string, any>) => {
+          const id = el.programIds ?? el.id;
+          return id != null && id !== '' ? String(id) : '';
+        })
+        .filter(Boolean);
+    }
     submitData.applicationStatus = row.applicationStatus;
   },
   { immediate: true },
@@ -64,9 +75,7 @@ async function submitFn() {
     form: item.form,
     extendedColumn: item.extendedColumn,
   }));
-  const detailIds = normalizedProgramType.map(
-    (item: Record<string, any>) => item.programIds,
-  );
+  const detailIds = normalizedProgramType.map((item: Record<string, any>) => item.programIds);
   const payload: ApplicationUpsertPayload = {
     id: submitData.id,
     applicationName: submitData.applicationName,

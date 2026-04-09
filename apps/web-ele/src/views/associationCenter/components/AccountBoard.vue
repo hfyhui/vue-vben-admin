@@ -336,6 +336,7 @@ defineExpose({
           v-model="filterForm.platform"
           :placeholder="$t('associationCenter.platformPlaceholder')"
           class="filter-input"
+          filterable
           multiple
           collapse-tags
           collapse-tags-tooltip
@@ -365,6 +366,7 @@ defineExpose({
           v-model="filterForm.accountGroup"
           :placeholder="$t('associationCenter.accountGroupPlaceholder')"
           class="filter-input"
+          filterable
           multiple
           collapse-tags
           collapse-tags-tooltip
@@ -385,6 +387,7 @@ defineExpose({
           v-model="filterForm.sortType"
           :placeholder="$t('associationCenter.sortTypePlaceholder')"
           class="filter-input"
+          filterable
           clearable
         >
           <el-option

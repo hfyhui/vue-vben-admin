@@ -122,7 +122,13 @@ function onUnbindProxy(ev: Event, row: DeviceItem) {
         align="center"
       >
         <template #default="{ row }">
-          <span class="table-status" :class="(row.color || 'gray').toLowerCase()" />
+          <el-tooltip
+            :content="row.devicePrompt"
+            placement="top"
+            :disabled="!row.devicePrompt"
+          >
+            <span class="table-status" :class="row.color || 'gray'" />
+          </el-tooltip>
         </template>
       </el-table-column>
 

@@ -135,7 +135,13 @@ function getBoundAccounts(item: DeviceItem): BoundAccountRow[] {
           @dragover="onDragOver"
           @drop="onDrop($event, item)"
         >
-          <div class="card-status" :class="item.color" />
+          <el-tooltip
+            :content="item.devicePrompt"
+            placement="top"
+            :disabled="!item.devicePrompt"
+          >
+            <div class="card-status" :class="item.color || 'gray'" />
+          </el-tooltip>
           <div class="card-body">
             <div class="card-ip">{{ item.deviceIp }}</div>
             <div class="card-row">

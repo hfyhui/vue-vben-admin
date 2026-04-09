@@ -1,6 +1,7 @@
 {
   "error": {
-    "loadFailed": "Load failed"
+    "loadFailed": "Load failed",
+    "submitFailed": "Submit failed"
   },
   "add": "Add",
   "edit": "Edit",
@@ -18,7 +19,9 @@
   "prompt": "Prompt",
   "view": "View",
   "detail": "Details",
+  "details": "Details",
   "search": "Search",
+  "query": "Query",
   "reset": "Reset",
   "loading": "Loading...",
   "noData": "No data",

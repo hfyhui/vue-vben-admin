@@ -68,6 +68,7 @@ const list = ref<DeviceItem[]>([]);
 const allMockRecords = ref<DeviceItem[]>([]);
 const boardContentRef = ref<HTMLElement | null>(null);
 const autoFillRunning = ref(false);
+const tableServerPaged = ref(false);
 
 const largeScreenVisible = ref(false);
 const largeScreenDevice = ref<DeviceItem | null>(null);
@@ -397,6 +398,7 @@ function handleSearch() {
   selectedDeviceKeys.value = [];
   pinnedDeviceKeys.value = [];
   pinMode.value = false;
+  tableServerPaged.value = false;
   void fetchData();
 }
 
@@ -411,6 +413,7 @@ async function refreshDeviceList() {
   selectedDeviceKeys.value = [];
   pinnedDeviceKeys.value = [];
   pinMode.value = false;
+  tableServerPaged.value = false;
   await fetchData();
 }
 
@@ -458,6 +461,9 @@ function onTableDrop(ev: DragEvent) {
 
 /** 刷新表格分页数据（与筛选条件保持一致） */
 function updateTableData() {
+  if (viewMode.value === 'table' && tableServerPaged.value && !showPinnedOnly.value) {
+    return;
+  }
   const filtered = showPinnedOnly.value ? pinnedRecords.value : list.value;
   tablePagination.total = showPinnedOnly.value
     ? filtered.length
@@ -482,11 +488,32 @@ function refreshDisplayedDeviceData() {
 /** 表格分页切换事件 */
 async function handleTablePageChange(page: number) {
   tablePagination.current = page;
-  const needCount = page * tablePagination.size;
-  while (allMockRecords.value.length < needCount && !finished.value) {
-    await fetchData();
+  if (showPinnedOnly.value) {
+    updateTableData();
+    return;
   }
-  updateTableData();
+  loading.value = true;
+  tableServerPaged.value = true;
+  try {
+    const { records = [], total = 0 } =
+      await getContainerAssetPageApi<DeviceItem>({
+        ...buildRequestParams(),
+        current: page,
+        size: tablePagination.size,
+      });
+    for (const item of records) {
+      markAccountInfosFromServer(item);
+      markProxyBindingsFromServer(item);
+    }
+    tableData.value = records;
+    tablePagination.total = total;
+    pagination.total = total;
+  } catch (error) {
+    console.error(error);
+    ElMessage.error($t('common.error.loadFailed'));
+  } finally {
+    loading.value = false;
+  }
 }
 
 /** 获取设备唯一 key（当前使用 deviceIp） */
@@ -581,6 +608,7 @@ function handleTogglePinDevices() {
   if (showPinnedOnly.value) {
     pinnedDeviceKeys.value = [];
     pinMode.value = false;
+    tableServerPaged.value = false;
     tablePagination.current = 1;
     refreshDisplayedDeviceData();
     return;
@@ -591,6 +619,7 @@ function handleTogglePinDevices() {
   }
   pinnedDeviceKeys.value = selectedDeviceKeys.value.filter(Boolean);
   pinMode.value = true;
+  tableServerPaged.value = false;
   tablePagination.current = 1;
   refreshDisplayedDeviceData();
 }
@@ -629,6 +658,7 @@ function applyReverseQueryDevices(devices: DeviceItem[] | null | undefined) {
   selectedDeviceKeys.value = [];
   pinnedDeviceKeys.value = [];
   pinMode.value = false;
+  tableServerPaged.value = false;
   pagination.current = 1;
   pagination.total = nextList.length;
   tablePagination.current = 1;
@@ -786,6 +816,9 @@ async function onCardDrop(ev: DragEvent, item: DeviceItem) {
 function toggleViewMode() {
   viewMode.value = viewMode.value === 'grid' ? 'table' : 'grid';
   if (viewMode.value === 'grid') {
+    tableServerPaged.value = false;
+  }
+  if (viewMode.value === 'grid') {
     void ensureGridScrollableOrFinished();
   }
 }
@@ -809,6 +842,7 @@ async function refreshDeviceListAfterUnbind() {
       records.length === 0 || allMockRecords.value.length >= total;
     pagination.current = finished.value ? 1 : 2;
     tablePagination.current = 1;
+    tableServerPaged.value = false;
     refreshDisplayedDeviceData();
   } catch (error) {
     console.error(error);
@@ -1168,6 +1202,7 @@ onMounted(() => {
           v-model="filterForm.suiteIds"
           :placeholder="$t('associationCenter.deviceGroup')"
           class="filter-input"
+          filterable
           multiple
           collapse-tags
           collapse-tags-tooltip
@@ -1188,6 +1223,7 @@ onMounted(() => {
           v-model="filterForm.associationStatus"
           :placeholder="$t('associationCenter.associationStatus')"
           class="filter-input"
+          filterable
           clearable
         >
           <el-option

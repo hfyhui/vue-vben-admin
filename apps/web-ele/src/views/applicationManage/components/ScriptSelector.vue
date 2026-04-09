@@ -63,7 +63,10 @@ const modelIds = computed<string[]>(() => {
 const detailMap = computed<Record<string, Record<string, any>>>(
   () =>
     (props.detailList || []).reduce((acc, item: Record<string, any>) => {
-      acc[item.programIds] = item;
+      const key = item.programIds ?? item.id;
+      if (key != null && key !== '') {
+        acc[String(key)] = item;
+      }
       return acc;
     }, {} as Record<string, Record<string, any>>),
 );
@@ -368,6 +371,7 @@ function removeFn(row: ScriptCard) {
 
     <el-drawer
       v-model="scriptDrawerVisible"
+      class="script-selector-drawer"
       :title="drawerTitle"
       size="75%"
       :close-on-click-modal="false"
@@ -403,8 +407,8 @@ function removeFn(row: ScriptCard) {
 
       <template #footer>
         <div class="footer-box">
-          <el-button @click="cancelFn">关闭</el-button>
-          <el-button type="primary" @click="submitFn">确定</el-button>
+          <el-button class="footer-btn" size="small" @click="cancelFn">取消</el-button>
+          <el-button class="footer-btn" size="small" type="primary" @click="submitFn">确定</el-button>
         </div>
       </template>
     </el-drawer>
@@ -507,6 +511,40 @@ function removeFn(row: ScriptCard) {
 .footer-box {
   display: flex;
   justify-content: center;
-  gap: 8px;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.footer-box .footer-btn {
+  /* 覆盖全局/抽屉 footer 里可能出现的 flex:1，避免两按钮各占半宽 */
+  flex: 0 0 auto !important;
+  width: auto !important;
+  margin: 0 !important;
+}
+
+.footer-box .footer-btn.el-button--primary {
+  font-weight: 500;
+}
+
+.footer-box .footer-btn:not(.el-button--primary) {
+  color: var(--el-text-color-regular);
+  background: var(--el-fill-color-blank);
+  border-color: var(--el-border-color);
+}
+
+.footer-box .footer-btn:not(.el-button--primary):hover {
+  color: var(--el-color-primary);
+  border-color: var(--el-color-primary-light-5);
+  background: var(--el-color-primary-light-9);
+}
+</style>
+
+<style>
+/* 覆盖抽屉 footer 默认布局，保证按钮整体居中 */
+.script-selector-drawer .el-drawer__footer {
+  display: flex;
+  justify-content: center;
 }
 </style>
