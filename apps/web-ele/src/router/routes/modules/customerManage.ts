@@ -16,7 +16,7 @@ const routes: RouteRecordRaw[] = [
     path: '/customerManage',
     component: () => import('#/views/customerManage/index.vue'),
     meta: {
-      icon: 'lucide:copyright',
+      icon: 'lucide:users',
       title: $t('page.dashboard.customerManage'),
       order: 9999,
     },
@@ -26,7 +26,7 @@ const routes: RouteRecordRaw[] = [
     path: '/licenseManage',
     component: () => import('#/views/licenseManage/index.vue'),
     meta: {
-      icon: 'lucide:copyright',
+      icon: 'lucide:key-round',
       title: $t('page.dashboard.licenseManage'),
       order: 9999,
     },
@@ -36,7 +36,7 @@ const routes: RouteRecordRaw[] = [
     path: '/productList',
     component: () => import('#/views/productList/index.vue'),
     meta: {
-      icon: 'lucide:copyright',
+      icon: 'lucide:package',
       title: $t('page.dashboard.productList'),
       order: 9999,
     },
@@ -47,7 +47,7 @@ const routes: RouteRecordRaw[] = [
     redirect: '/associationCenter/associationConfig',
     component: () => import('#/views/associationCenter/layout.vue'),
     meta: {
-      icon: 'lucide:copyright',
+      icon: 'lucide:link-2',
       title: $t('page.dashboard.associationCenter'),
       order: 9999,
     },
@@ -69,7 +69,7 @@ const routes: RouteRecordRaw[] = [
     redirect: '/assetManage/accountPool',
     component: () => import('#/views/assetManage/index.vue'),
     meta: {
-      icon: 'lucide:copyright',
+      icon: 'lucide:layers',
       title: $t('page.dashboard.assetManage'),
       order: 9999,
     },
@@ -141,7 +141,7 @@ const routes: RouteRecordRaw[] = [
     path: '/applicationManage',
     component: () => import('#/views/applicationManage/index.vue'),
     meta: {
-      icon: 'lucide:copyright',
+      icon: 'lucide:layout-grid',
       title: $t('page.dashboard.applicationManage'),
       order: 9999,
     },
