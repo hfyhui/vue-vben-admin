@@ -38,9 +38,7 @@ const modeOptions = computed(() => [
 
 const primarySearchInput = computed({
   get() {
-    return searchMode.value === 'account'
-      ? (searchForm.id ?? '')
-      : (searchForm.appAccount ?? '');
+    return searchMode.value === 'account' ? searchForm.id : searchForm.appAccount
   },
   set(v: string) {
     if (searchMode.value === 'account') {
@@ -125,14 +123,14 @@ async function loadList() {
 
 function applyLocalFilter() {
   const list = [...selectedMap.value.values()];
-  const idKw = (searchForm.id ?? '').trim();
-  const accKw = (searchForm.appAccount ?? '').trim().toLowerCase();
+  const idKw = searchForm.id
+  const accKw = searchForm.appAccount
   const filtered = list.filter((el) => {
     if (searchMode.value === 'account' && idKw) {
       return el.id.includes(idKw);
     }
     if (searchMode.value === 'userAccount' && accKw) {
-      return el.appAccount.toLowerCase().includes(accKw);
+      return el.appAccount.includes(accKw);
     }
     return true;
   });
@@ -271,7 +269,6 @@ async function save() {
     class="account-assign-drawer"
   >
     <div class="drawer-body">
-      <!-- 与旧版 SubmitForm 只读分组信息一致：表单项 + 禁用输入框/文本域 -->
       <ElForm class="header-form" label-position="left" label-width="96px">
         <ElFormItem :label="$t('systemManage.groupManage.groupName')">
           <ElInput :model-value="detail?.suiteName ?? ''" disabled maxlength="50" />
@@ -287,7 +284,6 @@ async function save() {
         </ElFormItem>
       </ElForm>
 
-      <!-- 与旧版 a-input-group compact + 查询 + 勾选 同一行 -->
       <div class="toolbar">
         <div class="search-input-group">
           <ElInput

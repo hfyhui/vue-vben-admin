@@ -100,7 +100,7 @@ async function uploadImage(options: UploadRequestOptions) {
     const formData = new FormData();
     formData.append('file', options.file);
 
-    const res = await socialClient.post('/social/oss/upload', formData, {
+    const res = await socialClient.post('/oss/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },

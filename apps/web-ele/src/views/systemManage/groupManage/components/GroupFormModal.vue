@@ -93,12 +93,11 @@ async function submit() {
   try {
     const initial = (props.initial) as Record<string, any>;
     const hit = suiteOptions.value.find(
-      (s) =>
-        s.suiteName.trim().toUpperCase() === form.suiteName.trim().toUpperCase(),
+      (s) => s.suiteName === form.suiteName,
     );
     const payload: Record<string, any> = {
       id: initial.id,
-      suiteName: form.suiteName.trim(),
+      suiteName: form.suiteName,
       suiteDesc: form.suiteDesc,
       suiteId: hit?.id,
     };

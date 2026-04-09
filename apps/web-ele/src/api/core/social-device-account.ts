@@ -6,28 +6,28 @@ export type SocialPageBody = {
   [key: string]: any;
 };
 
-/** GET /social/device/page */
+/** GET .../social/device/page（baseURL 含 /social，路径用 /device/page） */
 export async function getSocialDevicePageApi(params: SocialPageBody) {
   return socialClient.get<{
     code: number;
     data: { records: any[]; total: number };
     msg?: string;
-  }>('/social/device/page', { params: params });
+  }>('/device/page', { params: params });
 }
 
-/** POST /social/account/list */
+/** POST .../social/account/list */
 export async function postSocialAccountListApi(data: SocialPageBody) {
   return socialClient.post<{
     code: number;
     data: { records: any[]; total: number };
     msg?: string;
-  }>('/social/account/list', data);
+  }>('/account/list', data);
 }
 
-/** POST /social/account-suite/update */
+/** POST .../social/account-suite/update */
 export async function updateSocialAccountSuiteApi(data: Record<string, any>) {
   return socialClient.post<{ code: number; data?: any; msg?: string }>(
-    '/social/account-suite/update',
+    '/account-suite/update',
     data,
   );
 }

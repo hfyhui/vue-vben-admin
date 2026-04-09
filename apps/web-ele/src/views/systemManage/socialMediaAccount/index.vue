@@ -68,7 +68,7 @@ async function loadApps() {
     if (res?.code === 200 || res?.code === 100000) {
       const records = res.data?.records ?? [];
       apps.value = records;
-      const firstId = records[0]?.id ? String(records[0].id) : '';
+      const firstId = records[0]?.id
       currentAppId.value = firstId;
       smStore.setCheckAppList(records);
       smStore.setCheckAppId(firstId);
@@ -143,7 +143,7 @@ function syncUserSelectionFromStore() {
   tb.clearSelection();
   const want = new Set(smStore.checkInfo.map((u: any) => u.userId));
   for (const row of userRows.value) {
-    if (want.has(String(row.userId ?? ''))) {
+    if (want.has(row.userId)) {
       tb.toggleRowSelection(row, true);
     }
   }
