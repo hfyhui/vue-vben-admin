@@ -26,7 +26,39 @@
     "selectBeforeDelete": "请先选择要删除的应用",
     "batchDeleteConfirm": "确定要删除选中的 {count} 个应用吗？",
     "deleteConfirm": "确定要删除「{name}」吗？",
-    "deleteSuccess": "删除成功"
+    "deleteSuccess": "删除成功",
+    "confirmDisable": "是否确认禁用应用：{name}？",
+    "confirmEnable": "是否确认启用应用：{name}？",
+    "disableSuccess": "禁用成功",
+    "enableSuccess": "启用成功",
+    "detailLoadFailed": "获取应用详情失败",
+    "createSuccess": "新增成功",
+    "updateSuccess": "编辑成功"
+  },
+  "scriptSelector": {
+    "drawerTitleEdit": "编辑脚本",
+    "drawerTitleAdd": "新增脚本",
+    "field": {
+      "programName": "脚本名称",
+      "logoPath": "脚本Logo",
+      "programCategory": "脚本类型",
+      "scriptId": "脚本",
+      "form": "表单"
+    },
+    "placeholder": {
+      "programName": "请输入脚本名称",
+      "programCategory": "请选择脚本类型",
+      "scriptId": "请选择脚本"
+    },
+    "rule": {
+      "programName": "请输入脚本名称",
+      "logoPath": "请上传脚本Logo",
+      "scriptId": "请选择脚本"
+    },
+    "message": {
+      "scriptListLoadFailed": "脚本清单加载失败，请稍后重试",
+      "dynamicFormSaveFailed": "动态表单保存失败：未返回有效ID"
+    }
   },
   "currentForm": {
     "tabs": {
@@ -139,7 +171,7 @@
         "httpUrl": "上传接口"
       },
       "tip": {
-        "alignBusinessParam": "请与业务参数保持一致"
+        "alignBusinessParam": "请和流程脚本中的参数名称保持一致"
       },
       "placeholder": {
         "dateFormatDefault": "默认 YYYY-MM-DD HH:mm:ss",

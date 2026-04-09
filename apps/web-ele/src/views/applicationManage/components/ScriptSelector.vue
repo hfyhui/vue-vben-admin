@@ -11,6 +11,7 @@ import {
 } from '#/api/core/application';
 import ImageUpload from '#/components/ImageUpload.vue';
 import SubmitForm from '#/components/SubmitForm/index.vue';
+import { $t } from '#/locales';
 import { useAssetEnumsStore } from '#/store';
 import { formatAssetImageUrl } from '#/utils/asset-url';
 import CurrentForm from './currentForm/index.vue';
@@ -114,53 +115,63 @@ const selectedScriptList = computed<ScriptCard[]>(() =>
   }),
 );
 
-const drawerTitle = computed(() => (currentEditId.value ? '编辑脚本' : '新增脚本'));
+const drawerTitle = computed(() =>
+  currentEditId.value
+    ? $t('applicationManage.scriptSelector.drawerTitleEdit')
+    : $t('applicationManage.scriptSelector.drawerTitleAdd'),
+);
 
 const drawerColumns = computed<any[]>(() => [
   {
     type: 'input' as const,
-    label: '脚本名称',
+    label: $t('applicationManage.scriptSelector.field.programName'),
     prop: 'programName',
     maxLength: 20,
-    placeholder: '请输入脚本名称',
-    rules: [{ required: true, message: '请输入脚本名称' }],
+    placeholder: $t('applicationManage.scriptSelector.placeholder.programName'),
+    rules: [{ required: true, message: $t('applicationManage.scriptSelector.rule.programName') }],
   },
   {
     type: 'customInput' as const,
-    label: '脚本Logo',
+    label: $t('applicationManage.scriptSelector.field.logoPath'),
     prop: 'logoPath',
     slot: 'logoPath',
-    rules: [{ required: true, message: '请上传脚本Logo' }],
+    rules: [{ required: true, message: $t('applicationManage.scriptSelector.rule.logoPath') }],
   },
   {
     type: 'select' as const,
-    label: '脚本类型',
+    label: $t('applicationManage.scriptSelector.field.programCategory'),
     prop: 'programCategory',
     options: scriptCategoryOptions.value,
-    placeholder: '请选择脚本类型',
+    placeholder: $t('applicationManage.scriptSelector.placeholder.programCategory'),
   },
   {
     type: 'select' as const,
-    label: '脚本',
+    label: $t('applicationManage.scriptSelector.field.scriptId'),
     prop: 'scriptId',
     options: scriptSelectOptions.value,
-    placeholder: '请选择脚本',
-    rules: [{ required: true, message: '请选择脚本' }],
+    placeholder: $t('applicationManage.scriptSelector.placeholder.scriptId'),
+    rules: [{ required: true, message: $t('applicationManage.scriptSelector.rule.scriptId') }],
     change: onScriptIdChange,
   },
   {
     type: 'customInput' as const,
-    label: '表单',
+    label: $t('applicationManage.scriptSelector.field.form'),
     prop: 'currentForm',
     slot: 'currentForm',
   },
 ]);
 
-const drawerRules = {
-  programName: [{ required: true, message: '请输入脚本名称', trigger: 'blur' }],
-  logoPath: [{ required: true, message: '请上传脚本Logo', trigger: 'change' }],
-  scriptId: [{ required: true, message: '请选择脚本', trigger: 'change' }],
-};
+const drawerRules = computed(() => ({
+  programName: [
+    { required: true, message: $t('applicationManage.scriptSelector.rule.programName'), trigger: 'blur' },
+  ],
+  logoPath: [
+    { required: true, message: $t('applicationManage.scriptSelector.rule.logoPath'), trigger: 'change' },
+  ],
+  scriptId: [
+    { required: true, message: $t('applicationManage.scriptSelector.rule.scriptId'), trigger: 'change' },
+  ],
+}));
 
 function buildApiScriptMeta(item?: any) {
   return {
@@ -211,7 +222,7 @@ async function fetchScriptOptions() {
     scriptOptionsRaw.value = data || [];
   } catch {
     scriptOptionsRaw.value = [];
-    ElMessage.warning('脚本清单加载失败，请稍后重试');
+    ElMessage.warning($t('applicationManage.scriptSelector.message.scriptListLoadFailed'));
   } finally {
     scriptLoading.value = false;
   }
@@ -289,7 +300,7 @@ async function submitFn() {
   const saveData = (saveRes as any)?.data;
   const dynamicFormId = saveData?.id || saveData || drawerForm.dynamicFormId;
   if (!dynamicFormId) {
-    ElMessage.error('动态表单保存失败：未返回有效ID');
+    ElMessage.error($t('applicationManage.scriptSelector.message.dynamicFormSaveFailed'));
     return;
   }
 
@@ -407,8 +418,8 @@ function removeFn(row: ScriptCard) {
 
       <template #footer>
         <div class="footer-box">
-          <el-button class="footer-btn" size="small" @click="cancelFn">取消</el-button>
-          <el-button class="footer-btn" size="small" type="primary" @click="submitFn">确定</el-button>
+          <el-button class="footer-btn" @click="cancelFn">{{ $t('common.cancel') }}</el-button>
+          <el-button class="footer-btn" type="primary" @click="submitFn">{{ $t('common.confirm') }}</el-button>
         </div>
       </template>
     </el-drawer>

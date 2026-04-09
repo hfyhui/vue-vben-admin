@@ -100,24 +100,28 @@ async function onBatchDelete() {
 async function onUpdateStatus(row: ApplicationItem, status: 0 | 1) {
   const message =
     status === 1
-      ? `是否确认禁用应用：${row.applicationName}?`
-      : `是否确认启用应用：${row.applicationName}?`;
+      ? $t('applicationManage.message.confirmDisable', { name: row.applicationName })
+      : $t('applicationManage.message.confirmEnable', { name: row.applicationName });
   try {
     await ElMessageBox.confirm(message, $t('common.prompt'), {
-      confirmButtonText: '是',
-      cancelButtonText: '否',
+      confirmButtonText: $t('common.yes'),
+      cancelButtonText: $t('common.no'),
       type: status === 1 ? 'warning' : 'info',
     });
-    await updateApplicationStatusApi(String(row.id), status);
+    await updateApplicationStatusApi(row.id, status);
     // 正式启用成功后，同步触发一次平台代理接口
     if (status === 0) {
       try {
-        await updateApplicationStatusByProxyApi(String(row.id), status);
+        await updateApplicationStatusByProxyApi(row.id, status);
       } catch (error) {
         console.error('[applicationManage] 启用后调用平台代理接口失败:', error);
       }
     }
-    ElMessage.success(status === 1 ? '禁用成功' : '启用成功');
+    ElMessage.success(
+      status === 1
+        ? $t('applicationManage.message.disableSuccess')
+        : $t('applicationManage.message.enableSuccess'),
+    );
     gridApi.reload();
   } catch {
     // 用户取消
@@ -139,14 +143,23 @@ function onEdit(row: ApplicationItem) {
 async function openEditDialog(row: ApplicationItem) {
   try {
     const res = await getApplicationDetailApi(String(row.id));
-    const detail = (res as any).data;
-    editData.value = {
+    const detail = ((res as any)?.data ?? {}) as ApplicationItem;
+    // 与 social_media_web CEModal 一致：详情若未带 script 列表，勿用空数组覆盖列表行，否则提交 programType: [] 会导致编辑失败
+    const merged: ApplicationItem = {
       ...row,
       ...detail,
     };
+    if (!Array.isArray(merged.programType) || merged.programType.length === 0) {
+      merged.programType = row.programType;
+    }
+    const rowProgramIds = row.programIds as string[] | undefined;
+    if (Array.isArray(rowProgramIds) && rowProgramIds.length && !merged.programIds?.length) {
+      merged.programIds = rowProgramIds;
+    }
+    editData.value = merged;
     showForm.value = true;
   } catch {
-    ElMessage.error('获取应用详情失败');
+    ElMessage.error($t('applicationManage.message.detailLoadFailed'));
   }
 }
 
@@ -157,6 +170,11 @@ function onFormDialogClose() {
   applicationFormRef.value?.resetSubmitting?.();
 }
 
+function isBackendSuccess(res: { code?: number } | null | undefined) {
+  const c = res?.code;
+  return c === 200 || c === 100000;
+}
+
 async function submitApplication(values: ApplicationUpsertPayload) {
   try {
     const payload: ApplicationUpsertPayload = {
@@ -164,13 +182,16 @@ async function submitApplication(values: ApplicationUpsertPayload) {
       applicationStatus: values.applicationStatus,
     };
     const isEdit = !!values.id;
-    if (isEdit) {
-      await updateApplicationApi(payload);
-      ElMessage.success('编辑成功');
-    } else {
-      await createApplicationApi(payload);
-      ElMessage.success('新增成功');
+    const res = isEdit
+      ? await updateApplicationApi(payload)
+      : await createApplicationApi(payload);
+    if (!isBackendSuccess(res)) {
+      applicationFormRef.value?.resetSubmitting?.();
+      return;
     }
+    ElMessage.success(
+      isEdit ? $t('applicationManage.message.updateSuccess') : $t('applicationManage.message.createSuccess'),
+    );
     showForm.value = false;
     editData.value = null;
     applicationFormRef.value?.resetSubmitting?.();
@@ -253,6 +274,7 @@ async function onDelete(row: ApplicationItem) {
       @close="onFormDialogClose"
     >
       <ApplicationForm
+        :key="editData?.id ? String(editData.id) : 'application-form-new'"
         ref="applicationFormRef"
         :visible="showForm"
         :model-value="editData"

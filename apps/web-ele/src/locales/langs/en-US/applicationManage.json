@@ -26,7 +26,39 @@
     "selectBeforeDelete": "Please select applications to delete first",
     "batchDeleteConfirm": "Are you sure to delete {count} selected applications?",
     "deleteConfirm": "Are you sure to delete 「{name}」?",
-    "deleteSuccess": "Deleted successfully"
+    "deleteSuccess": "Deleted successfully",
+    "confirmDisable": "Disable application 「{name}」?",
+    "confirmEnable": "Enable application 「{name}」?",
+    "disableSuccess": "Disabled successfully",
+    "enableSuccess": "Enabled successfully",
+    "detailLoadFailed": "Failed to load application details",
+    "createSuccess": "Created successfully",
+    "updateSuccess": "Updated successfully"
+  },
+  "scriptSelector": {
+    "drawerTitleEdit": "Edit script",
+    "drawerTitleAdd": "Add script",
+    "field": {
+      "programName": "Script name",
+      "logoPath": "Script logo",
+      "programCategory": "Script type",
+      "scriptId": "Script",
+      "form": "Form"
+    },
+    "placeholder": {
+      "programName": "Enter script name",
+      "programCategory": "Select script type",
+      "scriptId": "Select a script"
+    },
+    "rule": {
+      "programName": "Please enter script name",
+      "logoPath": "Please upload script logo",
+      "scriptId": "Please select a script"
+    },
+    "message": {
+      "scriptListLoadFailed": "Failed to load script list. Please try again later.",
+      "dynamicFormSaveFailed": "Failed to save dynamic form: no valid ID returned"
+    }
   },
   "currentForm": {
     "tabs": {
@@ -139,7 +171,7 @@
         "httpUrl": "Upload URL"
       },
       "tip": {
-        "alignBusinessParam": "Should match business parameters"
+        "alignBusinessParam": "Keep consistent with param name in workflow script"
       },
       "placeholder": {
         "dateFormatDefault": "Default YYYY-MM-DD HH:mm:ss",
