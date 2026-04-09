@@ -110,8 +110,7 @@ export const getFormOptions = (
         clearable: true,
         filterable: true,
         multiple: true,
-        collapseTags: true,
-        collapseTagsTooltip: true,
+        collapseTags: false,
         options: groupOptions
           .map((item) => ({
             label: item.suiteName ?? '',

@@ -1204,8 +1204,6 @@ onMounted(() => {
           class="filter-input"
           filterable
           multiple
-          collapse-tags
-          collapse-tags-tooltip
           clearable
           @change="handleSearch"
         >
@@ -1323,7 +1321,7 @@ onMounted(() => {
 .filter-bar {
   display: flex;
   flex-wrap: nowrap;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 8px;
   justify-content: flex-start;
 }
@@ -1331,7 +1329,7 @@ onMounted(() => {
 .filter-item {
   display: flex;
   flex-direction: row;
-  align-items: center;
+  align-items: flex-start;
   gap: 4px;
   flex: 0 0 240px;
   min-width: 240px;
@@ -1339,9 +1337,13 @@ onMounted(() => {
 
 .filter-bar :deep(.el-button) {
   flex-shrink: 0;
+  align-self: flex-start;
+  margin-top: 6px;
 }
 
 .filter-label {
+  flex-shrink: 0;
+  padding-top: 6px;
   font-size: 14px;
   color: var(--el-text-color-regular);
   white-space: nowrap;

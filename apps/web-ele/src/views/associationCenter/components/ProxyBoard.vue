@@ -294,9 +294,8 @@ defineExpose({
           v-model="filterForm.proxyGroup"
           :placeholder="$t('associationCenter.proxyGroupPlaceholder')"
           class="filter-input"
+          filterable
           multiple
-          collapse-tags
-          collapse-tags-tooltip
           clearable
           @change="handleSearch"
         >
@@ -419,20 +418,22 @@ defineExpose({
 .filter-bar {
   display: flex;
   flex-wrap: nowrap;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 12px;
 }
 
 .filter-item {
   display: flex;
   flex-direction: row;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
   flex: 1;
   min-width: 0;
 }
 
 .filter-label {
+  flex-shrink: 0;
+  padding-top: 6px;
   font-size: 12px;
   color: var(--el-text-color-regular);
   line-height: 1.4;
@@ -450,6 +451,7 @@ defineExpose({
 
 .filter-actions {
   flex-shrink: 0;
+  padding-top: 6px;
 }
 
 .board-content {
