@@ -13,7 +13,7 @@ export async function postSystemAccountsPageApi(data: SocialAccountsPageBody) {
     code: number;
     data: { records: any[]; total: number };
     msg?: string;
-  }>('/social/accounts/page', data);
+  }>('/accounts/page', data);
 }
 
 export async function postSystemAccountsUsersPageApi(data: SocialAccountsPageBody) {
@@ -21,12 +21,12 @@ export async function postSystemAccountsUsersPageApi(data: SocialAccountsPageBod
     code: number;
     data: { records: any[]; total: number };
     msg?: string;
-  }>('/social/accounts/users/page', data);
+  }>('/accounts/users/page', data);
 }
 
 export async function postSystemAccountsUsersApi(data: { accountIds?: string[] }) {
   return socialClient.post<{ code: number; data: any[]; msg?: string }>(
-    '/social/accounts/users',
+    '/accounts/users',
     data,
   );
 }
@@ -36,7 +36,7 @@ export async function postSystemAccountsByUsersApi(data: {
   appId?: string;
 }) {
   return socialClient.post<{ code: number; data: any[]; msg?: string }>(
-    '/social/accounts',
+    '/accounts',
     data,
   );
 }
@@ -49,7 +49,7 @@ export async function postSystemAccountsBandApi(data: {
   bindDirection: number;
 }) {
   return socialClient.post<{ code: number; data?: any; msg?: string }>(
-    '/social/accounts/band',
+    '/accounts/band',
     data,
   );
 }

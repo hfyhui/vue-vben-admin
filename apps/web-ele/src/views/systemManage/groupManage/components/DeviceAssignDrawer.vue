@@ -63,11 +63,11 @@ function brandLabel(code?: string) {
 
 
 function displayStatus(row: any) {
-  return row.deviceStatusName || statusLabel(row.deviceStatus) || '-';
+  return row.deviceStatusName || statusLabel(row.deviceStatus) || '';
 }
 
 function displayBrand(row: any) {
-  return row.deviceCategoryName || brandLabel(row.deviceCategory) || '-';
+  return row.deviceCategoryName || brandLabel(row.deviceCategory) || '';
 }
 
 async function ensureEnums() {
@@ -120,16 +120,15 @@ async function loadList() {
 
 function applyLocalFilter() {
   const list = [...selectedMap.value.values()];
-  const kw = (searchForm.deviceIdx ?? '').trim();
+  const kw = searchForm.deviceIdx
   const st = searchForm.deviceStatuses ?? '';
   const filtered = list.filter((el) => {
     if (searchMode.value === 'status' && st) {
-      return `${el.deviceStatus ?? ''}` === st;
+      return el.deviceStatus === st;
     }
     if (searchMode.value === 'device' && kw) {
-      const k = kw.toLowerCase();
       return [el.deviceIdx, el.deviceIp, el.deviceAliases]
-        .some((f) => `${f ?? ''}`.toLowerCase().includes(k));
+        .some((f) =>  f.includes(kw));
     }
     return true;
   });
@@ -148,7 +147,7 @@ function syncSelection() {
   syncingSelection = true;
   tb.clearSelection();
   for (const row of tableRows.value) {
-    if (selectedMap.value.has(`${row.deviceId ?? ''}`)) {
+    if (selectedMap.value.has(row.deviceId)) {
       tb.toggleRowSelection(row, true);
     }
   }
@@ -181,9 +180,9 @@ function onSelect(selection: any[], row: any) {
   if (syncingSelection) return;
   const inSel = selection.some((r) => r.deviceId === row.deviceId);
   if (inSel) {
-    selectedMap.value.set(`${row.deviceId ?? ''}`, row);
+    selectedMap.value.set(row.deviceId, row);
   } else {
-    selectedMap.value.delete(`${row.deviceId ?? ''}`);
+    selectedMap.value.delete(row.deviceId);
   }
 }
 
@@ -192,11 +191,11 @@ function onSelectAll(selection: any[]) {
   const onPage = tableRows.value;
   if (selection.length) {
     for (const r of selection) {
-      selectedMap.value.set(`${r.deviceId ?? ''}`, r);
+      selectedMap.value.set(r.deviceId, r);
     }
   } else {
     for (const r of onPage) {
-      selectedMap.value.delete(`${r.deviceId ?? ''}`);
+      selectedMap.value.delete(r.deviceId);
     }
   }
 }

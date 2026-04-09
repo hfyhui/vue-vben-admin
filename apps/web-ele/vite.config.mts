@@ -48,7 +48,7 @@ export default defineConfig(async () => {
             // 应用管理 MCC 接口代理，测试环境
             target: 'https://test.callfansai.cn',
             secure: false,
-            rewrite: (path) => path.replace(/^\/social/, ''),
+            rewrite: (path) => path.replace(/^\/social/, 'social'),
             ws: true,
           }
         },
