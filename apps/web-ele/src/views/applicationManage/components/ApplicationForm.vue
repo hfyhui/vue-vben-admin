@@ -31,11 +31,11 @@ const rules = {
   programType: [{ required: true, message: '请选择脚本清单', trigger: 'change' }],
 };
 
+// 需同时依赖 modelValue：仅监听 visible 时，若弹窗未关闭就从编辑切到新增（visible 一直为 true），不会触发重置，仍显示上一条数据
 watch(
-  () => props.visible,
-  (visible) => {
+  () => [props.visible, props.modelValue] as const,
+  ([visible, row]) => {
     if (!visible) return;
-    const row = props.modelValue;
     if (!row) {
       resetForm();
       return;
@@ -75,7 +75,15 @@ async function submitFn() {
     form: item.form,
     extendedColumn: item.extendedColumn,
   }));
-  const detailIds = normalizedProgramType.map((item: Record<string, any>) => item.programIds);
+  // 与 social_media_web CEModal 一致：programIds = programType.map(el => el.programIds || el.id)
+  // 接口侧脚本项通常只有 id，没有 programIds，只取 programIds 会得到 null/undefined
+  const detailIds = normalizedProgramType
+    .map((item: Record<string, any>) => {
+      const raw = item.programIds ?? item.id;
+      return raw != null && raw !== '' ? String(raw) : '';
+    })
+    .filter(Boolean);
+  const programIds = detailIds.length ? detailIds : submitData.programType;
   const payload: ApplicationUpsertPayload = {
     id: submitData.id,
     applicationName: submitData.applicationName,
@@ -83,8 +91,9 @@ async function submitFn() {
     packageName: submitData.packageName,
     activityName: submitData.activityName,
     orderNum: submitData.orderNum,
-    programIds: detailIds.length ? detailIds : submitData.programType,
-    programType: normalizedProgramType,
+    programIds,
+    // 与 CEModal 一致：无明细时不要传空 programType，避免后端按「清空脚本」处理
+    ...(normalizedProgramType.length ? { programType: normalizedProgramType } : {}),
     applicationStatus: submitData.applicationStatus,
   };
   emit('submit', payload);
