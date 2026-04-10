@@ -317,15 +317,16 @@ void loadApps().then(() => {
             <ElButton :icon="Refresh" circle @click="redoAccounts" />
           </div>
 
-          <ElTable
-            ref="accountTableRef"
-            v-loading="accountLoading"
-            :data="accountRows"
-            row-key="accountId"
-            class="no-lines-table"
-            height="420"
-            @selection-change="onAccountSelect"
-          >
+          <div class="table-scroll">
+            <ElTable
+              ref="accountTableRef"
+              v-loading="accountLoading"
+              :data="accountRows"
+              row-key="accountId"
+              class="no-lines-table"
+              height="100%"
+              @selection-change="onAccountSelect"
+            >
             <ElTableColumn type="selection" width="48" />
             <ElTableColumn
               prop="owner"
@@ -355,7 +356,8 @@ void loadApps().then(() => {
               min-width="120"
               show-overflow-tooltip
             />
-          </ElTable>
+            </ElTable>
+          </div>
 
           <div class="pager">
             <ElPagination
@@ -382,6 +384,7 @@ void loadApps().then(() => {
 
       <section class="panel panel-narrow">
         <div class="panel-inner">
+          <div class="panel-sync-spacer" aria-hidden="true" />
           <div class="table-toolbar">
             <ElInput
               v-model="userKeyword"
@@ -393,15 +396,16 @@ void loadApps().then(() => {
             <ElButton :icon="Refresh" circle @click="redoUsers" />
           </div>
 
-          <ElTable
-            ref="userTableRef"
-            v-loading="userLoading"
-            :data="userRows"
-            row-key="userId"
-            class="no-lines-table"
-            height="420"
-            @selection-change="onUserSelect"
-          >
+          <div class="table-scroll">
+            <ElTable
+              ref="userTableRef"
+              v-loading="userLoading"
+              :data="userRows"
+              row-key="userId"
+              class="no-lines-table"
+              height="100%"
+              @selection-change="onUserSelect"
+            >
             <ElTableColumn type="selection" width="48" />
             <ElTableColumn
               prop="userName"
@@ -413,7 +417,8 @@ void loadApps().then(() => {
               :label="$t('systemManage.socialMediaAccount.nickname')"
               min-width="120"
             />
-          </ElTable>
+            </ElTable>
+          </div>
 
           <div class="pager">
             <ElPagination
@@ -464,27 +469,39 @@ void loadApps().then(() => {
   flex-direction: row-reverse;
 }
 .panel {
+  display: flex;
   flex: 1 1 0;
+  flex-direction: column;
   min-width: 0;
-  background: #f5f5f5;
+  min-height: 0;
+  padding: 12px 16px;
+  background: var(--el-fill-color-blank);
   border: 1px solid var(--el-border-color);
-  border-radius: 6px;
-  padding: 12px;
+  border-radius: 8px;
 }
 .panel-narrow {
   flex: 0 0 32%;
   max-width: 520px;
 }
 .panel-inner {
-  background: #fff;
-  border-radius: 6px;
-  padding: 12px 16px 8px;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+.panel-sync-spacer {
+  flex-shrink: 0;
+  min-height: 44px;
+  margin-bottom: 12px;
 }
 .app-bar {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
+  align-items: center;
+  min-height: 44px;
   margin-bottom: 12px;
+  flex-shrink: 0;
 }
 .app-icon {
   width: 44px;
@@ -507,18 +524,36 @@ void loadApps().then(() => {
   align-items: center;
   gap: 8px;
   margin-bottom: 10px;
+  flex-shrink: 0;
 }
 .table-toolbar .el-input {
   flex: 1;
   min-width: 160px;
+}
+.table-scroll {
+  flex-shrink: 0;
+  width: 100%;
+  height: 420px;
+  overflow: hidden;
 }
 .link-icon {
   align-self: center;
   padding: 0 4px;
 }
 .pager {
-  margin-top: 8px;
   display: flex;
+  flex-shrink: 0;
   justify-content: flex-end;
+  margin-top: 8px;
+  background: transparent;
+}
+.pager :deep(.el-pagination) {
+  --el-pagination-bg-color: transparent;
+  --el-pagination-text-color: var(--el-text-color-regular);
+}
+.pager :deep(.el-pagination.is-background .btn-next),
+.pager :deep(.el-pagination.is-background .btn-prev),
+.pager :deep(.el-pagination.is-background .el-pager li) {
+  background-color: var(--el-fill-color);
 }
 </style>
