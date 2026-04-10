@@ -12,7 +12,6 @@ import {
   deleteApplicationApi,
   getApplicationDetailApi,
   updateApplicationApi,
-  updateApplicationStatusByProxyApi,
   updateApplicationStatusApi,
   type ApplicationUpsertPayload,
 } from '#/api/core/application';
@@ -108,14 +107,10 @@ async function onUpdateStatus(row: ApplicationItem, status: 0 | 1) {
       cancelButtonText: $t('common.no'),
       type: status === 1 ? 'warning' : 'info',
     });
-    await updateApplicationStatusApi(row.id, status);
-    // 正式启用成功后，同步触发一次平台代理接口
-    if (status === 0) {
-      try {
-        await updateApplicationStatusByProxyApi(row.id, status);
-      } catch (error) {
-        console.error('[applicationManage] 启用后调用平台代理接口失败:', error);
-      }
+    const res = await updateApplicationStatusApi(row.id, status);
+    // 与 social_media_web Application 一致：仅调一次状态接口；业务失败时拦截器已提示，不再成功 toast
+    if (!isBackendSuccess(res)) {
+      return;
     }
     ElMessage.success(
       status === 1
