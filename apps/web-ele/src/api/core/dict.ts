@@ -25,9 +25,7 @@ export interface DictResponse {
   message?: string;
 }
 
-/**
- * 获取所有枚举数据
- */
-export async function getDictApi(_keys?: string[]): Promise<DictResponse> {
-  return proxyClient.get('/asset/enums');
+
+export async function getDictPullArray(_keys?: string[]): Promise<DictResponse> {
+  return proxyClient.get('/dict/pull-array');
 }

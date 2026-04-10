@@ -18,7 +18,7 @@ import {
   updateCustomerApi,
   importCustomerApi,
 } from '../../api/core/customer';
-import { getDictApi } from '../../api/core/dict';
+import { getDictPullArray } from '../../api/core/dict';
 import CustomerForm from './components/form.vue';
 import SearchForm from './components/searchForm.vue';
 import CustomerViewForm from './components/viewForm.vue';
@@ -32,7 +32,7 @@ const customerFormRef = ref<InstanceType<typeof CustomerForm>>();
 // 加载字典数据
 const loadDictData = async () => {
   try {
-    const res = await getDictApi(['LICENSE_CUSTOMER_TYPE', 'CERTIFICATE_TYPE']);
+    const res = await getDictPullArray(['LICENSE_CUSTOMER_TYPE', 'CERTIFICATE_TYPE']);
     customerTypes.value = res.data.LICENSE_CUSTOMER_TYPE?.children || [];
     idTypeOptions.value = res.data.CERTIFICATE_TYPE?.children || [];
     dictLoaded.value = true;
