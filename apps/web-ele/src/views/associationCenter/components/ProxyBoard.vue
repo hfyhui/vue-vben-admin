@@ -451,7 +451,8 @@ defineExpose({
 
 .filter-actions {
   flex-shrink: 0;
-  padding-top: 6px;
+  display: flex;
+  align-items: center;
 }
 
 .board-content {

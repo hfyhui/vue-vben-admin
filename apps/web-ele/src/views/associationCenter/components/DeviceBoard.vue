@@ -1339,32 +1339,34 @@ onMounted(() => {
   color: var(--el-text-color-primary);
 }
 
+/* 找到这一段，全部替换 */
 .filter-bar {
   display: flex;
   flex-wrap: nowrap;
-  align-items: flex-start;
-  gap: 8px;
+  align-items: center; /* 改为 center，统一垂直居中 */
+  gap: 12px; /* 统一间距 */
   justify-content: flex-start;
 }
 
 .filter-item {
   display: flex;
   flex-direction: row;
-  align-items: flex-start;
-  gap: 4px;
+  align-items: center; /* 改为 center，标签和输入框垂直居中 */
+  gap: 8px; /* 统一标签和输入框间距 */
   flex: 0 0 240px;
   min-width: 240px;
 }
 
 .filter-bar :deep(.el-button) {
   flex-shrink: 0;
-  align-self: flex-start;
-  margin-top: 6px;
+  align-self: center; /* 按钮垂直居中 */
+  margin-top: 0; /* 移除多余的上移 */
+  height: 32px; /* 统一按钮高度，和输入框对齐 */
 }
 
 .filter-label {
   flex-shrink: 0;
-  padding-top: 6px;
+  padding-top: 0; /* 移除标签上移，和输入框居中对齐 */
   font-size: 14px;
   color: var(--el-text-color-regular);
   white-space: nowrap;
