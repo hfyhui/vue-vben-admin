@@ -55,6 +55,9 @@ export function resetAllStores() {
   }
   const allStores = (pinia as any)._s;
   for (const [_key, store] of allStores) {
-    store.$reset();
+    // setup 语法的 store 默认没有 $reset，直接调用会抛错
+    if (typeof (store as any).$reset === 'function') {
+      (store as any).$reset();
+    }
   }
 }

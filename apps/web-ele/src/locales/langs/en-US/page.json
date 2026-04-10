@@ -8,8 +8,18 @@
   },
   "dashboard": {
     "title": "Dashboard",
+    "applicationManage": "Application Management",
+    "systemManage": "System management",
+    "groupManage": "Group management",
+    "socialMediaAccount": "Social media accounts",
     "customerManage": "CustomerManage",
     "licenseManage": "LicenseManage",
-    "productList": "ProductList"
+    "productList": "ProductList",
+    "associationCenter": "Association Center",
+    "associationConfig": "Association Config",
+    "assetManage": "Asset Management",
+    "accountPool": "Account Pool",
+    "containerPool": "Container Pool",
+    "proxyPool": "Proxy Pool"
   }
 }
