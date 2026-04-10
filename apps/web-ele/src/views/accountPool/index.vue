@@ -270,10 +270,10 @@ function toSafeNumber(value: unknown) {
 }
 
 const statsData = ref<AccountStatRow[]>([
-  { key: 'accountPool', value: 56 },
-  { key: 'runningAccounts', value: 20 },
-  { key: 'pendingAccounts', value: 36 },
-  { key: 'riskControlAccounts', value: 3 },
+  { key: 'accountPool', value: 0 },
+  { key: 'runningAccounts', value: 0 },
+  { key: 'pendingAccounts', value: 0 },
+  { key: 'riskControlAccounts', value: 0 },
 ]);
 
 async function loadAccountPoolNum() {
