@@ -1,4 +1,4 @@
-import { proxyClient, socialClient } from '../request';
+import { socialClient } from '../request';
 
 /** 应用列表查询参数 */
 export interface ApplicationPageParams {
@@ -106,14 +106,6 @@ export async function updateApplicationStatusApi(
   status: 0 | 1,
 ): Promise<ApiResponse<null>> {
   return socialClient.post(`/application/management/${id}/${status}`);
-}
-
-/** 启用后同步触发一次平台代理接口 */
-export async function updateApplicationStatusByProxyApi(
-  id: string,
-  status: 0 | 1,
-): Promise<ApiResponse<null>> {
-  return proxyClient.post(`/social/application/management/${id}/${status}`);
 }
 
 /** 获取应用详情 */
