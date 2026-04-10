@@ -178,7 +178,7 @@ const [Form, formApi] = useVbenForm({
         props: {
           label: 'deviceIp',
           value: 'deviceIp',
-          disabled: 'disabled',
+          disabled: (row) => row.disabled === true || row.isLock === true,
         },
       },
     },
