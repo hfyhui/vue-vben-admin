@@ -26,6 +26,7 @@ interface AccountItem {
   proxy?: string;
   inputTime?: string;
   remark?: string;
+  isLock?: boolean; // 新增锁定字段
   [key: string]: any;
 }
 
@@ -71,12 +72,16 @@ function getKey(item: AccountItem, index: number) {
 
 /** 判断某个列表项是否处于选中状态 */
 function isSelected(item: AccountItem, index: number) {
+  // 锁定项不允许选中
+  if (item.isLock) return false;
   const key = getKey(item, index);
   return selectedIds.value.includes(key);
 }
 
 /** 切换某个列表项的选中状态（多选） */
 function toggleSelect(item: AccountItem, index: number) {
+  // 锁定项禁止操作
+  if (item.isLock) return;
   const key = getKey(item, index);
   const idx = selectedIds.value.indexOf(key);
   if (idx > -1) selectedIds.value.splice(idx, 1);
@@ -91,7 +96,7 @@ function getSelectedAccounts() {
   });
   return selectedIds.value
     .map((key) => map.get(key))
-    .filter((item): item is AccountItem => Boolean(item));
+    .filter((item): item is AccountItem => Boolean(item) && !item.isLock);
 }
 
 /** 清空当前选择（对外暴露给父组件调用） */
@@ -263,6 +268,12 @@ function createDragPreviewElement(items: AccountItem[]) {
 
 /** 拖拽开始：把“已选账号 + 当前拖拽账号”打包到 dataTransfer（并校验同平台唯一） */
 function onAccountDragStart(ev: DragEvent, item: AccountItem, index: number) {
+  // 锁定项禁止拖拽
+  if (item.isLock) {
+    ev.preventDefault();
+    return;
+  }
+  
   const dt = ev.dataTransfer;
   if (!dt) return;
 
@@ -277,6 +288,8 @@ function onAccountDragStart(ev: DragEvent, item: AccountItem, index: number) {
 
   const appIdMap: Record<string, number> = {};
   for (const it of dragItems) {
+    // 过滤锁定项
+    if (it.isLock) continue;
     const appId = getAccountAppId(it);
     if (!appId) continue;
     appIdMap[appId] = (appIdMap[appId] || 0) + 1;
@@ -416,8 +429,8 @@ defineExpose({
             v-for="(item, index) in list"
             :key="item.accountId || `account-${index}`"
             class="account-row"
-            :class="{ selected: isSelected(item, index) }"
-            draggable="true"
+            :class="{ selected: isSelected(item, index), disabled: item.isLock }"
+            :draggable="!item.isLock"
             @click.stop="toggleSelect(item, index)"
             @dragstart="onAccountDragStart($event, item, index)"
           >
@@ -427,7 +440,7 @@ defineExpose({
                   :placement="lineTooltipPlacement(item, index)"
                   :show-after="200"
                   :content="accountPlatformHoverText(item)"
-                  :disabled="!accountPlatformHoverText(item)"
+                  :disabled="!accountPlatformHoverText(item) || item.isLock"
                   popper-class="account-board-line-tooltip"
                 >
                   <div
@@ -448,6 +461,7 @@ defineExpose({
                     :show-after="200"
                     :content="item.account"
                     popper-class="account-board-line-tooltip"
+                    :disabled="item.isLock"
                   >
                     <div
                       class="account-id"
@@ -461,6 +475,7 @@ defineExpose({
                     :show-after="200"
                     :content="item.nickName != null && String(item.nickName).trim() !== '' ? String(item.nickName) : '-'"
                     popper-class="account-board-line-tooltip"
+                    :disabled="item.isLock"
                   >
                     <div
                       class="account-name"
@@ -556,7 +571,8 @@ defineExpose({
 
 .filter-actions {
   flex-shrink: 0;
-  padding-top: 6px;
+  display: flex;
+  align-items: center;
 }
 
 .board-content {
@@ -627,11 +643,20 @@ defineExpose({
   min-height: 44px;
   cursor: grab;
   user-select: none;
+  transition: all 0.2s;
 }
 
 .account-row.selected {
   border-color: var(--el-color-primary);
   box-shadow: 0 0 0 1px var(--el-color-primary-light-5);
+}
+
+/* 锁定禁用样式 */
+.account-row.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: var(--el-fill-color-light);
+  pointer-events: none;
 }
 
 /* 占满网格单元格剩余宽度，避免字少时 el-tooltip 触发器收缩成窄条、难点难悬停 */
