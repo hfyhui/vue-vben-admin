@@ -44,7 +44,19 @@ async function loadDeviceNodeOptions() {
       current: 1,
       size: PAGE_SIZE,
     });
-    deviceNodeOptions.value = res?.records ?? [];
+    let list = res?.records ?? [];
+    const boundMark = $t('proxyPool.form.deviceIpBoundMark');
+    list = list.map((item) => {
+      const disabled = item.disabled === true || item.isLock === true;
+      const deviceIp = item.deviceIp ?? '';
+      return {
+        ...item,
+        deviceIp,
+        disabled,
+        deviceIpLabel: item.disabled === true ? `${deviceIp}${boundMark}` : deviceIp,
+      };
+    });
+    deviceNodeOptions.value = list
   } catch (error) {
     console.error('[proxyPool] 加载设备列表失败:', error);
     ElMessage.error($t('proxyPool.message.deviceListLoadFailed'));
@@ -176,9 +188,9 @@ const [Form, formApi] = useVbenForm({
         collapseTags: false,
         options: deviceNodeSelectOptions,
         props: {
-          label: 'deviceIp',
+          label: 'deviceIpLabel',
           value: 'deviceIp',
-          disabled: (row) => row.disabled === true || row.isLock === true,
+          disabled: 'disabled',
         },
       },
     },

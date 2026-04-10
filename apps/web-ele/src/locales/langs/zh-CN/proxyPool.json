@@ -65,6 +65,7 @@
     "areaPlaceholder": "请输入地区",
     "phoneIp": "节点IP",
     "phoneIpPlaceholder": "请选择节点IP",
+    "deviceIpBoundMark": "（已绑定）",
     "agreement": "协议",
     "agreementPlaceholder": "请输入协议",
     "networkLink": "链接",
