@@ -18,6 +18,7 @@
   "scripts": {
     "build": "pnpm vite build --mode production",
     "build:prod": "pnpm vite build --mode production",
+    "build:guangzhou": "pnpm vite build --mode guangzhou",
     "build:test": "pnpm vite build --mode test",
     "build:dev": "pnpm vite build --mode dev",
     "build:analyze": "pnpm vite build --mode analyze",
