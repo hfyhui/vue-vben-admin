@@ -16,6 +16,11 @@ export function getProxyIp(item: DeviceItem): string {
  * - 不再使用 `fromServer === true`，避免接口返回 1 / 省略字段时误隐藏；
  * - 统一按 `proxyIp`（兼容 boundProxies.ip）判断是否具备可解绑代理。
  */
+/** 列表接口 `isLock === true` 时：看板置灰且不可点击、不可拖拽绑定 */
+export function isDeviceLocked(item: DeviceItem): boolean {
+  return (item as Record<string, unknown>).isLock === true;
+}
+
 export function canUnbindDeviceProxy(item: DeviceItem): boolean {
   const r = item as Record<string, unknown>;
   const boundProxy = (

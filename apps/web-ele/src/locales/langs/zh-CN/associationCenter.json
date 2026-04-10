@@ -120,5 +120,7 @@
   "unbindProxy": "解绑代理",
   "unbindProxyFailed": "解绑代理失败",
   "unbindOnlyServerProxy": "仅接口已绑定的代理可解绑；拖拽关联需正式启用后才可解绑",
-  "unbindProxyMissingIds": "缺少代理或关联 id，无法解绑"
+  "unbindProxyMissingIds": "缺少代理或关联 id，无法解绑",
+  "deviceLocked": "设备已锁定，不可操作",
+  "allSelectedDevicesLocked": "所选设备均已锁定，无法操作"
 }

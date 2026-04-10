@@ -10,6 +10,7 @@ import {
   canUnbindDeviceProxy,
   getDeviceVersion,
   getProxyIp,
+  isDeviceLocked,
 } from '../composables/useDeviceDisplay';
 
 type BoundAccountRow = {
@@ -49,19 +50,23 @@ function handleLoadMore() {
   emit('loadMore');
 }
 
-function onDragOver(ev: DragEvent) {
+function onDragOver(ev: DragEvent, item: DeviceItem) {
+  if (isDeviceLocked(item)) return;
   emit('dragOver', ev);
 }
 
 function onDrop(ev: DragEvent, item: DeviceItem) {
+  if (isDeviceLocked(item)) return;
   emit('drop', ev, item);
 }
 
 function onDeviceClick(item: DeviceItem) {
+  if (isDeviceLocked(item)) return;
   emit('deviceClick', item);
 }
 
 function onDeviceDblClick(item: DeviceItem) {
+  if (isDeviceLocked(item)) return;
   emit('deviceDblclick', item);
 }
 
@@ -129,10 +134,13 @@ function getBoundAccounts(item: DeviceItem): BoundAccountRow[] {
           v-for="item in list"
           :key="item.deviceIp"
           class="device-card"
-          :class="{ selected: selectedDeviceKeys.includes(getDeviceKey(item)) }"
+          :class="{
+            selected: selectedDeviceKeys.includes(getDeviceKey(item)),
+            locked: isDeviceLocked(item),
+          }"
           @click.stop="onDeviceClick(item)"
           @dblclick.stop="onDeviceDblClick(item)"
-          @dragover="onDragOver"
+          @dragover="onDragOver($event, item)"
           @drop="onDrop($event, item)"
         >
           <el-tooltip
@@ -320,6 +328,13 @@ function getBoundAccounts(item: DeviceItem): BoundAccountRow[] {
 .device-card.selected {
   border-color: var(--el-color-primary);
   box-shadow: 0 0 0 1px var(--el-color-primary-light-5);
+}
+
+.device-card.locked {
+  opacity: 0.55;
+  cursor: not-allowed;
+  filter: grayscale(0.35);
+  pointer-events: none;
 }
 
 .card-status {

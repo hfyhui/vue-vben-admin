@@ -7,6 +7,7 @@ import { formatProcessUrl } from '#/utils/asset-url';
 import {
   canUnbindDeviceProxy,
   getDeviceVersion,
+  isDeviceLocked,
 } from '../composables/useDeviceDisplay';
 
 import type { DeviceItem } from '#/api/core/asset';
@@ -74,17 +75,24 @@ function handlePageChange(page: number) {
 }
 
 function handleRowClick(row: DeviceItem) {
+  if (isDeviceLocked(row)) return;
   emit('deviceClick', row);
 }
 
 function handleRowDblClick(row: DeviceItem) {
+  if (isDeviceLocked(row)) return;
   emit('deviceDblclick', row);
 }
 
 function getRowClassName({ row }: { row: DeviceItem }) {
-  return props.selectedDeviceKeys.includes(row.deviceIp || '')
-    ? 'selected-device-row'
-    : '';
+  const classes: string[] = [];
+  if (props.selectedDeviceKeys.includes(row.deviceIp || '')) {
+    classes.push('selected-device-row');
+  }
+  if (isDeviceLocked(row)) {
+    classes.push('device-row-locked');
+  }
+  return classes.join(' ');
 }
 
 function onUnbindAccount(ev: Event, row: DeviceItem, accountId?: string) {
@@ -149,7 +157,7 @@ function onUnbindProxy(ev: Event, row: DeviceItem) {
               getProxyDisplay(row)
             }}</span>
             <el-tooltip
-              v-if="canUnbindDeviceProxy(row)"
+              v-if="canUnbindDeviceProxy(row) && !isDeviceLocked(row)"
               :content="$t('associationCenter.unbindProxy')"
               placement="top"
             >
@@ -205,7 +213,7 @@ function onUnbindProxy(ev: Event, row: DeviceItem) {
                 aria-hidden="true"
               />
               <el-tooltip
-                v-if="acc.fromServer === true"
+                v-if="acc.fromServer === true && !isDeviceLocked(row)"
                 :content="$t('associationCenter.unbindAccount')"
                 placement="top"
               >
@@ -425,5 +433,12 @@ function onUnbindProxy(ev: Event, row: DeviceItem) {
 
 :deep(.selected-device-row > td) {
   background: var(--el-color-primary-light-9) !important;
+}
+
+:deep(.device-row-locked > td) {
+  opacity: 0.55;
+  cursor: not-allowed;
+  filter: grayscale(0.35);
+  pointer-events: none;
 }
 </style>
