@@ -9,6 +9,8 @@ export interface DeviceItem {
   deviceIp?: string;
   /** 设备列表等接口：true 时下拉等场景不可选 */
   disabled?: boolean;
+  /** 列表接口：true 时设备看板置灰且不可操作 */
+  isLock?: boolean;
   romVersion?: string;
   phoneBrand?: string;
   phoneModel?: string;

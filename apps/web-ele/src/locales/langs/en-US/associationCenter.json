@@ -118,5 +118,7 @@
   "unbindProxy": "Unbind proxy",
   "unbindProxyFailed": "Failed to unbind proxy",
   "unbindOnlyServerProxy": "Only API-bound proxies can be unbound; drag-drop bindings must be officially enabled first",
-  "unbindProxyMissingIds": "Missing proxy or association id; cannot unbind"
+  "unbindProxyMissingIds": "Missing proxy or association id; cannot unbind",
+  "deviceLocked": "This device is locked and cannot be operated",
+  "allSelectedDevicesLocked": "All selected devices are locked"
 }

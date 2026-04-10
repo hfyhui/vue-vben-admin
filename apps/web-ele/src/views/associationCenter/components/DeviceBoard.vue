@@ -21,6 +21,7 @@ import LargeScreen from '#/components/WebAdb/LargeScreen.vue';
 import DevicePinActions from './DevicePinActions.vue';
 import DeviceGrid from './DeviceGrid.vue';
 import DeviceTable from './DeviceTable.vue';
+import { isDeviceLocked } from '../composables/useDeviceDisplay';
 
 const router = useRouter();
 const props = defineProps<{
@@ -573,11 +574,13 @@ function buildDeviceEnablePayload(
 
 /** 点击设备：仅切换选中状态（用于自动关联） */
 function handleDeviceClick(item: DeviceItem) {
+  if (isDeviceLocked(item)) return;
   toggleDeviceSelect(item);
 }
 
 /** 双击设备：打开 WebAdb 大屏 */
 function handleDeviceDblClick(item: DeviceItem) {
+  if (isDeviceLocked(item)) return;
   largeScreenDevice.value = item;
   largeScreenVisible.value = true;
 }
@@ -634,7 +637,13 @@ function getSelectedDeviceIds() {
   const selectedKeys = selectedDeviceKeys.value;
   return allMockRecords.value.reduce((ids, item) => {
     const deviceId = getDeviceId(item);
-    if (selectedKeys.includes(getDeviceKey(item)) && deviceId) ids.push(deviceId);
+    if (
+      selectedKeys.includes(getDeviceKey(item)) &&
+      deviceId &&
+      !isDeviceLocked(item)
+    ) {
+      ids.push(deviceId);
+    }
     return ids;
   }, [] as string[]);
 }
@@ -670,8 +679,10 @@ function applyReverseQueryDevices(devices: DeviceItem[] | null | undefined) {
 
 /** 构建正式启用接口所需的 deviceEnables 数组 */
 function getSelectedDeviceEnables() {
-  const selectedRecords = allMockRecords.value.filter((item) =>
-    selectedDeviceKeys.value.includes(getDeviceKey(item)),
+  const selectedRecords = allMockRecords.value.filter(
+    (item) =>
+      selectedDeviceKeys.value.includes(getDeviceKey(item)) &&
+      !isDeviceLocked(item),
   );
   return selectedRecords
     .map((item) => {
@@ -728,6 +739,11 @@ async function onCardDrop(ev: DragEvent, item: DeviceItem) {
 
   const target =
     allMockRecords.value.find((d) => d.deviceIp === item.deviceIp) || item;
+
+  if (isDeviceLocked(target)) {
+    ElMessage.warning($t('associationCenter.deviceLocked'));
+    return;
+  }
 
   if (accountData) {
     let accounts: BoundAccount[] = [];
@@ -916,11 +932,16 @@ async function autoAssociateWithSelections(
     const key = getDeviceKey(d);
     if (key) deviceMap.set(key, d);
   });
-  const devices = selectedDeviceKeys.value
+  const devicesRaw = selectedDeviceKeys.value
     .map((key) => deviceMap.get(key))
     .filter((item): item is DeviceItem => Boolean(item));
+  const devices = devicesRaw.filter((d) => !isDeviceLocked(d));
   const hasAccounts = accounts.length > 0;
   const hasProxies = proxies.length > 0;
+  if (devicesRaw.length && !devices.length) {
+    ElMessage.warning($t('associationCenter.allSelectedDevicesLocked'));
+    return;
+  }
   if (!devices.length || (!hasAccounts && !hasProxies)) {
     ElMessage.warning($t('associationCenter.selectDataInAllBoardsFirst'));
     return;
