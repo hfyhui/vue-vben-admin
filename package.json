@@ -30,6 +30,7 @@
     "build:ele:test": "pnpm --filter @vben/web-ele build:test",
     "build:ele:prod": "pnpm --filter @vben/web-ele build:prod",
     "build:ele:guangzhou": "pnpm --filter @vben/web-ele build:guangzhou",
+    "build:guangzhou": "pnpm run build:ele:guangzhou",
     "build:analyze": "turbo build:analyze",
     "build:antd": "pnpm run build --filter=@vben/web-antd",
     "build:docker": "./scripts/deploy/build-local-docker-image.sh",
