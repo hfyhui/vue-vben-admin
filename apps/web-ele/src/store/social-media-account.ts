@@ -33,9 +33,14 @@ export const useSocialMediaAccountStore = defineStore('social-media-account', ()
   }
 
   async function fetchAccountsByUsers(selectedRowKeys: string[] = []) {
+    if (!selectedRowKeys.length) {
+      setCheckInfo([]);
+      setDefaultCheckInfo([]);
+      return;
+    }
     try {
       const res = await postSystemAccountsByUsersApi({
-        userIds: selectedRowKeys.length ? selectedRowKeys : checkUserIds.value,
+        userIds: selectedRowKeys,
         appId: checkAppId.value,
       });
       if (res && success(res.code)) {
@@ -51,6 +56,12 @@ export const useSocialMediaAccountStore = defineStore('social-media-account', ()
   }
 
   async function fetchUsersByAccounts(selectedRowKeys: string[] = []) {
+    if (!selectedRowKeys.length) {
+      setCheckInfo([]);
+      setDefaultCheckInfo([]);
+      setCheckUserIds([]);
+      return;
+    }
     try {
       const res = await postSystemAccountsUsersApi({
         accountIds: selectedRowKeys,
