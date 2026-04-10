@@ -65,6 +65,7 @@
     "areaPlaceholder": "Enter area",
     "phoneIp": "Node IP",
     "phoneIpPlaceholder": "Select node IP",
+    "deviceIpBoundMark": " (Bound)",
     "agreement": "Agreement",
     "agreementPlaceholder": "Enter agreement",
     "networkLink": "Link",
