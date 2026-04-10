@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { nextTick, reactive, ref, watch } from 'vue';
+import { computed, nextTick, reactive, ref, watch } from 'vue';
 
 import { Page } from '@vben/common-ui';
 
@@ -7,6 +7,7 @@ import { Connection, Refresh, Search } from '@element-plus/icons-vue';
 import {
   ElAvatar,
   ElButton,
+  ElCheckbox,
   ElIcon,
   ElInput,
   ElMessage,
@@ -50,6 +51,26 @@ const userTableRef = ref();
 
 const selectedAccountIds = ref<string[]>([]);
 const selectedUserIds = ref<string[]>([]);
+
+/** 与参考项目一致：Tab1 在系统用户表、Tab2 在社媒账号表展示「仅展示已勾选」 */
+const userShowSelectedOnly = ref(false);
+const accountShowSelectedOnly = ref(false);
+
+const displayUserRows = computed(() => {
+  if (activeTab.value === 'assignUsers' && userShowSelectedOnly.value) {
+    const list = smStore.checkInfo;
+    return Array.isArray(list) ? [...list] : [];
+  }
+  return userRows.value;
+});
+
+const displayAccountRows = computed(() => {
+  if (activeTab.value === 'assignAccounts' && accountShowSelectedOnly.value) {
+    const list = smStore.checkInfo;
+    return Array.isArray(list) ? [...list] : [];
+  }
+  return accountRows.value;
+});
 
 let syncingAccount = false;
 let syncingUser = false;
@@ -96,7 +117,11 @@ async function loadAccounts() {
       accountTotal.value = res.data?.total ?? 0;
     }
     await nextTick();
-    syncAccountSelection();
+    if (activeTab.value === 'assignAccounts') {
+      syncAccountSelectionFromStore();
+    } else {
+      syncAccountSelection();
+    }
   } finally {
     accountLoading.value = false;
   }
@@ -115,7 +140,9 @@ async function loadUsers() {
       userTotal.value = res.data?.total ?? 0;
     }
     await nextTick();
-    syncUserSelectionFromStore();
+    if (activeTab.value === 'assignUsers') {
+      syncUserSelectionFromStore();
+    }
   } finally {
     userLoading.value = false;
   }
@@ -136,13 +163,38 @@ function syncAccountSelection() {
   });
 }
 
+/** assignAccounts：checkInfo 为账号列表，与右侧账号表对齐 */
+function syncAccountSelectionFromStore() {
+  const tb = accountTableRef.value;
+  if (!tb) return;
+  syncingAccount = true;
+  tb.clearSelection();
+  const want = new Set(smStore.checkInfo.map((a: any) => a.accountId));
+  const rows =
+    activeTab.value === 'assignAccounts' && accountShowSelectedOnly.value
+      ? (Array.isArray(smStore.checkInfo) ? smStore.checkInfo : [])
+      : accountRows.value;
+  for (const row of rows) {
+    if (want.has(row.accountId)) {
+      tb.toggleRowSelection(row, true);
+    }
+  }
+  nextTick(() => {
+    syncingAccount = false;
+  });
+}
+
 function syncUserSelectionFromStore() {
   const tb = userTableRef.value;
   if (!tb) return;
   syncingUser = true;
   tb.clearSelection();
   const want = new Set(smStore.checkInfo.map((u: any) => u.userId));
-  for (const row of userRows.value) {
+  const rows =
+    activeTab.value === 'assignUsers' && userShowSelectedOnly.value
+      ? (Array.isArray(smStore.checkInfo) ? smStore.checkInfo : [])
+      : userRows.value;
+  for (const row of rows) {
     if (want.has(row.userId)) {
       tb.toggleRowSelection(row, true);
     }
@@ -157,6 +209,8 @@ function onPickApp(id: string) {
   smStore.setCheckAppId(id);
   accountPage.current = 1;
   selectedAccountIds.value = [];
+  userShowSelectedOnly.value = false;
+  accountShowSelectedOnly.value = false;
   smStore.resetBindings();
   loadAccounts();
   loadUsers();
@@ -166,6 +220,7 @@ function onAccountSelect(rows: any[]) {
   if (syncingAccount) return;
   selectedAccountIds.value = rows.map((r) => r.accountId);
   if (activeTab.value === 'assignUsers') {
+    /** 空选时由 store 直接清空，不请求 /accounts/users（保存后 clearSelection 会触发） */
     void smStore.fetchUsersByAccounts(selectedAccountIds.value);
   } else {
     smStore.setCheckInfo(rows);
@@ -185,7 +240,13 @@ function onUserSelect(rows: any[]) {
 watch(
   () => smStore.checkInfo,
   () => {
-    nextTick(() => syncUserSelectionFromStore());
+    nextTick(() => {
+      if (activeTab.value === 'assignUsers') {
+        syncUserSelectionFromStore();
+      } else {
+        syncAccountSelectionFromStore();
+      }
+    });
   },
   { deep: true },
 );
@@ -194,6 +255,8 @@ function onTabChange() {
   smStore.resetBindings();
   selectedAccountIds.value = [];
   selectedUserIds.value = [];
+  userShowSelectedOnly.value = false;
+  accountShowSelectedOnly.value = false;
   accountPage.current = 1;
   userPage.current = 1;
   loadAccounts();
@@ -201,11 +264,13 @@ function onTabChange() {
 }
 
 function searchAccounts() {
+  accountShowSelectedOnly.value = false;
   accountPage.current = 1;
   loadAccounts();
 }
 
 function searchUsers() {
+  userShowSelectedOnly.value = false;
   userPage.current = 1;
   loadUsers();
 }
@@ -220,18 +285,40 @@ function redoUsers() {
   searchUsers();
 }
 
+function onAccountOnlySelectedChange() {
+  nextTick(() => {
+    if (activeTab.value === 'assignAccounts') {
+      syncAccountSelectionFromStore();
+    }
+  });
+}
+
+function onUserOnlySelectedChange() {
+  nextTick(() => {
+    if (activeTab.value === 'assignUsers') {
+      syncUserSelectionFromStore();
+    }
+  });
+}
+
 async function saveBind() {
   const accountRowsSel = accountTableRef.value?.getSelectionRows?.() ?? [];
   const userRowsSel = userTableRef.value?.getSelectionRows?.() ?? [];
   const accountIds = accountRowsSel.map((r: any) => r.accountId);
   const userIds = userRowsSel.map((r: any) => r.userId);
 
+  /**
+   * 与 social_media_web SocialMediaAccount/index.vue saveEvent 一致：
+   * - assignUsers（socialRef）：左侧为社媒账号表，须先选账号
+   * - assignAccounts（systemRef）：row-reverse 后左侧为系统用户表，须先选用户
+   * 仅选另一侧时提示「当前激活列表」
+   */
   if (activeTab.value === 'assignUsers') {
-    if (!userIds.length) {
+    if (!accountIds.length) {
       ElMessage.warning($t('systemManage.socialMediaAccount.pleaseSelectLeftList'));
       return;
     }
-  } else if (!accountIds.length) {
+  } else if (!userIds.length) {
     ElMessage.warning($t('systemManage.socialMediaAccount.pleaseSelectLeftList'));
     return;
   }
@@ -240,8 +327,9 @@ async function saveBind() {
     .map((el: any) => String(el.accountId ?? el.userId ?? ''))
     .filter(Boolean);
 
+  /** delIds：对照另一侧当前勾选（参考 tempInfo = data[activeValue == systemRef ? socialRef : systemRef]） */
   const tempInfo =
-    activeTab.value === 'assignUsers' ? accountIds : userIds;
+    activeTab.value === 'assignUsers' ? userIds : accountIds;
   const delIds = defaultIds.filter((id) => !tempInfo.includes(id));
 
   try {
@@ -255,8 +343,11 @@ async function saveBind() {
     if (res && successCode(res.code)) {
       ElMessage.success($t('systemManage.opSuccess'));
       smStore.resetBindings();
+      selectedAccountIds.value = [];
+      selectedUserIds.value = [];
+      userShowSelectedOnly.value = false;
+      accountShowSelectedOnly.value = false;
       loadAccounts();
-      loadUsers();
     }
   } catch {
     /* client toast */
@@ -307,21 +398,31 @@ void loadApps().then(() => {
           </div>
 
           <div class="table-toolbar">
-            <ElInput
-              v-model="accountKeyword"
-              clearable
-              :placeholder="$t('systemManage.socialMediaAccount.searchPlaceholderSocial')"
-              @keyup.enter="searchAccounts"
-            />
-            <ElButton :icon="Search" circle type="primary" @click="searchAccounts" />
-            <ElButton :icon="Refresh" circle @click="redoAccounts" />
+            <div class="table-toolbar-row">
+              <ElInput
+                v-model="accountKeyword"
+                clearable
+                :placeholder="$t('systemManage.socialMediaAccount.searchPlaceholderSocial')"
+                @keyup.enter="searchAccounts"
+              />
+              <ElButton :icon="Search" circle type="primary" @click="searchAccounts" />
+              <ElButton :icon="Refresh" circle @click="redoAccounts" />
+            </div>
+            <div v-show="activeTab === 'assignAccounts'" class="only-selected-wrap">
+              <ElCheckbox
+                v-model="accountShowSelectedOnly"
+                @change="onAccountOnlySelectedChange"
+              >
+                {{ $t('systemManage.socialMediaAccount.onlyShowSelected') }}
+              </ElCheckbox>
+            </div>
           </div>
 
           <div class="table-scroll">
             <ElTable
               ref="accountTableRef"
               v-loading="accountLoading"
-              :data="accountRows"
+              :data="displayAccountRows"
               row-key="accountId"
               class="no-lines-table"
               height="100%"
@@ -359,7 +460,10 @@ void loadApps().then(() => {
             </ElTable>
           </div>
 
-          <div class="pager">
+          <div
+            v-show="!(activeTab === 'assignAccounts' && accountShowSelectedOnly)"
+            class="pager"
+          >
             <ElPagination
               background
               small
@@ -386,21 +490,28 @@ void loadApps().then(() => {
         <div class="panel-inner">
           <div class="panel-sync-spacer" aria-hidden="true" />
           <div class="table-toolbar">
-            <ElInput
-              v-model="userKeyword"
-              clearable
-              :placeholder="$t('systemManage.socialMediaAccount.searchPlaceholderSystem')"
-              @keyup.enter="searchUsers"
-            />
-            <ElButton :icon="Search" circle type="primary" @click="searchUsers" />
-            <ElButton :icon="Refresh" circle @click="redoUsers" />
+            <div class="table-toolbar-row">
+              <ElInput
+                v-model="userKeyword"
+                clearable
+                :placeholder="$t('systemManage.socialMediaAccount.searchPlaceholderSystem')"
+                @keyup.enter="searchUsers"
+              />
+              <ElButton :icon="Search" circle type="primary" @click="searchUsers" />
+              <ElButton :icon="Refresh" circle @click="redoUsers" />
+            </div>
+            <div v-show="activeTab === 'assignUsers'" class="only-selected-wrap">
+              <ElCheckbox v-model="userShowSelectedOnly" @change="onUserOnlySelectedChange">
+                {{ $t('systemManage.socialMediaAccount.onlyShowSelected') }}
+              </ElCheckbox>
+            </div>
           </div>
 
           <div class="table-scroll">
             <ElTable
               ref="userTableRef"
               v-loading="userLoading"
-              :data="userRows"
+              :data="displayUserRows"
               row-key="userId"
               class="no-lines-table"
               height="100%"
@@ -420,7 +531,10 @@ void loadApps().then(() => {
             </ElTable>
           </div>
 
-          <div class="pager">
+          <div
+            v-show="!(activeTab === 'assignUsers' && userShowSelectedOnly)"
+            class="pager"
+          >
             <ElPagination
               background
               small
@@ -520,15 +634,25 @@ void loadApps().then(() => {
 }
 .table-toolbar {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  flex-direction: column;
   gap: 8px;
   margin-bottom: 10px;
   flex-shrink: 0;
 }
-.table-toolbar .el-input {
+.table-toolbar-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.table-toolbar-row .el-input {
   flex: 1;
   min-width: 160px;
+}
+.only-selected-wrap {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
 }
 .table-scroll {
   flex-shrink: 0;
