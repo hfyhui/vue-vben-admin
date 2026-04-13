@@ -36,7 +36,8 @@
     "associatedDevices": "Associated Devices",
     "deviceIp": "Associated Device",
     "associatedAgents": "Associated Agents",
-    "clickToCopy": "Click to copy"
+    "clickToCopy": "Click to copy",
+    "operation": "Action"
   },
   "action": {
     "add": "Add",
@@ -56,6 +57,7 @@
   },
   "form": {
     "addAccountTitle": "Add Account",
+    "editAccountTitle": "Edit Account",
     "appName": "Application Name",
     "appNamePlaceholder": "Please select an application",
     "userNickname": "User Nickname",
@@ -91,6 +93,7 @@
     "selectIdFailed": "Failed to get account IDs",
     "selectImportPlatformFirst": "Please select a platform from the import platform dropdown first",
     "missingImportAppId": "Missing application ID, please select an import platform first",
+    "missingAccountId": "Missing account ID, unable to edit",
     "batchLockConfirm": "Are you sure you want to lock {count} selected accounts?",
     "batchUnlockConfirm": "Are you sure you want to unlock {count} selected accounts?",
     "batchLockConfirmTitle": "Batch Lock Confirmation",
@@ -110,6 +113,12 @@
     "downloadFailed": "Download failed",
     "addSuccess": "Account added successfully",
     "addFailed": "Failed to add account",
+    "editSuccess": "Account updated successfully",
+    "editFailed": "Failed to update account",
+    "loadDetailFailed": "Failed to load account detail",
+    "editRemarkPlaceholder": "Please enter remark",
+    "editRemarkSuccess": "Remark updated",
+    "editRemarkFailed": "Failed to update remark",
     "userAccountLengthExceeded": "User account supports up to 50 characters",
     "passwordLengthExceeded": "Account password supports up to 20 characters",
     "emailLengthExceeded": "Email supports up to 50 characters",

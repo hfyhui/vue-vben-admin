@@ -179,6 +179,8 @@ export interface ImportProxyParams {
 }
 
 export interface AddAccountParams {
+  id?: string;
+  accountId?: string;
   nickName?: string;
   appAccount?: string;
   accountPasswd?: string;
@@ -193,6 +195,33 @@ export interface AddAccountParams {
   suiteId?: string;
   suiteName?: string;
   suiteDesc?: string;
+}
+
+export interface AddAccountRemarkParams {
+  accountId?: string;
+  remark?: string;
+}
+
+export interface AccountDetailData {
+  id?: string;
+  accountId?: string;
+  appAccount?: string;
+  nickName?: string;
+  accountPasswd?: string;
+  appName?: string;
+  appId?: string;
+  emailAddr?: string;
+  emailPasswd?: string;
+  deviceIdx?: string;
+  deviceIp?: string;
+  loginStatus?: string;
+  loginTime?: string;
+  riskLevel?: string;
+  twiceCheck?: string;
+  suiteId?: string;
+  suiteName?: string;
+  suiteDesc?: string;
+  remark?: string;
 }
 
 export interface AddProxyPhoneItem {
@@ -631,6 +660,22 @@ export async function addAccountApi(
   params: AddAccountParams,
 ): Promise<ApiResponse<null>> {
   return proxyClient.post<ApiResponse<null>>('/asset/add/account', params);
+}
+
+/** 新增账号备注 POST /asset/add/account-remark */
+export async function addAccountRemarkApi(
+  params: AddAccountRemarkParams,
+): Promise<ApiResponse<null>> {
+  return proxyClient.post<ApiResponse<null>>('/asset/add/account-remark', params);
+}
+
+/** 查询账号详情 GET /asset/account/detail/{accountId} */
+export async function getAccountDetailApi(
+  accountId: string,
+): Promise<ApiResponse<AccountDetailData>> {
+  return proxyClient.get<ApiResponse<AccountDetailData>>(
+    `/asset/account/detail/${encodeURIComponent(accountId)}`,
+  );
 }
 
 /** 新增代理 POST /asset/add/proxy */

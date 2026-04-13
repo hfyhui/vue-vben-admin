@@ -11,6 +11,7 @@ import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import { $t } from '#/locales';
 import { useAssetEnumsStore } from '#/store';
 import {
+  addAccountRemarkApi,
   batchDeleteAccountApi,
   downloadAccountTemplateApi,
   getAssetAppListApi,
@@ -37,6 +38,9 @@ const selectedPlatformIds = ref<string[]>([]);
 const importAppId = ref('');
 const importing = ref(false);
 const locking = ref(false);
+const savingRemark = ref(false);
+const editingRemarkAccountId = ref<string | null>(null);
+const editingRemarkValue = ref('');
 const groupOptions = ref<AccountPoolGroupOption[]>([]);
 const platformOptions = ref<AccountPoolPlatformOption[]>([]);
 const sortOptions = ref<AccountPoolSortOption[]>([]);
@@ -45,7 +49,48 @@ const assetEnumsStore = useAssetEnumsStore();
 const [Grid, gridApi] = useVbenVxeGrid({
   formOptions: getFormOptions([]),
   gridOptions: {
-    columns: useColumns(),
+    columns: useColumns({
+      onEdit,
+      getEditingRemarkAccountId: () => editingRemarkAccountId.value,
+      getEditingRemarkValue: () => editingRemarkValue.value,
+      onStartEditRemark(row) {
+        const accountId = row.accountId || row.id;
+        if (!accountId) {
+          ElMessage.warning($t('accountPool.message.missingAccountId'));
+          return;
+        }
+        editingRemarkAccountId.value = accountId;
+        editingRemarkValue.value = row.remark || '';
+      },
+      onChangeEditingRemarkValue(value) {
+        editingRemarkValue.value = value;
+      },
+      async onConfirmEditRemark() {
+        if (!editingRemarkAccountId.value || savingRemark.value) return;
+        savingRemark.value = true;
+        try {
+          const res = await addAccountRemarkApi({
+            accountId: editingRemarkAccountId.value,
+            remark: editingRemarkValue.value,
+          });
+          if (res?.code === 100000) {
+            ElMessage.success($t('accountPool.message.editRemarkSuccess'));
+            gridApi.query?.();
+          }
+        } catch (error) {
+          console.error('[accountPool] 更新账号备注失败:', error);
+          ElMessage.error($t('accountPool.message.editRemarkFailed'));
+        } finally {
+          savingRemark.value = false;
+          editingRemarkAccountId.value = null;
+          editingRemarkValue.value = '';
+        }
+      },
+      onCancelEditRemark() {
+        editingRemarkAccountId.value = null;
+        editingRemarkValue.value = '';
+      },
+    }),
     pagerConfig: {
       enabled: true,
       pageSize: 10,
@@ -104,7 +149,24 @@ const [Grid, gridApi] = useVbenVxeGrid({
 function onCreate() {
   formModalApi
     .setData({
+      mode: 'create',
       defaultAppId: currentAppId.value,
+      groupOptions: groupOptions.value,
+      platformOptions: platformOptions.value,
+    })
+    .open();
+}
+
+function onEdit(row: Record<string, any>) {
+  const accountId = String(row?.accountId ?? row?.id ?? '').trim();
+  if (!accountId) {
+    ElMessage.warning($t('accountPool.message.missingAccountId'));
+    return;
+  }
+  formModalApi
+    .setData({
+      mode: 'edit',
+      accountId,
       groupOptions: groupOptions.value,
       platformOptions: platformOptions.value,
     })
