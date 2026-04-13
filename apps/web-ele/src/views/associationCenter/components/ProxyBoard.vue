@@ -359,17 +359,22 @@ defineExpose({
                       : ''
                   }}
                 </span>
-                <span class="card-area">{{ item.area ?? '' }}</span>
-                <el-tooltip
-                  v-if="item.ip"
-                  :content="item.ip"
-                  placement="top"
-                >
-                  <span class="card-ip">
-                    {{ item.ip }}
-                  </span>
-                </el-tooltip>
-                <span v-else class="card-ip"></span>
+                <div class="card-middle">
+                  <div class="card-middle-slot">
+                    <el-tooltip
+                      :content="item.area ?? ''"
+                      placement="top"
+                      :disabled="!item.area"
+                    >
+                      <span class="card-area">{{ item.area ?? '' }}</span>
+                    </el-tooltip>
+                  </div>
+                  <div v-if="item.ip" class="card-middle-slot">
+                    <el-tooltip :content="item.ip" placement="top">
+                      <span class="card-ip">{{ item.ip }}</span>
+                    </el-tooltip>
+                  </div>
+                </div>
                 <span class="card-count" :class="getRiskColor(item.color)">{{
                   item.bandingCount ?? 0
                 }}</span>
@@ -502,11 +507,19 @@ defineExpose({
   align-items: stretch;
 }
 
-.proxy-card-main :deep(.el-tooltip__trigger) {
-  flex: 1;
+/* 中间槽可收缩，触发器拉满宽度，省略号才生效 */
+.card-middle-slot {
+  flex: 1 1 0;
   min-width: 0;
-  display: inline-flex !important;
-  align-items: center;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.proxy-card-main :deep(.card-middle-slot .el-tooltip__trigger) {
+  display: block !important;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .proxy-card.selected {
@@ -517,14 +530,24 @@ defineExpose({
 .card-info {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 8px 12px;
   flex: 1;
   width: 100%;
   min-width: 0;
 }
 
+.card-middle {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  gap: 8px;
+  overflow: hidden;
+}
+
 .card-amount {
+  flex-shrink: 0;
   font-size: 14px;
   font-weight: 600;
 }
@@ -556,8 +579,21 @@ defineExpose({
   color: var(--el-text-color-secondary);
 }
 
+.card-area,
 .card-ip {
-  flex: 1;
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.card-area {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-ip {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -565,7 +601,8 @@ defineExpose({
 }
 
 .card-count {
-  margin-left: auto;
+  flex-shrink: 0;
+  min-width: 2ch;
   font-weight: 700;
   text-align: right;
 }
