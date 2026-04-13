@@ -211,6 +211,41 @@
         "enterFileSize": "请输入文件大小",
         "enterFileSuffix": "请输入文件后缀"
       }
+    },
+    "viewRegex": {
+      "title": "参考正则",
+      "number": "数字",
+      "nDigits": "n位的数字",
+      "threeChars": "长度为3的字符",
+      "atLeastNDigits": "至少n位的数字",
+      "mToNDigits": "m-n位的数字",
+      "zeroOrNonZeroStart": "零和非零开头的数字",
+      "nonZeroWithTwoDecimals": "非零开头的最多带两位小数的数字",
+      "posNegWithDecimals": "带1-2位小数的正数或负数",
+      "standardTime": "标准时间格式",
+      "posNegDecimal": "正数、负数、和小数",
+      "posRealWithTwoDecimals": "有两位小数的正实数",
+      "posRealWith1To3Decimals": "有1~3位小数的正实数",
+      "nonZeroPosInt": "非零的正整数",
+      "nonZeroNegInt": "非零的负整数",
+      "nonNegInt": "非负整数",
+      "nonPosInt": "非正整数",
+      "nonNegFloat": "非负浮点数",
+      "nonPosFloat": "非正浮点数",
+      "posFloat": "正浮点数",
+      "negFloat": "负浮点数",
+      "float": "浮点数",
+      "pureEnglish": "纯英文",
+      "upperCase": "英文字母大写",
+      "lowerCase": "英文字母小写",
+      "numberEnglish": "数字+英文",
+      "alphanumericUnderscore": "数字、26个英文字母或者下划线组成",
+      "specialChars": "验证是否含有^%&',;=?$\"等字符",
+      "chinese": "汉字",
+      "email": "Email地址",
+      "internetUrl": "InternetURL",
+      "idCard": "身份证号（15位或18位数字）",
+      "ip": "IP地址"
     }
   }
 }

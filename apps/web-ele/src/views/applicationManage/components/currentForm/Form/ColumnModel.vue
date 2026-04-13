@@ -8,6 +8,7 @@ import { $t } from '#/locales';
 import { useAssetEnumsStore } from '#/store';
 
 import { buildColumnModelBaseColumns, buildControlTypeObj } from './column-model-config';
+import ViewRegex from './ViewRegex.vue';
 
 const CM_RULE = 'applicationManage.currentForm.columnModel.rule';
 const ruleMsg = (k: string) => $t(`${CM_RULE}.${k}`);
@@ -18,6 +19,7 @@ const emit = defineEmits<{
 
 const assetEnumsStore = useAssetEnumsStore();
 const submitFormRef = ref<InstanceType<typeof SubmitForm>>();
+const viewRegexRef = ref<InstanceType<typeof ViewRegex>>();
 const visible = ref(false);
 const confirmLoading = ref(false);
 const columnsForm = ref<Record<string, any>[]>([]);
@@ -277,6 +279,10 @@ onMounted(async () => {
   refreshTemplates();
 });
 
+function viewRegex() {
+  viewRegexRef.value?.open();
+}
+
 defineExpose({
   open,
   closeFn,
@@ -300,8 +306,8 @@ defineExpose({
             maxlength="500"
             clearable
           />
-          <el-tooltip :content="$t('applicationManage.currentForm.columnModel.regexTip')" placement="top">
-            <el-icon class="tip"><QuestionFilled /></el-icon>
+          <el-tooltip :content="$t('applicationManage.currentForm.viewRegex.title')" placement="top">
+            <el-icon class="tip" @click.stop="viewRegex"><QuestionFilled /></el-icon>
           </el-tooltip>
         </div>
       </template>
@@ -496,6 +502,8 @@ defineExpose({
         }}
       </el-button>
     </div>
+
+    <ViewRegex ref="viewRegexRef" />
   </div>
 </template>
 
@@ -518,7 +526,7 @@ defineExpose({
 .regex-row .tip {
   flex-shrink: 0;
   color: var(--el-color-danger);
-  cursor: help;
+  cursor: pointer;
 }
 
 .block-radio {
