@@ -15,6 +15,12 @@
     "add": "新增",
     "batchDelete": "批量删除"
   },
+  "form": {
+    "appArea": "地区",
+    "appAreaDomestic": "国内",
+    "appAreaOverseas": "国外",
+    "appAreaPlaceholder": "请选择"
+  },
   "table": {
     "applicationName": "应用名称",
     "scriptList": "脚本清单",

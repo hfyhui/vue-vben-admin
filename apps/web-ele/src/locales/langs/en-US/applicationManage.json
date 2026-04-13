@@ -15,6 +15,12 @@
     "add": "Add",
     "batchDelete": "Batch Delete"
   },
+  "form": {
+    "appArea": "Area",
+    "appAreaDomestic": "Domestic",
+    "appAreaOverseas": "Overseas",
+    "appAreaPlaceholder": "Please select"
+  },
   "table": {
     "applicationName": "Application Name",
     "scriptList": "Script List",

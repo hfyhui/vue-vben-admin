@@ -70,6 +70,8 @@ export interface ApplicationUpsertPayload {
   logoPath: string;
   packageName?: string;
   activityName?: string;
+  /** 与旧版 CEModal 一致：国内 / 国外 */
+  appArea?: string;
   programIds: string[];
   programType?: Record<string, any>[];
   orderNum?: number;

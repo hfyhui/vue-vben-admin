@@ -16,9 +16,11 @@ const emit = defineEmits<{
 }>();
 
 const submitFormRef = ref();
+
 const submitData = reactive<Record<string, any>>({
   activityName: '',
   applicationName: '',
+  appArea: '',
   logoPath: '',
   orderNum: undefined,
   packageName: '',
@@ -45,6 +47,7 @@ watch(
     submitData.logoPath = row.logoPath;
     submitData.packageName = row.packageName;
     submitData.activityName = row.activityName;
+    submitData.appArea = row.appArea;
     submitData.orderNum = row.orderNum;
     // 与 social_media_web CEModal 提交逻辑一致：programIds = programType.map(el => el.programIds || el.id)
     const pt = Array.isArray(row.programType) ? row.programType : [];
@@ -67,34 +70,49 @@ watch(
 async function submitFn() {
   const valid = await submitFormRef.value?.validate?.().then(() => true).catch(() => false);
   if (!valid) return;
-  const normalizedProgramType = submitData.programTypeDetail.map((item: Record<string, any>) => ({
-    ...item,
-    id: item.id,
-    programIds: item.programIds,
-    scriptId: item.scriptId,
-    form: item.form,
-    extendedColumn: item.extendedColumn,
-  }));
-  // 与 social_media_web CEModal 一致：programIds = programType.map(el => el.programIds || el.id)
-  // 接口侧脚本项通常只有 id，没有 programIds，只取 programIds 会得到 null/undefined
-  const detailIds = normalizedProgramType
+  // 与 CEModal 一致：programIds = programType.map(el => el.programIds || el.id)
+  const detailIds = submitData.programTypeDetail
     .map((item: Record<string, any>) => {
       const raw = item.programIds ?? item.id;
       return raw != null && raw !== '' ? String(raw) : '';
     })
     .filter(Boolean);
   const programIds = detailIds.length ? detailIds : submitData.programType;
+  // 与接口详情返回结构对齐：子项不要带冗余 programIds；补 systemConfig（系统脚本为 1，自建为 0）
+  const normalizedProgramType = submitData.programTypeDetail.map((item: Record<string, any>) => {
+    const row: Record<string, any> = {
+      id: item.id,
+      logoPath: item.logoPath,
+      programName: item.programName,
+      scriptId: item.scriptId ?? null,
+      form: item.form ?? null,
+      extendedColumn: item.extendedColumn ?? null,
+      systemConfig: item.systemConfig ?? 0,
+    };
+    if (item.programCategory != null && item.programCategory !== '') {
+      row.programCategory = item.programCategory;
+    }
+    return row;
+  });
+  // 与 social_media_web CEModal：applicationStatus 空则默认 1（禁用态）
+  const applicationStatus =
+    submitData.applicationStatus === undefined ||
+    submitData.applicationStatus === null ||
+    submitData.applicationStatus === ''
+      ? 1
+      : submitData.applicationStatus;
   const payload: ApplicationUpsertPayload = {
     id: submitData.id,
     applicationName: submitData.applicationName,
     logoPath: submitData.logoPath,
     packageName: submitData.packageName,
     activityName: submitData.activityName,
+    appArea: submitData.appArea,
     orderNum: submitData.orderNum,
     programIds,
     // 与 CEModal 一致：无明细时不要传空 programType，避免后端按「清空脚本」处理
     ...(normalizedProgramType.length ? { programType: normalizedProgramType } : {}),
-    applicationStatus: submitData.applicationStatus,
+    applicationStatus,
   };
   emit('submit', payload);
 }
@@ -113,6 +131,7 @@ function resetForm() {
   submitData.logoPath = '';
   submitData.packageName = '';
   submitData.activityName = '';
+  submitData.appArea = '';
   submitData.orderNum = undefined;
   submitData.programType = [];
   submitData.programTypeDetail = [];
@@ -183,6 +202,18 @@ defineExpose({
           style="width: 100%"
         />
       </el-form-item>
+
+      <el-form-item :label="$t('applicationManage.form.appArea')" prop="appArea">
+        <el-select
+          v-model="submitData.appArea"
+          :placeholder="$t('applicationManage.form.appAreaPlaceholder')"
+          style="width: 100%"
+          clearable
+        >
+          <el-option :label="$t('applicationManage.form.appAreaDomestic')" value="国内" />
+          <el-option :label="$t('applicationManage.form.appAreaOverseas')" value="国外" />
+        </el-select>
+    </el-form-item>
     </el-form>
 
   </div>
