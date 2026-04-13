@@ -430,63 +430,126 @@ defineExpose({
         </template>
       </template>
 
+      <!-- 对齐 social_media_web ColumnModel textareaUpload：仅占位符 + 行内输入与问号，无右侧常驻说明 -->
       <template #textareaUpload="{ rowData }">
-        <el-radio-group v-model="submitData[rowData.prop]" class="block-radio" @change="radioGroupChange">
-          <el-radio-button v-for="op in rowData.options || []" :key="String(op.value)" :value="op.value">
-            {{ op.label }}
-          </el-radio-button>
-        </el-radio-group>
+        <div class="textarea-upload-root">
+          <el-radio-group v-model="submitData[rowData.prop]" class="block-radio" @change="radioGroupChange">
+            <el-radio-button v-for="op in rowData.options || []" :key="String(op.value)" :value="op.value">
+              {{ op.label }}
+            </el-radio-button>
+          </el-radio-group>
 
-        <template v-if="submitData[rowData.prop]">
-          <el-divider content-position="left">
-            {{ $t('applicationManage.currentForm.columnModel.dividerImportTemplate') }}
-          </el-divider>
-          <el-form-item prop="httpUrlTemp" class="mt10">
-            <el-input
-              v-model="submitData.httpUrlTemp"
-              :placeholder="$t('applicationManage.currentForm.columnModel.placeholderTemplateApi')"
-              clearable
-            />
-          </el-form-item>
-          <el-form-item prop="httpMethodsTemp">
-            <el-input
-              v-model="submitData.httpMethodsTemp"
-              :placeholder="$t('applicationManage.currentForm.columnModel.placeholderTemplateMethod')"
-              clearable
-            />
-          </el-form-item>
-          <el-divider content-position="left">
-            {{ $t('applicationManage.currentForm.columnModel.dividerImportApi') }}
-          </el-divider>
-          <el-form-item prop="httpUrl" class="mt10">
-            <el-input
-              v-model="submitData.httpUrl"
-              :placeholder="$t('applicationManage.currentForm.columnModel.placeholderImportApi')"
-              clearable
-            />
-          </el-form-item>
-          <el-form-item prop="httpMethods">
-            <el-input
-              v-model="submitData.httpMethods"
-              :placeholder="$t('applicationManage.currentForm.columnModel.placeholderImportMethod')"
-              clearable
-            />
-          </el-form-item>
-          <el-form-item prop="returnDataFormat">
-            <el-input
-              v-model="submitData.returnDataFormat"
-              :placeholder="$t('applicationManage.currentForm.columnModel.placeholderDatasetPath')"
-              clearable
-            />
-          </el-form-item>
-          <el-form-item prop="fileFormat">
-            <el-input
-              v-model="submitData.fileFormat"
-              :placeholder="$t('applicationManage.currentForm.columnModel.placeholderFileTypes')"
-              clearable
-            />
-          </el-form-item>
-        </template>
+          <template v-if="submitData[rowData.prop]">
+            <!-- 不用 el-divider：避免横线与标题字体重叠；样式对齐旧版分区标题 -->
+            <div class="import-block-title">
+              {{ $t('applicationManage.currentForm.columnModel.dividerImportTemplate') }}
+            </div>
+            <el-form-item prop="httpUrlTemp" label-width="0" class="import-flex-form-item">
+              <div class="import-flex-row">
+                <div class="import-flex-input-wrap">
+                  <el-input
+                    v-model="submitData.httpUrlTemp"
+                    :placeholder="$t('applicationManage.currentForm.columnModel.placeholderApiUrl')"
+                    clearable
+                  />
+                </div>
+                <div class="import-flex-trail">
+                  <el-tooltip placement="bottom-start" :show-after="200">
+                    <template #content>
+                      {{ $t('applicationManage.currentForm.columnModel.tip.importExpectJsonApi') }}
+                    </template>
+                    <el-icon class="import-tip-icon"><QuestionFilled /></el-icon>
+                  </el-tooltip>
+                </div>
+              </div>
+            </el-form-item>
+            <el-form-item prop="httpMethodsTemp" label-width="0" class="import-flex-form-item">
+              <div class="import-flex-row">
+                <div class="import-flex-input-wrap">
+                  <el-input
+                    v-model="submitData.httpMethodsTemp"
+                    :placeholder="$t('applicationManage.currentForm.columnModel.importBlockRequestMethod')"
+                    clearable
+                  />
+                </div>
+                <div class="import-flex-trail import-flex-trail--spacer" aria-hidden="true" />
+              </div>
+            </el-form-item>
+
+            <div class="import-block-title import-block-title--follow">
+              {{ $t('applicationManage.currentForm.columnModel.dividerImportApi') }}
+            </div>
+            <el-form-item prop="httpUrl" label-width="0" class="import-flex-form-item">
+              <div class="import-flex-row">
+                <div class="import-flex-input-wrap">
+                  <el-input
+                    v-model="submitData.httpUrl"
+                    :placeholder="$t('applicationManage.currentForm.columnModel.placeholderApiUrl')"
+                    clearable
+                  />
+                </div>
+                <div class="import-flex-trail">
+                  <el-tooltip placement="bottom-start" :show-after="200">
+                    <template #content>
+                      {{ $t('applicationManage.currentForm.columnModel.tip.importExpectJsonApi') }}
+                    </template>
+                    <el-icon class="import-tip-icon"><QuestionFilled /></el-icon>
+                  </el-tooltip>
+                </div>
+              </div>
+            </el-form-item>
+            <el-form-item prop="httpMethods" label-width="0" class="import-flex-form-item">
+              <div class="import-flex-row">
+                <div class="import-flex-input-wrap">
+                  <el-input
+                    v-model="submitData.httpMethods"
+                    :placeholder="$t('applicationManage.currentForm.columnModel.importBlockRequestMethod')"
+                    clearable
+                  />
+                </div>
+                <div class="import-flex-trail import-flex-trail--spacer" aria-hidden="true" />
+              </div>
+            </el-form-item>
+            <el-form-item prop="returnDataFormat" label-width="0" class="import-flex-form-item">
+              <div class="import-flex-row">
+                <div class="import-flex-input-wrap">
+                  <el-input
+                    v-model="submitData.returnDataFormat"
+                    :placeholder="$t('applicationManage.currentForm.columnModel.importBlockDataset')"
+                    clearable
+                  />
+                </div>
+                <div class="import-flex-trail">
+                  <el-tooltip placement="bottom-start" :show-after="200" popper-class="import-dataset-tooltip">
+                    <template #content>
+                      <div class="import-dataset-tip-popper">
+                        <span>{{ $t('applicationManage.currentForm.columnModel.tip.importParseDatasetTitle') }}</span>
+                        <br />
+                        <pre class="import-dataset-pre-popper">{{
+                          $t('applicationManage.currentForm.columnModel.tip.importParseDatasetExample')
+                        }}</pre>
+                        <span>{{ $t('applicationManage.currentForm.columnModel.tip.importParseDatasetHint') }}</span>
+                      </div>
+                    </template>
+                    <el-icon class="import-tip-icon"><QuestionFilled /></el-icon>
+                  </el-tooltip>
+                </div>
+              </div>
+            </el-form-item>
+            <el-form-item prop="fileFormat" label-width="0" class="import-flex-form-item">
+              <div class="import-flex-row">
+                <div class="import-flex-input-wrap">
+                  <el-input
+                    v-model="submitData.fileFormat"
+                    :placeholder="$t('applicationManage.currentForm.columnModel.importBlockFilePlaceholder')"
+                    clearable
+                  />
+                </div>
+                <div class="import-flex-trail import-flex-trail--spacer" aria-hidden="true" />
+              </div>
+            </el-form-item>
+          </template>
+        </div>
       </template>
     </SubmitForm>
 
@@ -609,5 +672,90 @@ defineExpose({
   color: var(--el-color-primary);
   border-color: var(--el-color-primary-light-5);
   background: var(--el-color-primary-light-9);
+}
+
+.textarea-upload-root {
+  width: 100%;
+}
+
+/* 替代 el-divider：横线不穿过文字，也不与上一项校验提示重叠 */
+.import-block-title {
+  margin: 12px 0 8px;
+  padding-bottom: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--el-text-color-regular);
+  line-height: 1.5;
+  border-bottom: 1px solid var(--el-border-color-lighter);
+}
+
+.import-block-title--follow {
+  margin-top: 22px;
+}
+
+/* 对齐旧版 Ant `.flex`：第二列固定 22px，无问号时占位，保证各行输入框等宽 */
+.import-flex-form-item {
+  width: 100%;
+}
+
+.import-flex-form-item :deep(.el-form-item__content) {
+  display: block;
+  width: 100%;
+  margin-left: 0 !important;
+  justify-content: flex-start;
+}
+
+.import-flex-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 22px;
+  column-gap: 8px;
+  align-items: center;
+  width: 100%;
+}
+
+.import-flex-input-wrap {
+  min-width: 0;
+  width: 100%;
+}
+
+.import-flex-input-wrap :deep(.el-input) {
+  width: 100%;
+}
+
+.import-flex-trail {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  flex-shrink: 0;
+}
+
+.import-flex-trail--spacer {
+  pointer-events: none;
+}
+
+.import-tip-icon {
+  color: var(--el-color-danger);
+  cursor: help;
+  font-size: 16px;
+}
+</style>
+
+<!-- tooltip 挂载到 body，需非 scoped 才能限制浮层宽度 -->
+<style>
+.import-dataset-tooltip {
+  max-width: 380px;
+}
+
+.import-dataset-tooltip .import-dataset-tip-popper {
+  line-height: 1.5;
+  font-size: 13px;
+}
+
+.import-dataset-tooltip .import-dataset-pre-popper {
+  margin: 8px 0;
+  font-size: 12px;
+  white-space: pre-wrap;
+  font-family: ui-monospace, monospace;
 }
 </style>

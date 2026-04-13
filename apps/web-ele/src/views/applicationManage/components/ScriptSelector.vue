@@ -274,9 +274,13 @@ function onScriptIdChange(value: string) {
   if (!drawerForm.programCategory) {
     drawerForm.programCategory = apiMeta.programCategory;
   }
-  // 切换脚本时优先回填接口返回的动态表单配置
-  drawerForm.currentForm = apiMeta.currentForm;
-  drawerForm.extendedColumn = apiMeta.extendedColumn;
+  // 仅在当前无自定义字段时回填默认配置，避免覆盖用户刚新增/编辑的表单项
+  const hasCustomForm = Array.isArray(drawerForm.currentForm) && drawerForm.currentForm.length > 0;
+  const hasCustomExt = Array.isArray(drawerForm.extendedColumn) && drawerForm.extendedColumn.length > 0;
+  if (!hasCustomForm && !hasCustomExt) {
+    drawerForm.currentForm = apiMeta.currentForm || [];
+    drawerForm.extendedColumn = apiMeta.extendedColumn || [];
+  }
 }
 
 async function submitFn() {
