@@ -27,7 +27,7 @@
     "port": "端口号",
     "username": "用户名",
     "password": "密码",
-    "link": "链路",
+    "link": "链接",
     "expireTime": "到期时间",
     "proxyGroup": "代理分组",
     "remarks": "备注",

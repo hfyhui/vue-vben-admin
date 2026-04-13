@@ -238,6 +238,12 @@ const [Modal, modalApi] = useVbenModal({
     if (isOpen) {
       const data = modalApi.getData<AccountPoolModalData>();
       modalMode.value = data?.mode === 'edit' ? 'edit' : 'create';
+      modalApi.setState({
+        title:
+          modalMode.value === 'edit'
+            ? $t('accountPool.form.editAccountTitle')
+            : $t('accountPool.form.addAccountTitle'),
+      });
       groupOptions.value = data?.groupOptions ?? [];
       platformOptions.value = data?.platformOptions ?? [];
       await formApi.updateSchema([
@@ -296,6 +302,9 @@ const [Modal, modalApi] = useVbenModal({
       return;
     }
     modalMode.value = 'create';
+    modalApi.setState({
+      title: $t('accountPool.form.addAccountTitle'),
+    });
     await formApi.updateSchema([
       {
         fieldName: 'appId',
