@@ -65,10 +65,12 @@
 #       run: pnpm prettier --cache --write --parser json {staged_files}
 #       glob: '{!(package)*.json,*.code-snippets,.!(browserslist)*rc}'
 
-post-merge:
-  commands:
-    install:
-      run: pnpm install
+# post-merge 会在每次 merge / pull 合并后执行，全量 pnpm install 在 monorepo 中很慢。
+# 若依赖未变，无需自动安装；变更 lockfile 后请手动执行：pnpm install
+# post-merge:
+#   commands:
+#     install:
+#       run: pnpm install
 
 # commit-msg:
 #   commands:

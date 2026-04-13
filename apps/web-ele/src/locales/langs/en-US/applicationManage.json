@@ -211,6 +211,41 @@
         "enterFileSize": "Please enter max file size",
         "enterFileSuffix": "Please enter file extensions"
       }
+    },
+    "viewRegex": {
+      "title": "Reference regex",
+      "number": "Number",
+      "nDigits": "n-digit number",
+      "threeChars": "3-character length",
+      "atLeastNDigits": "At least n digits",
+      "mToNDigits": "m–n digits",
+      "zeroOrNonZeroStart": "Zero / non-zero leading number",
+      "nonZeroWithTwoDecimals": "Non-zero start, up to two decimals",
+      "posNegWithDecimals": "Positive or negative with 1–2 decimals",
+      "standardTime": "Standard time format",
+      "posNegDecimal": "Positive, negative, or decimal",
+      "posRealWithTwoDecimals": "Positive real with two decimals",
+      "posRealWith1To3Decimals": "Positive real with 1–3 decimals",
+      "nonZeroPosInt": "Non-zero positive integer",
+      "nonZeroNegInt": "Non-zero negative integer",
+      "nonNegInt": "Non-negative integer",
+      "nonPosInt": "Non-positive integer",
+      "nonNegFloat": "Non-negative float",
+      "nonPosFloat": "Non-positive float",
+      "posFloat": "Positive float",
+      "negFloat": "Negative float",
+      "float": "Float",
+      "pureEnglish": "Letters only",
+      "upperCase": "Uppercase letters",
+      "lowerCase": "Lowercase letters",
+      "numberEnglish": "Alphanumeric",
+      "alphanumericUnderscore": "Letters, digits, or underscore",
+      "specialChars": "Exclude ^%&',;=?$\" etc.",
+      "chinese": "Chinese characters",
+      "email": "Email",
+      "internetUrl": "HTTP URL",
+      "idCard": "ID card (15 or 18 digits)",
+      "ip": "IP address"
     }
   }
 }
