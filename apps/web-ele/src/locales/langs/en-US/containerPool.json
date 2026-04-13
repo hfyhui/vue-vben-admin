@@ -30,6 +30,7 @@
     "phoneModel": "Phone model",
     "operator": "Carrier",
     "phoneNumber": "Phone number",
+    "deviceVersion": "Device version",
     "deviceGroup": "Device group",
     "remark": "Remark",
     "account": "Linked account",
