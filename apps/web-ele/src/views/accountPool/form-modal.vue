@@ -242,6 +242,15 @@ const [Modal, modalApi] = useVbenModal({
       platformOptions.value = data?.platformOptions ?? [];
       await formApi.updateSchema([
         {
+          fieldName: 'nickName',
+          componentProps: {
+            placeholder: $t('accountPool.form.userNicknamePlaceholder'),
+            maxlength: 50,
+            clearable: true,
+            disabled: modalMode.value === 'edit',
+          },
+        },
+        {
           fieldName: 'appAccount',
           componentProps: {
             placeholder: $t('accountPool.form.userAccountPlaceholder'),
@@ -287,6 +296,15 @@ const [Modal, modalApi] = useVbenModal({
     }
     modalMode.value = 'create';
     await formApi.updateSchema([
+      {
+        fieldName: 'nickName',
+        componentProps: {
+          placeholder: $t('accountPool.form.userNicknamePlaceholder'),
+          maxlength: 50,
+          clearable: true,
+          disabled: false,
+        },
+      },
       {
         fieldName: 'appAccount',
         componentProps: {
