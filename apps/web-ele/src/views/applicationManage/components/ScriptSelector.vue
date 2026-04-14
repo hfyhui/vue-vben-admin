@@ -419,7 +419,7 @@ function removeFn(row: ScriptCard) {
       class="script-selector-drawer"
       :title="drawerTitle"
       size="75%"
-      :close-on-click-modal="false"
+      :close-on-click-modal="true"
       destroy-on-close
       @close="cancelFn"
     >
