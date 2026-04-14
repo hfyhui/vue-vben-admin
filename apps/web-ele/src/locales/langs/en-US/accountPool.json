@@ -94,6 +94,7 @@
     "selectImportPlatformFirst": "Please select a platform from the import platform dropdown first",
     "missingImportAppId": "Missing application ID, please select an import platform first",
     "missingAccountId": "Missing account ID, unable to edit",
+    "editDisabledWhenLocked": "This account is locked and cannot be edited",
     "batchLockConfirm": "Are you sure you want to lock {count} selected accounts?",
     "batchUnlockConfirm": "Are you sure you want to unlock {count} selected accounts?",
     "batchLockConfirmTitle": "Batch Lock Confirmation",

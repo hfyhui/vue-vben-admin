@@ -34,6 +34,12 @@ const selectObj = reactive<{ name: string; content: string }>({
 });
 
 const optionDragIndex = ref(-1);
+const importParseDatasetExample = computed(() => `"data": {
+  "dict": [
+    { "name": "${$t('applicationManage.currentForm.columnModel.tip.importParseDatasetName1')}", "value": "TikTok" },
+    { "name": "${$t('applicationManage.currentForm.columnModel.tip.importParseDatasetName2')}", "value": "Twitter" }
+  ]
+}`);
 
 const dictInfoList = computed(() => {
   const raw = assetEnumsStore.enums as Record<string, any>;
@@ -53,11 +59,18 @@ const dictInfoList = computed(() => {
 const extraRules = computed(() => {
   const r: Record<string, any> = {};
   const ds = submitData.dataSources;
+  const validateManualOptions = (_: unknown, value: unknown, callback: (error?: Error) => void) => {
+    if (Array.isArray(value) && value.length > 0) {
+      callback();
+      return;
+    }
+    callback(new Error(ruleMsg('addDataSource')));
+  };
   if (submitData.type === 'select') {
     if (ds === 2) {
       r.httpUrl = [{ required: true, message: ruleMsg('enterApiUrl'), trigger: 'blur' }];
       r.httpMethods = [{ required: true, message: ruleMsg('enterHttpMethod'), trigger: 'blur' }];
-      r.returnDataFormat = [{ required: true, message: ruleMsg('enterImportDataPath'), trigger: 'blur' }];
+      r.returnDataFormat = [{ required: true, message: ruleMsg('enterDataPath'), trigger: 'blur' }];
       r.labelKey = [{ required: true, message: ruleMsg('enterLabelKey'), trigger: 'blur' }];
       r.valueKey = [{ required: true, message: ruleMsg('enterValueKey'), trigger: 'blur' }];
     }
@@ -65,7 +78,10 @@ const extraRules = computed(() => {
       r.dicKey = [{ required: true, message: ruleMsg('selectEnum'), trigger: 'change' }];
     }
     if (ds === 0) {
-      r.options = [{ required: true, message: ruleMsg('addDataSource'), trigger: 'change' }];
+      r.options = [
+        { validator: validateManualOptions, trigger: 'change' },
+        { validator: validateManualOptions, trigger: 'blur' },
+      ];
     }
   }
   if (submitData.type === 'textarea' && submitData.textareaUpload) {
@@ -240,6 +256,7 @@ function onDictChange(val: string) {
 function delOption(index: number) {
   if (!Array.isArray(submitData.options)) return;
   submitData.options.splice(index, 1);
+  submitFormRef.value?.validateField?.('options');
 }
 
 function pressEnter() {
@@ -256,6 +273,7 @@ function pressEnter() {
   submitData.options.push({ name, content });
   selectObj.name = '';
   selectObj.content = '';
+  submitFormRef.value?.validateField?.('options');
 }
 
 function onOptionDragStart(index: number) {
@@ -315,7 +333,7 @@ defineExpose({
       <template #dataSources="{ rowData }">
         <el-radio-group
           v-model="submitData[rowData.prop]"
-          class="block-radio"
+          class="block-radio block-radio--compact"
           @change="radioGroupChange"
         >
           <el-radio-button v-for="op in rowData.options || []" :key="op.value" :value="op.value">
@@ -324,32 +342,66 @@ defineExpose({
         </el-radio-group>
 
         <template v-if="submitData[rowData.prop] === 2">
-          <el-form-item prop="httpUrl" class="mt10">
-            <el-input
-              v-model="submitData.httpUrl"
-              :placeholder="$t('applicationManage.currentForm.columnModel.placeholderApiUrl')"
-              clearable
-            />
+          <el-form-item prop="httpUrl" class="mt10 import-flex-form-item">
+            <div class="import-flex-row">
+              <div class="import-flex-input-wrap">
+                <el-input
+                  v-model="submitData.httpUrl"
+                  :placeholder="$t('applicationManage.currentForm.columnModel.placeholderApiUrl')"
+                  clearable
+                />
+              </div>
+              <div class="import-flex-trail">
+                <el-tooltip placement="bottom-start" :show-after="200">
+                  <template #content>
+                    {{ $t('applicationManage.currentForm.columnModel.tip.importExpectJsonApi') }}
+                  </template>
+                  <el-icon class="import-tip-icon"><QuestionFilled /></el-icon>
+                </el-tooltip>
+              </div>
+            </div>
           </el-form-item>
-          <el-form-item prop="httpMethods">
-            <el-input
-              v-model="submitData.httpMethods"
-              :placeholder="$t('applicationManage.currentForm.columnModel.placeholderHttpMethod')"
-              clearable
-            />
+          <el-form-item prop="httpMethods" class="import-flex-form-item">
+            <div class="import-flex-row">
+              <div class="import-flex-input-wrap">
+                <el-input
+                  v-model="submitData.httpMethods"
+                  :placeholder="$t('applicationManage.currentForm.columnModel.placeholderHttpMethod')"
+                  clearable
+                />
+              </div>
+              <div class="import-flex-trail import-flex-trail--spacer" aria-hidden="true" />
+            </div>
           </el-form-item>
-          <el-form-item prop="returnDataFormat">
-            <el-input
-              v-model="submitData.returnDataFormat"
-              :placeholder="$t('applicationManage.currentForm.columnModel.placeholderDataPath')"
-              clearable
-            />
+          <el-form-item prop="returnDataFormat" class="import-flex-form-item">
+            <div class="import-flex-row">
+              <div class="import-flex-input-wrap">
+                <el-input
+                  v-model="submitData.returnDataFormat"
+                  :placeholder="$t('applicationManage.currentForm.columnModel.placeholderDataPath')"
+                  clearable
+                />
+              </div>
+              <div class="import-flex-trail">
+                <el-tooltip placement="bottom-start" :show-after="200" popper-class="import-dataset-tooltip">
+                  <template #content>
+                    <div class="import-dataset-tip-popper">
+                      <span>{{ $t('applicationManage.currentForm.columnModel.tip.importParseDatasetTitle') }}</span>
+                      <br />
+                      <pre class="import-dataset-pre-popper">{{ importParseDatasetExample }}</pre>
+                      <span>{{ $t('applicationManage.currentForm.columnModel.tip.importParseDatasetHint') }}</span>
+                    </div>
+                  </template>
+                  <el-icon class="import-tip-icon"><QuestionFilled /></el-icon>
+                </el-tooltip>
+              </div>
+            </div>
           </el-form-item>
           <div class="pair-row">
             <el-form-item prop="labelKey" class="pair-item">
               <el-input
                 v-model="submitData.labelKey"
-                :placeholder="$t('applicationManage.currentForm.columnModel.placeholderLabelKey')"
+                :placeholder="$t('applicationManage.currentForm.columnModel.placeholderDisplayName')"
                 clearable
               />
             </el-form-item>
@@ -357,10 +409,18 @@ defineExpose({
             <el-form-item prop="valueKey" class="pair-item">
               <el-input
                 v-model="submitData.valueKey"
-                :placeholder="$t('applicationManage.currentForm.columnModel.placeholderValueKey')"
+                :placeholder="$t('applicationManage.currentForm.columnModel.placeholderDataValue')"
                 clearable
               />
             </el-form-item>
+            <div class="pair-trail">
+              <el-tooltip placement="bottom-start" :show-after="200">
+                <template #content>
+                  {{ $t('applicationManage.currentForm.columnModel.tip.parseDisplayNameDataValueExpression') }}
+                </template>
+                <el-icon class="import-tip-icon"><QuestionFilled /></el-icon>
+              </el-tooltip>
+            </div>
           </div>
         </template>
 
@@ -371,7 +431,7 @@ defineExpose({
               :placeholder="$t('applicationManage.currentForm.columnModel.placeholderSelectEnum')"
               clearable
               filterable
-              style="width: 100%"
+              style="max-width: 100%"
               @change="onDictChange"
             >
               <el-option
@@ -382,36 +442,40 @@ defineExpose({
               />
             </el-select>
           </el-form-item>
-          <div
-            v-for="item in submitData.dictOptions || []"
-            :key="item.name"
-            class="dict-preview"
-          >
-            <span>{{ item.content }}</span>
-            <span class="colon">:</span>
-            <span>{{ item.name }}</span>
+          <div class="pair-list">
+            <div
+              v-for="item in submitData.dictOptions || []"
+              :key="item.name"
+              class="pair-display-row"
+            >
+              <span class="pair-chip">{{ item.content }}</span>
+              <span class="colon">:</span>
+              <span class="pair-chip">{{ item.name }}</span>
+            </div>
           </div>
         </template>
 
         <template v-else>
-          <div
-            v-for="(item, index) in submitData.options || []"
-            :key="`${item.name}-${index}`"
-            class="option-row"
-            draggable="true"
-            @dragstart="onOptionDragStart(index)"
-            @dragover.prevent
-            @drop="onOptionDrop(index)"
-          >
-            <span>{{ item.content }}</span>
-            <span class="colon">:</span>
-            <span>{{ item.name }}</span>
-            <el-button link type="danger" class="del-opt" @click="delOption(index)">
-              {{ $t('applicationManage.currentForm.common.delete') }}
-            </el-button>
+          <div class="pair-list">
+            <div
+              v-for="(item, index) in submitData.options || []"
+              :key="`${item.name}-${index}`"
+              class="option-row"
+              draggable="true"
+              @dragstart="onOptionDragStart(index)"
+              @dragover.prevent
+              @drop="onOptionDrop(index)"
+            >
+              <span class="pair-chip">{{ item.content }}</span>
+              <span class="colon">:</span>
+              <span class="pair-chip">{{ item.name }}</span>
+              <el-button link type="danger" class="del-opt" @click="delOption(index)">
+                {{ $t('applicationManage.currentForm.common.delete') }}
+              </el-button>
+            </div>
           </div>
           <el-form-item prop="options" class="mb0">
-            <div class="option-row">
+            <div class="manual-input-row">
               <el-input
                 v-model="selectObj.content"
                 :placeholder="$t('applicationManage.currentForm.columnModel.placeholderDisplayName')"
@@ -525,9 +589,7 @@ defineExpose({
                       <div class="import-dataset-tip-popper">
                         <span>{{ $t('applicationManage.currentForm.columnModel.tip.importParseDatasetTitle') }}</span>
                         <br />
-                        <pre class="import-dataset-pre-popper">{{
-                          $t('applicationManage.currentForm.columnModel.tip.importParseDatasetExample')
-                        }}</pre>
+                        <pre class="import-dataset-pre-popper">{{ importParseDatasetExample }}</pre>
                         <span>{{ $t('applicationManage.currentForm.columnModel.tip.importParseDatasetHint') }}</span>
                       </div>
                     </template>
@@ -599,6 +661,12 @@ defineExpose({
   margin-bottom: 8px;
 }
 
+.block-radio--compact {
+  gap: 0;
+  display: flex;
+  width: 100%;
+}
+
 .mt10 {
   margin-top: 10px;
 }
@@ -608,38 +676,103 @@ defineExpose({
 }
 
 .pair-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 10px minmax(0, 1fr) 25px;
+  align-items: start;
+  width: 100%;
+}
+
+.pair-trail {
   display: flex;
-  align-items: flex-start;
-  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  flex-shrink: 0;
+  padding-top: 6px;
 }
 
 .pair-item {
-  flex: 1;
   margin-bottom: 0 !important;
 }
 
+.pair-item :deep(.el-form-item__content) {
+  display: block;
+  width: 100%;
+  margin-left: 0 !important;
+}
+
 .colon {
-  padding-top: 6px;
+  padding: 0 10px;
   color: var(--el-text-color-secondary);
 }
 
 .dict-preview,
 .option-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 200px 10px 200px auto;
   align-items: center;
-  gap: 8px;
-  margin-top: 8px;
-  padding: 6px 8px;
-  background: var(--el-fill-color-light);
+  margin-top: 6px;
+  line-height: 1;
+  max-width: 100%;
+}
+
+.pair-display-row {
+  display: grid !important;
+  grid-template-columns: 200px 10px 200px;
+  align-items: center;
+  margin-top: 6px;
+  max-width: 100%;
+}
+
+.pair-list {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.pair-chip {
+  background: #f0f2f5;
+  padding: 5px 8px;
   border-radius: 4px;
+  width: 200px;
+  max-width: 200px;
+  box-sizing: border-box;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .option-row {
   cursor: move;
 }
 
+.manual-input-row {
+  display: flex;
+  align-items: center;
+  margin-top: 10px;
+  width: 460px;
+  max-width: 100%;
+}
+
+.manual-input-row :deep(.el-input) {
+  width: 200px;
+}
+
+.mb0 :deep(.el-form-item__content) {
+  display: block;
+  width: 100%;
+}
+
 .del-opt {
-  margin-left: auto;
+  display: none;
+  margin-left: 8px;
+  padding: 0;
+  line-height: 1;
+}
+
+.option-row:hover .del-opt {
+  display: inline-flex;
 }
 
 /* 对齐旧版 Ant ColumnModel：两个 block 按钮横向等分（参考图二 取消 + 主色按钮） */

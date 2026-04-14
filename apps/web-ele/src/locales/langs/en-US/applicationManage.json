@@ -16,6 +16,16 @@
     "batchDelete": "Batch Delete"
   },
   "form": {
+    "applicationName": "Application Name",
+    "logoPath": "Upload Logo",
+    "logoTip": "Recommended logo size: 16px * 16px",
+    "packageName": "Package Name",
+    "activityName": "Activity Name",
+    "programType": "Script List",
+    "orderNum": "Index",
+    "ruleApplicationName": "Please enter application name",
+    "ruleLogoPath": "Please upload logo",
+    "ruleProgramType": "Please select script list",
     "appArea": "Area",
     "appAreaDomestic": "Domestic",
     "appAreaOverseas": "Overseas",
@@ -111,10 +121,10 @@
       "duplicateOption": "Duplicate display name or data value",
       "regexTip": "Refer to common business regex patterns",
       "placeholderApiUrl": "API URL",
-      "placeholderHttpMethod": "HTTP method, e.g. post",
-      "placeholderDataPath": "Data path, e.g. data.list",
-      "placeholderLabelKey": "Label field name",
-      "placeholderValueKey": "Value field name",
+      "placeholderHttpMethod": "Request Method",
+      "placeholderDataPath": "Dataset",
+      "placeholderLabelKey": "Display Name",
+      "placeholderValueKey": "Data Value",
       "placeholderSelectEnum": "Select enumeration",
       "placeholderDisplayName": "Display name",
       "placeholderDataValue": "Data value",
@@ -140,9 +150,9 @@
         "uploadFile": "File upload"
       },
       "dataSource": {
-        "manual": "Manual",
-        "enum": "Enumeration",
-        "api": "API"
+        "manual": "Manual Add",
+        "enum": "Enum Add",
+        "api": "API Add"
       },
       "field": {
         "controlName": "Control label",
@@ -183,8 +193,11 @@
         "alignBusinessParam": "Keep consistent with param name in workflow script",
         "importExpectJsonApi": "Enter an API URL that returns JSON",
         "importParseDatasetTitle": "Example parsed from API response:",
-        "importParseDatasetExample": "\"data\": {\n  \"dict\": [\n    { \"name\": \"Douyin\", \"value\": \"TikTok\" },\n    { \"name\": \"Twitter\", \"value\": \"Twitter\" }\n  ]\n}",
-        "importParseDatasetHint": "Path expression for values: data.dict"
+        "importParseDatasetExample": "Example: data.dict => [...]",
+        "importParseDatasetName1": "Douyin",
+        "importParseDatasetName2": "Twitter",
+        "importParseDatasetHint": "Path expression for values: data.dict",
+        "parseDisplayNameDataValueExpression": "Parse: display name and data value expressions are: name:value"
       },
       "placeholder": {
         "dateFormatDefault": "Default YYYY-MM-DD HH:mm:ss",
@@ -203,10 +216,10 @@
         "enterPrecision": "Please enter decimal places",
         "enterStep": "Please enter step",
         "enterApiUrl": "Please enter API URL",
-        "enterHttpMethod": "Please enter HTTP method",
-        "enterDataPath": "Please enter dataset path",
-        "enterLabelKey": "Please enter label field",
-        "enterValueKey": "Please enter value field",
+        "enterHttpMethod": "Please enter request method",
+        "enterDataPath": "Please enter dataset",
+        "enterLabelKey": "Please enter display name",
+        "enterValueKey": "Please enter data value",
         "selectEnum": "Please select enumeration",
         "addDataSource": "Please add data source options",
         "enterTemplateApi": "Please enter import template API URL",

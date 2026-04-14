@@ -158,7 +158,11 @@ function onCreate() {
 }
 
 function onEdit(row: Record<string, any>) {
-  const accountId = String(row?.accountId ?? row?.id ?? '').trim();
+  if (row?.isLock) {
+    ElMessage.warning($t('accountPool.message.editDisabledWhenLocked'));
+    return;
+  }
+  const accountId = row?.accountId ?? row?.id ?? ''
   if (!accountId) {
     ElMessage.warning($t('accountPool.message.missingAccountId'));
     return;
@@ -250,7 +254,7 @@ function getSelectedAccountIds(emptyTip: string) {
   const idSet = new Set<string>();
   for (const item of checkboxRecords) {
     const id = (item as any)?.accountId;
-    if (id) idSet.add(String(id));
+    if (id) idSet.add(id);
   }
   const ids = [...idSet];
   if (!ids.length) {

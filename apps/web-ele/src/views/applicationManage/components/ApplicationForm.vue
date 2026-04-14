@@ -1,8 +1,9 @@
 <script lang="ts" setup>
-import { reactive, ref, watch } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 
 import { type ApplicationUpsertPayload } from '#/api/core/application';
 import ImageUpload from '#/components/ImageUpload.vue';
+import { $t } from '#/locales';
 import ScriptSelector from './ScriptSelector.vue';
 
 const props = defineProps<{
@@ -27,11 +28,11 @@ const submitData = reactive<Record<string, any>>({
   programType: [],
   programTypeDetail: [],
 });
-const rules = {
-  applicationName: [{ required: true, message: '请输入应用名称', trigger: 'blur' }],
-  logoPath: [{ required: true, message: '请上传Logo', trigger: 'change' }],
-  programType: [{ required: true, message: '请选择脚本清单', trigger: 'change' }],
-};
+const rules = computed(() => ({
+  applicationName: [{ required: true, message: $t('applicationManage.form.ruleApplicationName'), trigger: 'blur' }],
+  logoPath: [{ required: true, message: $t('applicationManage.form.ruleLogoPath'), trigger: 'change' }],
+  programType: [{ required: true, message: $t('applicationManage.form.ruleProgramType'), trigger: 'change' }],
+}));
 
 // 需同时依赖 modelValue：仅监听 visible 时，若弹窗未关闭就从编辑切到新增（visible 一直为 true），不会触发重置，仍显示上一条数据
 watch(
@@ -148,16 +149,16 @@ defineExpose({
 
 <template>
   <div>
-    <el-form ref="submitFormRef" :model="submitData" :rules="rules" label-width="120px">
-    <el-form-item label="应用名称" prop="applicationName">
+    <el-form ref="submitFormRef" :model="submitData" :rules="rules" label-width="140px">
+    <el-form-item :label="$t('applicationManage.form.applicationName')" prop="applicationName">
       <el-input v-model="submitData.applicationName" maxlength="20" show-word-limit />
     </el-form-item>
 
     <el-form-item prop="logoPath">
       <template #label>
         <span class="logo-label">
-          <span>上传logo</span>
-          <el-tooltip content="建议logo尺寸为 16px * 16px" placement="top">
+          <span>{{ $t('applicationManage.form.logoPath') }}</span>
+          <el-tooltip :content="$t('applicationManage.form.logoTip')" placement="top">
             <span class="logo-tip-icon">?</span>
           </el-tooltip>
         </span>
@@ -174,15 +175,15 @@ defineExpose({
       />
     </el-form-item>
 
-    <el-form-item label="包名" prop="packageName">
+    <el-form-item :label="$t('applicationManage.form.packageName')" prop="packageName">
       <el-input v-model="submitData.packageName" maxlength="1000" />
     </el-form-item>
 
-    <el-form-item label="Activity名称" prop="activityName">
+    <el-form-item :label="$t('applicationManage.form.activityName')" prop="activityName">
       <el-input v-model="submitData.activityName" maxlength="1000" />
     </el-form-item>
 
-      <el-form-item label="脚本清单" prop="programType">
+      <el-form-item :label="$t('applicationManage.form.programType')" prop="programType">
         <ScriptSelector
           v-model="submitData.programType"
           :detail-list="submitData.programTypeDetail"
@@ -191,7 +192,7 @@ defineExpose({
         />
       </el-form-item>
 
-      <el-form-item label="序号" prop="orderNum">
+      <el-form-item :label="$t('applicationManage.form.orderNum')" prop="orderNum">
         <el-input-number
           v-model="submitData.orderNum"
           :min="0"
@@ -224,6 +225,7 @@ defineExpose({
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  white-space: nowrap;
 }
 
 .logo-tip-icon {

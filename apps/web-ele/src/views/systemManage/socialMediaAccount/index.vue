@@ -51,6 +51,8 @@ const userTableRef = ref();
 
 const selectedAccountIds = ref<string[]>([]);
 const selectedUserIds = ref<string[]>([]);
+const selectedAccountRows = ref<any[]>([]);
+const selectedUserRows = ref<any[]>([]);
 
 /** 与参考项目一致：Tab1 在系统用户表、Tab2 在社媒账号表展示「仅展示已勾选」 */
 const userShowSelectedOnly = ref(false);
@@ -58,16 +60,14 @@ const accountShowSelectedOnly = ref(false);
 
 const displayUserRows = computed(() => {
   if (activeTab.value === 'assignUsers' && userShowSelectedOnly.value) {
-    const list = smStore.checkInfo;
-    return Array.isArray(list) ? [...list] : [];
+    return [...selectedUserRows.value];
   }
   return userRows.value;
 });
 
 const displayAccountRows = computed(() => {
   if (activeTab.value === 'assignAccounts' && accountShowSelectedOnly.value) {
-    const list = smStore.checkInfo;
-    return Array.isArray(list) ? [...list] : [];
+    return [...selectedAccountRows.value];
   }
   return accountRows.value;
 });
@@ -218,6 +218,7 @@ function onPickApp(id: string) {
 
 function onAccountSelect(rows: any[]) {
   if (syncingAccount) return;
+  selectedAccountRows.value = rows;
   selectedAccountIds.value = rows.map((r) => r.accountId);
   if (activeTab.value === 'assignUsers') {
     /** 空选时由 store 直接清空，不请求 /accounts/users（保存后 clearSelection 会触发） */
@@ -229,6 +230,7 @@ function onAccountSelect(rows: any[]) {
 
 function onUserSelect(rows: any[]) {
   if (syncingUser) return;
+  selectedUserRows.value = rows;
   selectedUserIds.value = rows.map((r) => r.userId);
   if (activeTab.value === 'assignAccounts') {
     void smStore.fetchAccountsByUsers(selectedUserIds.value);
@@ -255,6 +257,8 @@ function onTabChange() {
   smStore.resetBindings();
   selectedAccountIds.value = [];
   selectedUserIds.value = [];
+  selectedAccountRows.value = [];
+  selectedUserRows.value = [];
   userShowSelectedOnly.value = false;
   accountShowSelectedOnly.value = false;
   accountPage.current = 1;
@@ -345,6 +349,8 @@ async function saveBind() {
       smStore.resetBindings();
       selectedAccountIds.value = [];
       selectedUserIds.value = [];
+      selectedAccountRows.value = [];
+      selectedUserRows.value = [];
       userShowSelectedOnly.value = false;
       accountShowSelectedOnly.value = false;
       loadAccounts();
@@ -466,13 +472,13 @@ void loadApps().then(() => {
           >
             <ElPagination
               background
-              small
+              size="small"
               layout="total, prev, pager, next"
               :total="accountTotal"
               :page-size="accountPage.size"
               :current-page="accountPage.current"
               @current-change="
-                (p: number) => {
+                (p) => {
                   accountPage.current = p;
                   loadAccounts();
                 }
@@ -537,13 +543,13 @@ void loadApps().then(() => {
           >
             <ElPagination
               background
-              small
+              size="small"
               layout="total, prev, pager, next"
               :total="userTotal"
               :page-size="userPage.size"
               :current-page="userPage.current"
               @current-change="
-                (p: number) => {
+                (p) => {
                   userPage.current = p;
                   loadUsers();
                 }
