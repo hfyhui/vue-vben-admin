@@ -16,6 +16,16 @@
     "batchDelete": "批量删除"
   },
   "form": {
+    "applicationName": "应用名称",
+    "logoPath": "上传logo",
+    "logoTip": "建议logo尺寸为 16px * 16px",
+    "packageName": "包名",
+    "activityName": "Activity名称",
+    "programType": "脚本清单",
+    "orderNum": "序号",
+    "ruleApplicationName": "请输入应用名称",
+    "ruleLogoPath": "请上传Logo",
+    "ruleProgramType": "请选择脚本清单",
     "appArea": "地区",
     "appAreaDomestic": "国内",
     "appAreaOverseas": "国外",
@@ -111,10 +121,10 @@
       "duplicateOption": "展示名或数据值重复",
       "regexTip": "请参考业务常用正则规则",
       "placeholderApiUrl": "接口地址",
-      "placeholderHttpMethod": "请求方式，如 post",
-      "placeholderDataPath": "数据集解析路径，如 data.list",
-      "placeholderLabelKey": "展示字段名",
-      "placeholderValueKey": "取值字段名",
+      "placeholderHttpMethod": "请求方式",
+      "placeholderDataPath": "数据集",
+      "placeholderLabelKey": "显示名称",
+      "placeholderValueKey": "数据值",
       "placeholderSelectEnum": "请选择枚举",
       "placeholderDisplayName": "展示名称",
       "placeholderDataValue": "数据值",
@@ -141,8 +151,8 @@
       },
       "dataSource": {
         "manual": "手动添加",
-        "enum": "枚举",
-        "api": "接口"
+        "enum": "枚举添加",
+        "api": "接口添加"
       },
       "field": {
         "controlName": "控件名称",
@@ -183,8 +193,11 @@
         "alignBusinessParam": "请和流程脚本中的参数名称保持一致",
         "importExpectJsonApi": "期望输入一个返回JSON格式的接口地址",
         "importParseDatasetTitle": "从接口结果中解析示例：",
-        "importParseDatasetExample": "\"data\": {\n  \"dict\": [\n    { \"name\": \"抖音\", \"value\": \"TikTok\" },\n    { \"name\": \"推特\", \"value\": \"Twitter\" }\n  ]\n}",
-        "importParseDatasetHint": "解析：数据值的表达式为：data.dict"
+        "importParseDatasetExample": "示例：data.dict => [...]",
+        "importParseDatasetName1": "抖音",
+        "importParseDatasetName2": "推特",
+        "importParseDatasetHint": "解析：数据值的表达式为：data.dict",
+        "parseDisplayNameDataValueExpression": "解析：显示名称：数据值的表达式为：name:value"
       },
       "placeholder": {
         "dateFormatDefault": "默认 YYYY-MM-DD HH:mm:ss",
@@ -204,10 +217,10 @@
         "enterStep": "请输入步长",
         "enterApiUrl": "请输入接口地址",
         "enterHttpMethod": "请输入请求方式",
-        "enterDataPath": "请输入数据集路径",
-        "enterLabelKey": "请输入展示字段",
-        "enterValueKey": "请输入取值字段",
-        "selectEnum": "请选择枚举",
+        "enterDataPath": "请输入数据集",
+        "enterLabelKey": "请输入显示名称",
+        "enterValueKey": "请输入数据值",
+        "selectEnum": "请选择枚举KEY",
         "addDataSource": "请添加数据来源",
         "enterTemplateApi": "请输入导入模板接口地址",
         "enterTemplateMethod": "请输入导入模板请求方式",

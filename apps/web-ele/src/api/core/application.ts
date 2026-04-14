@@ -138,6 +138,13 @@ export async function saveDynamicFormApi(
   return socialClient.put('/dynamic/form', data);
 }
 
+/** 动态表单详情 */
+export async function getDynamicFormDetailApi(
+  id: string,
+): Promise<ApiResponse<Record<string, any>>> {
+  return socialClient.get(`/dynamic/form/${id}`);
+}
+
 /** 新增应用 */
 export async function createApplicationApi(
   data: ApplicationUpsertPayload,

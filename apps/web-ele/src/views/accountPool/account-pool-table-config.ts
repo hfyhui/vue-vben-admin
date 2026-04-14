@@ -12,7 +12,7 @@ import { renderPoolRiskTipsCell } from '#/utils/risk-tips-display';
 const SENSITIVE_DOT_COUNT = 4;
 
 async function copyAccountPoolSensitive(text: string) {
-  const value = String(text ?? '');
+  const value = text
   if (!value) return;
   try {
     await navigator.clipboard.writeText(value);
@@ -32,7 +32,7 @@ async function copyAccountPoolSensitive(text: string) {
 
 /** 账号池：敏感字段用小圆点展示，悬停提示单击复制，点击复制真实值 */
 export function renderAccountPoolSensitiveCell(raw: unknown) {
-  const text = raw === undefined || raw === null ? '' : String(raw);
+  const text = raw === undefined || raw === null ? '' : raw;
   const hasValue = text.trim() !== '';
   if (!hasValue) {
     return h(
@@ -353,8 +353,20 @@ export const useColumns = (options: AccountPoolTableConfigOptions = {}) => [
     fixed: 'right',
     align: 'center',
     slots: {
-      default: ({ row }: { row: AccountPoolRow }) =>
-        h(
+      default: ({ row }: { row: AccountPoolRow }) => {
+        const locked = Boolean(row.isLock);
+        if (locked) {
+          return h(
+            'span',
+            {
+              style:
+                'color: var(--el-text-color-disabled); cursor: not-allowed; user-select: none;',
+              title: $t('accountPool.message.editDisabledWhenLocked'),
+            },
+            $t('common.edit'),
+          );
+        }
+        return h(
           'span',
           {
             style:
@@ -365,7 +377,8 @@ export const useColumns = (options: AccountPoolTableConfigOptions = {}) => [
             },
           },
           $t('common.edit'),
-        ),
+        );
+      },
     },
   },
 ];

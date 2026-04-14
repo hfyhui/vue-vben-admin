@@ -94,6 +94,7 @@
     "selectImportPlatformFirst": "请先在导入平台下拉中选择平台",
     "missingImportAppId": "缺少应用ID，请先选择导入平台",
     "missingAccountId": "缺少账号ID，无法编辑",
+    "editDisabledWhenLocked": "账号已锁定，无法编辑",
     "batchLockConfirm": "确定要锁定选中的 {count} 个账号吗？",
     "batchUnlockConfirm": "确定要解锁选中的 {count} 个账号吗？",
     "batchLockConfirmTitle": "批量锁定确认",
