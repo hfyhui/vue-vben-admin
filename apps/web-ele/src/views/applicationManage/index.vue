@@ -265,7 +265,7 @@ async function onDelete(row: ApplicationItem) {
       v-model="showForm"
       :title="editData?.id ? $t('common.edit') : $t('common.add')"
       width="720px"
-      :close-on-click-modal="false"
+      :close-on-click-modal="true"
       @close="onFormDialogClose"
     >
       <ApplicationForm

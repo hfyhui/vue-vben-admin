@@ -7,6 +7,7 @@ import { ElMessage } from 'element-plus';
 
 import { socialClient } from '#/api/request';
 import { $t } from '#/locales';
+import { formatAssetImageUrl } from '#/utils/asset-url';
 
 const props = withDefaults(
   defineProps<{
@@ -29,9 +30,6 @@ const emit = defineEmits<{
 const uploading = ref(false);
 const currentValue = ref(props.modelValue || '');
 const showImageViewer = ref(false);
-const ossBaseUrl = String(import.meta.env.VITE_OSS_BASE_URL || '')
-  .trim()
-  .replace(/\/+$/, '');
 
 watch(
   () => props.modelValue,
@@ -50,15 +48,10 @@ const previewSrcList = computed(() =>
   previewUrl.value ? [previewUrl.value] : [],
 );
 
+/** 与 social_media_web 的 $formatProcessUrl 一致：相对路径按当前访问域名拼成可访问地址；若已是绝对地址则替换为当前 origin */
 function formatImageUrl(url?: string) {
-  const value = String(url || '').trim();
-  if (!value) return '';
-  if (/^https?:\/\//i.test(value)) return value;
-  const normalizedPath = value.replace(/^\/+/, '');
-  if (!ossBaseUrl) {
-    return `/${normalizedPath}`;
-  }
-  return `${ossBaseUrl}/${normalizedPath}`;
+  if (!url) return '';
+  return formatAssetImageUrl(url) || '';
 }
 
 function beforeUpload(file: File) {
@@ -247,5 +240,39 @@ function closeImageViewer() {
   font-size: 16px;
   color: #fff;
   cursor: pointer;
+}
+
+</style>
+
+<style>
+/* el-image-viewer 使用 teleport 挂到 body，需使用全局样式覆盖 */
+.el-image-viewer__actions {
+  background: rgb(17 24 39 / 88%) !important;
+  border: 1px solid rgb(255 255 255 / 24%) !important;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 40%) !important;
+}
+
+.el-image-viewer__actions__inner,
+.el-image-viewer__actions__inner i {
+  color: #fff !important;
+}
+
+.el-image-viewer__actions__inner i:hover {
+  color: #f87171 !important;
+}
+
+/* 右上角关闭按钮 */
+.el-image-viewer__close {
+  background: rgb(17 24 39 / 88%) !important;
+  border: 1px solid rgb(255 255 255 / 24%) !important;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 35%) !important;
+}
+
+.el-image-viewer__close .el-icon {
+  color: #fff !important;
+}
+
+.el-image-viewer__close:hover .el-icon {
+  color: #f87171 !important;
 }
 </style>
