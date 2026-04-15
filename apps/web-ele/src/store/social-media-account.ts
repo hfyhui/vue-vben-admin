@@ -33,11 +33,6 @@ export const useSocialMediaAccountStore = defineStore('social-media-account', ()
   }
 
   async function fetchAccountsByUsers(selectedRowKeys: string[] = []) {
-    if (!selectedRowKeys.length) {
-      setCheckInfo([]);
-      setDefaultCheckInfo([]);
-      return;
-    }
     try {
       const res = await postSystemAccountsByUsersApi({
         userIds: selectedRowKeys,
