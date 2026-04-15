@@ -1,4 +1,4 @@
-import { socialClient } from '../request';
+import { proxyClient } from '../request';
 
 export type SocialAccountsPageBody = {
   current?: number;
@@ -9,7 +9,7 @@ export type SocialAccountsPageBody = {
 };
 
 export async function postSystemAccountsPageApi(data: SocialAccountsPageBody) {
-  return socialClient.post<{
+  return proxyClient.post<{
     code: number;
     data: { records: any[]; total: number };
     msg?: string;
@@ -17,7 +17,7 @@ export async function postSystemAccountsPageApi(data: SocialAccountsPageBody) {
 }
 
 export async function postSystemAccountsUsersPageApi(data: SocialAccountsPageBody) {
-  return socialClient.post<{
+  return proxyClient.post<{
     code: number;
     data: { records: any[]; total: number };
     msg?: string;
@@ -25,7 +25,7 @@ export async function postSystemAccountsUsersPageApi(data: SocialAccountsPageBod
 }
 
 export async function postSystemAccountsUsersApi(data: { accountIds?: string[] }) {
-  return socialClient.post<{ code: number; data: any[]; msg?: string }>(
+  return proxyClient.post<{ code: number; data: any[]; msg?: string }>(
     '/accounts/users',
     data,
   );
@@ -35,7 +35,7 @@ export async function postSystemAccountsByUsersApi(data: {
   userIds?: string[];
   appId?: string;
 }) {
-  return socialClient.post<{ code: number; data: any[]; msg?: string }>(
+  return proxyClient.post<{ code: number; data: any[]; msg?: string }>(
     '/accounts',
     data,
   );
@@ -48,7 +48,7 @@ export async function postSystemAccountsBandApi(data: {
   delIds: string[];
   bindDirection: number;
 }) {
-  return socialClient.post<{ code: number; data?: any; msg?: string }>(
+  return proxyClient.post<{ code: number; data?: any; msg?: string }>(
     '/accounts/band',
     data,
   );
