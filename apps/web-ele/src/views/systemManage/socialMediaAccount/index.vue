@@ -43,6 +43,7 @@ const accountTotal = ref(0);
 const userTotal = ref(0);
 const accountPage = reactive({ current: 1, size: 100 });
 const userPage = reactive({ current: 1, size: 100 });
+const pageSizeOptions = [10, 20, 50, 100];
 const accountKeyword = ref('');
 const userKeyword = ref('');
 
@@ -266,6 +267,8 @@ watch(
 );
 
 function onTabChange() {
+  accountTableRef.value?.clearSelection?.();
+  userTableRef.value?.clearSelection?.();
   smStore.resetBindings();
   selectedAccountIds.value = [];
   selectedUserIds.value = [];
@@ -313,6 +316,18 @@ function onUserOnlySelectedChange() {
       syncUserSelectionFromStore();
     }
   });
+}
+
+function isDisabledUser(row: any) {
+  return String(row?.status ?? '') === '1';
+}
+
+function userSelectable(row: any) {
+  return !isDisabledUser(row);
+}
+
+function userRowClassName({ row }: { row: any }) {
+  return isDisabledUser(row) ? 'disabled-row' : '';
 }
 
 async function saveBind() {
@@ -481,10 +496,18 @@ void loadApps().then(() => {
             <ElPagination
               background
               size="small"
-              layout="total, prev, pager, next"
+              layout="total, sizes, prev, pager, next"
               :total="accountTotal"
+              :page-sizes="pageSizeOptions"
               :page-size="accountPage.size"
               :current-page="accountPage.current"
+              @size-change="
+                (s) => {
+                  accountPage.size = s;
+                  accountPage.current = 1;
+                  loadAccounts();
+                }
+              "
               @current-change="
                 (p) => {
                   accountPage.current = p;
@@ -527,11 +550,17 @@ void loadApps().then(() => {
               v-loading="userLoading"
               :data="displayUserRows"
               row-key="userId"
+              :row-class-name="userRowClassName"
               class="no-lines-table"
               height="100%"
               @selection-change="onUserSelect"
             >
-            <ElTableColumn type="selection" width="48" :reserve-selection="true" />
+            <ElTableColumn
+              type="selection"
+              width="48"
+              :reserve-selection="true"
+              :selectable="userSelectable"
+            />
             <ElTableColumn
               prop="userName"
               :label="$t('systemManage.socialMediaAccount.name')"
@@ -552,10 +581,18 @@ void loadApps().then(() => {
             <ElPagination
               background
               size="small"
-              layout="total, prev, pager, next"
+              layout="total, sizes, prev, pager, next"
               :total="userTotal"
+              :page-sizes="pageSizeOptions"
               :page-size="userPage.size"
               :current-page="userPage.current"
+              @size-change="
+                (s) => {
+                  userPage.size = s;
+                  userPage.current = 1;
+                  loadUsers();
+                }
+              "
               @current-change="
                 (p) => {
                   userPage.current = p;
@@ -688,10 +725,28 @@ void loadApps().then(() => {
 .pager :deep(.el-pagination) {
   --el-pagination-bg-color: transparent;
   --el-pagination-text-color: var(--el-text-color-regular);
+  --el-pagination-button-color: var(--el-text-color-regular);
+  --el-pagination-button-disabled-color: var(--el-text-color-disabled);
+  --el-pagination-button-disabled-bg-color: var(--el-fill-color);
 }
 .pager :deep(.el-pagination.is-background .btn-next),
 .pager :deep(.el-pagination.is-background .btn-prev),
 .pager :deep(.el-pagination.is-background .el-pager li) {
   background-color: var(--el-fill-color);
+  color: var(--el-text-color-regular);
+  border: 1px solid var(--el-border-color);
+}
+.pager :deep(.el-pagination.is-background .el-pager li.is-active) {
+  background-color: color-mix(in srgb, var(--el-color-primary) 18%, var(--el-fill-color));
+  color: var(--el-color-primary);
+  border-color: color-mix(in srgb, var(--el-color-primary) 35%, var(--el-border-color));
+}
+.pager :deep(.el-pagination .el-pagination__sizes .el-select .el-input__wrapper) {
+  background-color: var(--el-fill-color);
+  box-shadow: 0 0 0 1px var(--el-border-color) inset;
+}
+.no-lines-table :deep(tr.disabled-row td) {
+  background: var(--el-fill-color-light);
+  color: var(--el-text-color-secondary);
 }
 </style>
