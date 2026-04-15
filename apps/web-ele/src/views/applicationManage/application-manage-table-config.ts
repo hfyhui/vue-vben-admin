@@ -30,6 +30,9 @@ export async function getApplicationListApi(params: {
 
 export const getFormOptions = (): VbenFormProps => ({
   collapsed: false,
+  commonConfig: {
+    labelWidth: 130,
+  },
   schema: [
     {
       component: 'Input',

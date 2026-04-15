@@ -12,7 +12,7 @@ import { renderPoolRiskTipsCell } from '#/utils/risk-tips-display';
 const SENSITIVE_DOT_COUNT = 4;
 
 async function copyAccountPoolSensitive(text: string) {
-  const value = String(text ?? '');
+  const value = text
   if (!value) return;
   try {
     await navigator.clipboard.writeText(value);
@@ -32,7 +32,7 @@ async function copyAccountPoolSensitive(text: string) {
 
 /** 账号池：敏感字段用小圆点展示，悬停提示单击复制，点击复制真实值 */
 export function renderAccountPoolSensitiveCell(raw: unknown) {
-  const text = raw === undefined || raw === null ? '' : String(raw);
+  const text = raw === undefined || raw === null ? '' : raw;
   const hasValue = text.trim() !== '';
   if (!hasValue) {
     return h(
@@ -88,6 +88,16 @@ export interface AccountPoolRow {
   loginStatusName?: string;
   [key: string]: any;
 }
+
+export type AccountPoolTableConfigOptions = {
+  onEdit?: (row: AccountPoolRow) => void;
+  getEditingRemarkAccountId?: () => string | null;
+  getEditingRemarkValue?: () => string;
+  onStartEditRemark?: (row: AccountPoolRow) => void;
+  onChangeEditingRemarkValue?: (value: string) => void;
+  onConfirmEditRemark?: () => void;
+  onCancelEditRemark?: () => void;
+};
 
 /** 与 GET /platform/asset/group（getAssetGroupApi）返回项一致，用于筛选下拉 */
 export type AccountPoolGroupOption = {
@@ -201,7 +211,7 @@ export const getFormOptions = (
   submitOnEnter: true,
 });
 
-export const useColumns = () => [
+export const useColumns = (options: AccountPoolTableConfigOptions = {}) => [
   { type: 'checkbox', width: 50, align: 'center' },
   { field: 'platform', title: $t('accountPool.table.platform'), minWidth: 120 },
   { field: 'inputTime', title: $t('accountPool.table.entryTime'), minWidth: 160 },
@@ -231,7 +241,7 @@ export const useColumns = () => [
   {
     field: 'accountPassword',
     title: $t('accountPool.table.accountPassword'),
-    minWidth: 100,
+    minWidth: 140,
     slots: {
       default: ({ row }: { row: AccountPoolRow }) =>
         renderAccountPoolSensitiveCell(row.accountPassword),
@@ -254,13 +264,73 @@ export const useColumns = () => [
   {
     field: 'twiceCheck',
     title: $t('accountPool.table.twiceCheck'),
-    minWidth: 100,
+    minWidth: 150,
     slots: {
       default: ({ row }: { row: AccountPoolRow }) =>
         renderAccountPoolSensitiveCell(row.twiceCheck),
     },
   },
-  { field: 'remark', title: $t('accountPool.table.remarks'), minWidth: 120 },
+  {
+    field: 'remark',
+    title: $t('accountPool.table.remarks'),
+    minWidth: 120,
+    slots: {
+      default: ({ row }: { row: AccountPoolRow }) => {
+        const accountId = row.accountId || row.id;
+        const remark = row.remark || '';
+        const displayRemark = remark || '\u00A0';
+        const editingAccountId = options.getEditingRemarkAccountId?.() ?? null;
+        const isEditing = !!editingAccountId && accountId === editingAccountId;
+
+        if (isEditing) {
+          return h('input', {
+            value: options.getEditingRemarkValue?.() || '',
+            autofocus: true,
+            spellcheck: false,
+            maxlength: 50,
+            style:
+              'width:100%;height:28px;padding:0 8px;border:1px solid var(--el-border-color);border-radius:4px;outline:none;',
+            placeholder: $t('accountPool.message.editRemarkPlaceholder'),
+            onInput: (e: Event) => {
+              const target = e.target as HTMLInputElement;
+              options.onChangeEditingRemarkValue?.(target.value);
+            },
+            onBlur: () => options.onConfirmEditRemark?.(),
+            onKeydown: (event: KeyboardEvent) => {
+              if (event.key === 'Enter') options.onConfirmEditRemark?.();
+              if (event.key === 'Escape') options.onCancelEditRemark?.();
+            },
+          });
+        }
+
+        return h(
+          'span',
+          {
+            title: remark,
+            style:
+              'display:block;width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;' +
+              'background-color:transparent;border-radius:4px;padding:2px 6px;transition:background-color 0.15s;',
+            onMouseenter: (event: MouseEvent) => {
+              const el = event.currentTarget as HTMLElement;
+              if (!el) return;
+              el.style.backgroundColor = 'var(--el-fill-color-light)';
+            },
+            onMouseleave: (event: MouseEvent) => {
+              const el = event.currentTarget as HTMLElement;
+              if (!el) return;
+              el.style.backgroundColor = 'transparent';
+            },
+            onDblclick: (event: Event) => {
+              event.stopPropagation();
+              event.preventDefault();
+              options.onStartEditRemark?.(row);
+            },
+          },
+          displayRemark,
+        );
+      },
+    },
+  },
   {
     field: 'suiteName',
     title: $t('accountPool.table.accountGroup'),
@@ -275,5 +345,40 @@ export const useColumns = () => [
     field: 'proxy',
     title: $t('accountPool.table.associatedAgents'),
     minWidth: 120,
+  },
+  {
+    field: 'action',
+    title: $t('accountPool.table.operation'),
+    width: 100,
+    fixed: 'right',
+    align: 'center',
+    slots: {
+      default: ({ row }: { row: AccountPoolRow }) => {
+        const locked = Boolean(row.isLock);
+        if (locked) {
+          return h(
+            'span',
+            {
+              style:
+                'color: var(--el-text-color-disabled); cursor: not-allowed; user-select: none;',
+              title: $t('accountPool.message.editDisabledWhenLocked'),
+            },
+            $t('common.edit'),
+          );
+        }
+        return h(
+          'span',
+          {
+            style:
+              'color: var(--el-color-primary); cursor: pointer; user-select: none;',
+            onClick: (event: Event) => {
+              event.stopPropagation();
+              options.onEdit?.(row);
+            },
+          },
+          $t('common.edit'),
+        );
+      },
+    },
   },
 ];

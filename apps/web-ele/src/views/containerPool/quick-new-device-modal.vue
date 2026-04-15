@@ -48,18 +48,27 @@ function operatorOptionLabel(item: AssetOperatorItem) {
   );
 }
 
-/** 详情里 netOperator 可能是 id 或历史文本，统一为下拉可选的 id */
-function normalizeNetOperatorToId() {
+function operatorOptionValue(item: AssetOperatorItem) {
+  return item.operatorEnName ?? item.operatorZhName ?? item.id ?? '';
+}
+
+function findOperatorByNetValue(value: string) {
+  const target = value?.trim();
+  if (!target || !operatorList.value.length) return undefined;
+  return operatorList.value.find(
+    (o) =>
+      o.id === target ||
+      operatorOptionValue(o) === target ||
+      operatorOptionLabel(o) === target,
+  );
+}
+
+/** 详情里 netOperator 可能是 id 或历史文本，统一为下拉可选的 value（非 id） */
+function normalizeNetOperatorToOptionValue() {
   const v = form.netOperator;
   if (!v || !operatorList.value.length) return;
-  if (operatorList.value.some((o) => o.id === v)) return;
-  const match = operatorList.value.find(
-    (o) =>
-      o.allName === v ||
-      o.operatorZhName === v ||
-      o.operatorEnName === v,
-  );
-  if (match?.id) form.netOperator = match.id;
+  const match = findOperatorByNetValue(v);
+  if (match) form.netOperator = operatorOptionValue(match);
 }
 
 const listRow = ref<ListRow | null>(null);
@@ -155,7 +164,8 @@ function applyGeneratedInfo(data: Record<string, any>) {
 }
 
 async function onOperatorChange() {
-  const operatorId = String(form.netOperator ?? '').trim();
+  const selected = findOperatorByNetValue(form.netOperator);
+  const operatorId = selected?.id ?? '';
   if (!operatorId) return;
   try {
     const res = await updateAssetOperatorApi({ operatorId });
@@ -215,9 +225,9 @@ async function loadDeviceData(row: ListRow) {
 
       await loadBrandModels(chip);
       applyDetail(detail);
-      // 只有百度盒子运营商是下拉（值为 id），才需要把历史文本归一为 id
+      // 只有百度盒子运营商是下拉，归一为下拉 value（中/英名），提交时保持与旧项目一致
       if (productType.value === 'AIBOX_L02') {
-        normalizeNetOperatorToId();
+        normalizeNetOperatorToOptionValue();
       }
       if (productMode.value !== 'basic') {
         updateModelList();
@@ -409,7 +419,7 @@ async function onSave() {
               v-for="(item, index) in operatorList"
               :key="index"
               :label="operatorOptionLabel(item)"
-              :value="item.id ?? ''"
+              :value="operatorOptionValue(item)"
             />
           </el-select>
           <el-input

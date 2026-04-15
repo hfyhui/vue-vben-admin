@@ -30,6 +30,7 @@
     "phoneModel": "手机型号",
     "operator": "运营商",
     "phoneNumber": "手机号码",
+    "deviceVersion": "设备版本",
     "deviceGroup": "设备分组",
     "remark": "备注",
     "account": "关联账号",

@@ -38,6 +38,7 @@ const creating = ref(false);
 const deviceNodeOptions = ref<DeviceItem[]>([]);
 
 const PAGE_SIZE = 100;
+
 async function loadDeviceNodeOptions() {
   try {
     const res = await getDeviceListApi<DeviceItem>({
@@ -130,7 +131,13 @@ const [Form, formApi] = useVbenForm({
       component: 'Input',
       fieldName: 'ip',
       label: $t('proxyPool.form.ip'),
-      rules: 'required',
+      rules: z
+        .string()
+        .trim()
+        .min(1, { message: '请输入IP' })
+        .regex(/^(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}$/, {
+          message: '格式错误，IPv4地址格式（例如 192.168.1.1）',
+        }),
       componentProps: {
         placeholder: $t('proxyPool.form.ipPlaceholder'),
         clearable: true,
@@ -249,7 +256,7 @@ async function onSubmit(values: ProxyFormValues) {
   modalApi.lock();
   try {
     const phones: { phoneId?: string; phoneIp: string }[] = [];
-    for (const phoneIp of values?.phoneIp) {
+    for (const phoneIp of values?.phoneIp ?? []) {
       const matched = deviceNodeOptions.value.find(
         (opt) => opt?.deviceIp === phoneIp,
       );

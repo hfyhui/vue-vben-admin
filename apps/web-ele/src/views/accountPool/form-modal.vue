@@ -8,7 +8,7 @@ import { useVbenModal } from '@vben/common-ui';
 import { ElMessage } from 'element-plus';
 
 import { useVbenForm } from '#/adapter/form';
-import { addAccountApi } from '#/api/core/asset';
+import { addAccountApi, getAccountDetailApi } from '#/api/core/asset';
 import { $t } from '#/locales';
 import { useAssetEnumsStore } from '#/store';
 
@@ -18,6 +18,8 @@ import type {
 } from './account-pool-table-config';
 
 interface AccountPoolModalData {
+  mode?: 'create' | 'edit';
+  accountId?: string;
   defaultAppId?: string;
   groupOptions?: AccountPoolGroupOption[];
   platformOptions?: AccountPoolPlatformOption[];
@@ -28,6 +30,7 @@ const emit = defineEmits<{
 }>();
 
 const creating = ref(false);
+const modalMode = ref<'create' | 'edit'>('create');
 const groupOptions = ref<AccountPoolGroupOption[]>([]);
 const platformOptions = ref<AccountPoolPlatformOption[]>([]);
 const assetEnumsStore = useAssetEnumsStore();
@@ -57,6 +60,7 @@ const loginStatusSelectOptions = computed(() => {
 
 function getDefaultValues(defaultAppId = ''): AddAccountParams {
   return {
+    id: undefined,
     appId: defaultAppId || undefined,
     appName: '',
     riskLevel: undefined,
@@ -78,9 +82,17 @@ const [Form, formApi] = useVbenForm({
   handleSubmit: onSubmit,
   showDefaultActions: false,
   commonConfig: {
-    labelWidth: 110,
+    labelWidth: 140,
   },
   schema: [
+    {
+      component: 'Input',
+      fieldName: 'id',
+      label: '',
+      componentProps: {
+        type: 'hidden',
+      },
+    },
     {
       component: 'Select',
       fieldName: 'appId',
@@ -225,12 +237,95 @@ const [Modal, modalApi] = useVbenModal({
   onOpenChange: async (isOpen) => {
     if (isOpen) {
       const data = modalApi.getData<AccountPoolModalData>();
+      modalMode.value = data?.mode === 'edit' ? 'edit' : 'create';
+      modalApi.setState({
+        title:
+          modalMode.value === 'edit'
+            ? $t('accountPool.form.editAccountTitle')
+            : $t('accountPool.form.addAccountTitle'),
+      });
       groupOptions.value = data?.groupOptions ?? [];
       platformOptions.value = data?.platformOptions ?? [];
+      await formApi.updateSchema([
+        {
+          fieldName: 'appId',
+          componentProps: {
+            placeholder: $t('accountPool.form.appNamePlaceholder'),
+            filterable: true,
+            clearable: true,
+            options: platformSelectOptions,
+            disabled: modalMode.value === 'edit',
+          },
+        },
+        {
+          fieldName: 'appAccount',
+          componentProps: {
+            placeholder: $t('accountPool.form.userAccountPlaceholder'),
+            maxlength: 50,
+            clearable: true,
+            disabled: modalMode.value === 'edit',
+          },
+        },
+      ]);
       await formApi.resetForm();
+      if (modalMode.value === 'edit') {
+        const accountId = data?.accountId || ''
+        try {
+          const detailRes = await getAccountDetailApi(accountId);
+          const detail = detailRes?.data ?? {};
+          await formApi.setValues({
+            ...getDefaultValues(),
+            id: detail.id,
+            appId: detail.appId,
+            appName: detail.appName ?? '',
+            riskLevel: detail.riskLevel,
+            loginStatus: detail.loginStatus,
+            nickName: detail.nickName ?? '',
+            appAccount: detail.appAccount ?? '',
+            accountPasswd: detail.accountPasswd ?? '',
+            emailAddr: detail.emailAddr ?? '',
+            emailPasswd: detail.emailPasswd ?? '',
+            twiceCheck: detail.twiceCheck ?? '',
+            remark: detail.remark ?? '',
+            suiteId: detail.suiteId ?? '',
+            suiteName: detail.suiteName ?? '',
+            suiteDesc: detail.suiteDesc ?? '',
+          });
+        } catch (error) {
+          console.error('[accountPool] 查询账号详情失败:', error);
+          ElMessage.error($t('accountPool.message.loadDetailFailed'));
+          modalApi.close();
+        }
+        return;
+      }
       await formApi.setValues(getDefaultValues(data?.defaultAppId ?? ''));
       return;
     }
+    modalMode.value = 'create';
+    modalApi.setState({
+      title: $t('accountPool.form.addAccountTitle'),
+    });
+    await formApi.updateSchema([
+      {
+        fieldName: 'appId',
+        componentProps: {
+          placeholder: $t('accountPool.form.appNamePlaceholder'),
+          filterable: true,
+          clearable: true,
+          options: platformSelectOptions,
+          disabled: false,
+        },
+      },
+      {
+        fieldName: 'appAccount',
+        componentProps: {
+          placeholder: $t('accountPool.form.userAccountPlaceholder'),
+          maxlength: 50,
+          clearable: true,
+          disabled: false,
+        },
+      },
+    ]);
     await formApi.resetForm();
   },
 });
@@ -250,13 +345,24 @@ async function onSubmit(values: AddAccountParams) {
     };
     const res = await addAccountApi(payload);
     if (res?.code === 100000) {
-      ElMessage.success($t('accountPool.message.addSuccess'));
+      ElMessage.success(
+        modalMode.value === 'edit'
+          ? $t('accountPool.message.editSuccess')
+          : $t('accountPool.message.addSuccess'),
+      );
       modalApi.close();
       emit('success-after');
     }
   } catch (error) {
-    console.error('[accountPool] 新增账号失败:', error);
-    ElMessage.error($t('accountPool.message.addFailed'));
+    console.error(
+      `[accountPool] ${modalMode.value === 'edit' ? '编辑' : '新增'}账号失败:`,
+      error,
+    );
+    ElMessage.error(
+      modalMode.value === 'edit'
+        ? $t('accountPool.message.editFailed')
+        : $t('accountPool.message.addFailed'),
+    );
   } finally {
     creating.value = false;
     modalApi.unlock();
@@ -269,3 +375,9 @@ async function onSubmit(values: AddAccountParams) {
     <Form />
   </Modal>
 </template>
+
+<style scoped>
+:deep(.el-form-item__label) {
+  white-space: nowrap;
+}
+</style>

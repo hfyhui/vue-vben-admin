@@ -15,6 +15,7 @@ import { useAccessStore } from '@vben/stores';
 
 import { ElMessage } from 'element-plus';
 
+import { $t } from '#/locales';
 import { useAuthStore } from '#/store';
 
 import { refreshTokenApi } from './core';
@@ -25,6 +26,26 @@ const socialBaseURL = import.meta.env.VITE_GLOB_SOCIAL_API_URL || '/social';
 const authApiBaseURL = import.meta.env.VITE_GLOB_AUTH_API_URL || '/auth';
 const customAuthorization = import.meta.env.VITE_GLOB_AUTHORIZATION;
 const backendSuccessCodes = new Set([200, 100000]);
+
+/**
+ * platform/social/auth 等后端约定：HTTP 200 且 body.code === 401，或 HTTP 401，表示登录失效。
+ * 与 createRequestClient 中 doReAuthenticate 行为一致（清 token、提示、跳转登录或弹窗）。
+ */
+async function handleBackendUnauthorized(message?: string) {
+  const accessStore = useAccessStore();
+  const authStore = useAuthStore();
+  accessStore.setAccessToken(null);
+  const text = message || $t('authentication.loginAgainSubTitle');
+  ElMessage.error(text);
+  if (
+    preferences.app.loginExpiredMode === 'modal' &&
+    accessStore.isAccessChecked
+  ) {
+    accessStore.setLoginExpired(true);
+  } else {
+    await authStore.logout();
+  }
+}
 
 function formatBearerToken(token: null | string) {
   return token ? `Bearer ${token}` : '';
@@ -199,19 +220,31 @@ function createBackendClient(baseURL: string) {
   });
 
   client.addResponseInterceptor({
-    fulfilled: (response) => {
+    fulfilled: async (response) => {
       const { data: responseData, status } = response;
       if (status >= 200 && status < 400) {
         // 检查响应数据中的code字段
         if (responseData && typeof responseData === 'object' && 'code' in responseData) {
           const { code, msg } = responseData;
-          if (backendSuccessCodes.has(Number(code))) {
+          if (backendSuccessCodes.has(code)) {
             return responseData;
+          }
+          // 业务码 401：登录状态过期（HTTP 可能仍为 200）
+          if (code === 401) {
+            const tip =
+              typeof msg === 'string' && msg ? msg : undefined;
+            await handleBackendUnauthorized(tip);
+            return Promise.reject(
+              Object.assign(new Error(tip || 'Unauthorized'), {
+                response,
+                isBusiness401: true,
+              }),
+            );
           }
           // POST /platform/asset/check/account-device：500511 由关联中心二次确认，不在此自动 toast
           const reqUrl = response.config?.url ?? '';
           const isAccountDeviceCheck = reqUrl.includes('check/account-device');
-          const needConfirmCode = Number(code) === 500511;
+          const needConfirmCode = code === 500511;
           if (msg && !(isAccountDeviceCheck && needConfirmCode)) {
             ElMessage.error(msg);
           }
@@ -222,9 +255,19 @@ function createBackendClient(baseURL: string) {
 
       return response;
     },
-    rejected: (error) => {
-      // 处理网络错误等异常情况
-      const errorMessage = error?.response?.data?.msg || '网络请求失败';
+    rejected: async (error) => {
+      const status = error?.response?.status;
+      const data = error?.response?.data;
+      if (status === 401) {
+        const tip =
+          (typeof data?.msg === 'string' && data.msg) ||
+          (typeof data?.message === 'string' && data.message) ||
+          undefined;
+        await handleBackendUnauthorized(tip);
+        return Promise.reject(error);
+      }
+      const errorMessage =
+        data?.msg || data?.message || error?.message || '网络请求失败';
       ElMessage.error(errorMessage);
       return Promise.reject(error);
     },

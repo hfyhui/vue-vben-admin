@@ -326,6 +326,20 @@ async function onReverseQuery() {
     ElMessage.error($t('associationCenter.reverseQueryFailed'));
   }
 }
+
+type ClearSelectionType = 'deviceBoard' | 'accountBoard' | 'proxyBoard' | 'all';
+
+function onClearSelection(command: ClearSelectionType) {
+  if (command === 'accountBoard' || command === 'all') {
+    accountBoardRef.value?.clearSelectedAccounts?.();
+  }
+  if (command === 'proxyBoard' || command === 'all') {
+    proxyBoardRef.value?.clearSelectedProxies?.();
+  }
+  if (command === 'deviceBoard' || command === 'all') {
+    deviceBoardRef.value?.clearSelectedDevices?.();
+  }
+}
 </script>
 
 <template>
@@ -383,6 +397,27 @@ async function onReverseQuery() {
         <el-button type="primary" @click="onReverseQuery">
           {{ $t('associationCenter.reverseQuery') }}
         </el-button>
+        <el-dropdown @command="onClearSelection">
+          <el-button type="primary">
+            {{ $t('associationCenter.clearSelection') }}
+          </el-button>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item command="accountBoard">
+                {{ $t('associationCenter.clearSelectionAccountBoard') }}
+              </el-dropdown-item>
+              <el-dropdown-item command="proxyBoard">
+                {{ $t('associationCenter.clearSelectionProxyBoard') }}
+              </el-dropdown-item>
+              <el-dropdown-item command="deviceBoard">
+                {{ $t('associationCenter.clearSelectionDeviceBoard') }}
+              </el-dropdown-item>
+              <el-dropdown-item command="all">
+                {{ $t('associationCenter.clearSelectionAll') }}
+              </el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
       </div>
       <el-button type="primary" @click="onViewSwitch">
         {{ $t('associationCenter.viewSwitch') }}

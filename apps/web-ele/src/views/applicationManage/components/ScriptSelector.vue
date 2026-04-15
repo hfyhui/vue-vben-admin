@@ -5,6 +5,7 @@ import { ElMessage } from 'element-plus';
 import { Delete, Edit, Plus } from '@element-plus/icons-vue';
 
 import {
+  getDynamicFormDetailApi,
   getApplicationScriptListApi,
   saveDynamicFormApi,
   type ApplicationScriptItem,
@@ -183,6 +184,16 @@ function buildApiScriptMeta(item?: any) {
   };
 }
 
+function normalizeProgramCategory(raw: unknown) {
+  if (raw == null || raw === '') return '';
+  const rawStr = raw;
+  const matched = scriptCategoryOptions.value.find(
+    (option: { label: string; value: string }) =>
+      option.value === rawStr || option.label === rawStr,
+  );
+  return matched ? matched.value : rawStr;
+}
+
 function buildProgramTypeList(ids: string[]) {
   return ids.map((id) => {
     const local = localScriptMap.value[id];
@@ -240,19 +251,38 @@ function resetDrawerForm() {
 }
 
 async function addTaskType(row?: ScriptCard) {
+  await assetEnumsStore.ensureAssetEnumsLoaded();
   await fetchScriptOptions();
   resetDrawerForm();
   currentEditId.value = '';
   if (row?.id) {
+    let detailRow: Record<string, any> = {};
+    try {
+      const detailRes = await getDynamicFormDetailApi(row.id);
+      detailRow = ((detailRes as any)?.data ?? {}) as Record<string, any>;
+    } catch {
+      detailRow = {};
+    }
     currentEditId.value = row.id;
     drawerForm.id = row.id;
-    drawerForm.scriptId = row.scriptId;
-    drawerForm.dynamicFormId = row.dynamicFormId;
-    drawerForm.programName = row.programName;
-    drawerForm.logoPath = row.logoPath;
-    drawerForm.programCategory = row.programCategory;
-    drawerForm.currentForm = row.currentForm || [];
-    drawerForm.extendedColumn =  row.extendedColumn || [];
+    drawerForm.scriptId = detailRow.scriptId;
+    drawerForm.dynamicFormId = detailRow.id;
+    drawerForm.programName = detailRow.programName;
+    drawerForm.logoPath = detailRow.logoPath;
+    drawerForm.programCategory = normalizeProgramCategory(detailRow.programCategory);
+    drawerForm.currentForm = detailRow.form
+    drawerForm.extendedColumn = detailRow.extendedColumn
+      ? detailRow.extendedColumn
+      : [];
+    if (drawerForm.scriptId) {
+      const scriptMeta = scriptOptionsRaw.value.find((item: any) => item.id === drawerForm.scriptId);
+      if (scriptMeta) {
+        const apiMeta = buildApiScriptMeta(scriptMeta);
+        if (!drawerForm.programCategory) {
+          drawerForm.programCategory = normalizeProgramCategory(apiMeta.programCategory);
+        }
+      }
+    }
   }
   scriptDrawerVisible.value = true;
 }
@@ -272,11 +302,15 @@ function onScriptIdChange(value: string) {
     drawerForm.logoPath = apiMeta.logoPath;
   }
   if (!drawerForm.programCategory) {
-    drawerForm.programCategory = apiMeta.programCategory;
+    drawerForm.programCategory = normalizeProgramCategory(apiMeta.programCategory);
   }
-  // 切换脚本时优先回填接口返回的动态表单配置
-  drawerForm.currentForm = apiMeta.currentForm;
-  drawerForm.extendedColumn = apiMeta.extendedColumn;
+  // 仅在当前无自定义字段时回填默认配置，避免覆盖用户刚新增/编辑的表单项
+  const hasCustomForm = Array.isArray(drawerForm.currentForm) && drawerForm.currentForm.length > 0;
+  const hasCustomExt = Array.isArray(drawerForm.extendedColumn) && drawerForm.extendedColumn.length > 0;
+  if (!hasCustomForm && !hasCustomExt) {
+    drawerForm.currentForm = apiMeta.currentForm || [];
+    drawerForm.extendedColumn = apiMeta.extendedColumn || [];
+  }
 }
 
 async function submitFn() {
@@ -385,7 +419,7 @@ function removeFn(row: ScriptCard) {
       class="script-selector-drawer"
       :title="drawerTitle"
       size="75%"
-      :close-on-click-modal="false"
+      :close-on-click-modal="true"
       destroy-on-close
       @close="cancelFn"
     >

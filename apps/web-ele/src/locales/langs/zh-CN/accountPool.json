@@ -36,7 +36,8 @@
     "associatedDevices": "关联设备",
     "deviceIp": "关联设备",
     "associatedAgents": "关联代理",
-    "clickToCopy": "单击复制"
+    "clickToCopy": "单击复制",
+    "operation": "操作"
   },
   "action": {
     "add": "新增",
@@ -56,6 +57,7 @@
   },
   "form": {
     "addAccountTitle": "新增账号",
+    "editAccountTitle": "编辑账号",
     "appName": "应用名称",
     "appNamePlaceholder": "请选择应用",
     "userNickname": "用户昵称",
@@ -91,6 +93,8 @@
     "selectIdFailed": "未获取到账号ID",
     "selectImportPlatformFirst": "请先在导入平台下拉中选择平台",
     "missingImportAppId": "缺少应用ID，请先选择导入平台",
+    "missingAccountId": "缺少账号ID，无法编辑",
+    "editDisabledWhenLocked": "账号已锁定，无法编辑",
     "batchLockConfirm": "确定要锁定选中的 {count} 个账号吗？",
     "batchUnlockConfirm": "确定要解锁选中的 {count} 个账号吗？",
     "batchLockConfirmTitle": "批量锁定确认",
@@ -110,6 +114,12 @@
     "downloadFailed": "下载失败",
     "addSuccess": "新增账号成功",
     "addFailed": "新增账号失败",
+    "editSuccess": "编辑账号成功",
+    "editFailed": "编辑账号失败",
+    "loadDetailFailed": "获取账号详情失败",
+    "editRemarkPlaceholder": "请输入备注",
+    "editRemarkSuccess": "备注更新成功",
+    "editRemarkFailed": "备注更新失败",
     "userAccountLengthExceeded": "用户账号最多支持50个字符",
     "passwordLengthExceeded": "账号密码最多支持20个字符",
     "emailLengthExceeded": "邮箱最多支持50个字符",

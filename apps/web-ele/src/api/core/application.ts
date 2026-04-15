@@ -1,4 +1,4 @@
-import { socialClient } from '../request';
+import { proxyClient } from '../request';
 
 /** 应用列表查询参数 */
 export interface ApplicationPageParams {
@@ -70,6 +70,8 @@ export interface ApplicationUpsertPayload {
   logoPath: string;
   packageName?: string;
   activityName?: string;
+  /** 与旧版 CEModal 一致：国内 / 国外 */
+  appArea?: string;
   programIds: string[];
   programType?: Record<string, any>[];
   orderNum?: number;
@@ -88,14 +90,14 @@ export async function getApplicationPageApi(
       applicationStatus: params.applicationStatus,
     }),
   };
-  return socialClient.post('/application/management/page', reqParams);
+  return proxyClient.post('/application/management/page', reqParams);
 }
 
 /** 删除应用（支持批量） */
 export async function deleteApplicationApi(
   checkIds: string[],
 ): Promise<ApiResponse<null>> {
-  return socialClient.delete('/application/management', {
+  return proxyClient.delete('/application/management', {
     data: { checkIds } satisfies ApplicationDeleteParams,
   });
 }
@@ -105,35 +107,42 @@ export async function updateApplicationStatusApi(
   id: string,
   status: 0 | 1,
 ): Promise<ApiResponse<null>> {
-  return socialClient.post(`/application/management/${id}/${status}`);
+  return proxyClient.post(`/application/management/${id}/${status}`);
 }
 
 /** 获取应用详情 */
 export async function getApplicationDetailApi(
   id: string,
 ): Promise<ApiResponse<ApplicationItem>> {
-  return socialClient.get(`/application/management/${id}`);
+  return proxyClient.get(`/application/management/${id}`);
 }
 
 /** 获取脚本清单 */
 export async function getApplicationScriptListApi(): Promise<
   ApiResponse<ApplicationScriptItem[]>
 > {
-  return socialClient.get('/application/management/script');
+  return proxyClient.get('/application/management/script');
 }
 
 /** 获取动态表单字段配置 */
 export async function getDynamicFormColumnConfigApi(): Promise<
   ApiResponse<DynamicFormColumnItem[]>
 > {
-  return socialClient.post('/dynamic/form/column/table', {});
+  return proxyClient.post('/dynamic/form/column/table', {});
 }
 
 /** 新增/编辑动态表单 */
 export async function saveDynamicFormApi(
   data: DynamicFormUpsertPayload,
 ): Promise<ApiResponse<{ id?: string }>> {
-  return socialClient.put('/dynamic/form', data);
+  return proxyClient.put('/dynamic/form', data);
+}
+
+/** 动态表单详情 */
+export async function getDynamicFormDetailApi(
+  id: string,
+): Promise<ApiResponse<Record<string, any>>> {
+  return proxyClient.get(`/dynamic/form/${id}`);
 }
 
 /** 新增应用 */
@@ -141,7 +150,7 @@ export async function createApplicationApi(
   data: ApplicationUpsertPayload,
 ): Promise<ApiResponse<null>> {
   // 兼容旧系统：新增走 PUT
-  return socialClient.put('/application/management', data);
+  return proxyClient.put('/application/management', data);
 }
 
 /** 编辑应用 */
@@ -149,5 +158,5 @@ export async function updateApplicationApi(
   data: ApplicationUpsertPayload,
 ): Promise<ApiResponse<null>> {
   // 兼容旧系统：编辑走 POST
-  return socialClient.post('/application/management', data);
+  return proxyClient.post('/application/management', data);
 }

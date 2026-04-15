@@ -145,6 +145,7 @@ export const useColumns = (options: ContainerPoolTableConfigOptions = {}) => [
   { field: 'phoneModel', title: $t('containerPool.table.phoneModel'), minWidth: 110 },
   { field: 'operator', title: $t('containerPool.table.operator'), minWidth: 100 },
   { field: 'phoneNum', title: $t('containerPool.table.phoneNumber'), minWidth: 120 },
+  { field: 'deviceVersion', title: $t('containerPool.table.deviceVersion'), minWidth: 120 },
   {
     field: 'suiteNames',
     title: $t('containerPool.table.deviceGroup'),
