@@ -51,8 +51,6 @@ const userTableRef = ref();
 
 const selectedAccountIds = ref<string[]>([]);
 const selectedUserIds = ref<string[]>([]);
-const selectedAccountRows = ref<any[]>([]);
-const selectedUserRows = ref<any[]>([]);
 
 /** 与参考项目一致：Tab1 在系统用户表、Tab2 在社媒账号表展示「仅展示已勾选」 */
 const userShowSelectedOnly = ref(false);
@@ -60,14 +58,14 @@ const accountShowSelectedOnly = ref(false);
 
 const displayUserRows = computed(() => {
   if (activeTab.value === 'assignUsers' && userShowSelectedOnly.value) {
-    return [...selectedUserRows.value];
+    return Array.isArray(smStore.checkInfo) ? [...smStore.checkInfo] : [];
   }
   return userRows.value;
 });
 
 const displayAccountRows = computed(() => {
   if (activeTab.value === 'assignAccounts' && accountShowSelectedOnly.value) {
-    return [...selectedAccountRows.value];
+    return Array.isArray(smStore.checkInfo) ? [...smStore.checkInfo] : [];
   }
   return accountRows.value;
 });
@@ -89,10 +87,10 @@ async function loadApps() {
     if (res?.code === 200 || res?.code === 100000) {
       const records = res.data?.records ?? [];
       apps.value = records;
-      const firstId = records[0]?.id
+      const firstId = records[0]?.id ?? '';
       currentAppId.value = firstId;
       smStore.setCheckAppList(records);
-      smStore.setCheckAppId(firstId);
+      if (firstId) smStore.setCheckAppId(firstId);
     }
   } catch {
     apps.value = [];
@@ -218,7 +216,14 @@ function onPickApp(id: string) {
 
 function onAccountSelect(rows: any[]) {
   if (syncingAccount) return;
-  selectedAccountRows.value = rows;
+  if (
+    activeTab.value === 'assignAccounts' &&
+    accountShowSelectedOnly.value &&
+    rows.length === 0 &&
+    smStore.checkInfo.length > 0
+  ) {
+    return;
+  }
   selectedAccountIds.value = rows.map((r) => r.accountId);
   if (activeTab.value === 'assignUsers') {
     /** 空选时由 store 直接清空，不请求 /accounts/users（保存后 clearSelection 会触发） */
@@ -230,7 +235,14 @@ function onAccountSelect(rows: any[]) {
 
 function onUserSelect(rows: any[]) {
   if (syncingUser) return;
-  selectedUserRows.value = rows;
+  if (
+    activeTab.value === 'assignUsers' &&
+    userShowSelectedOnly.value &&
+    rows.length === 0 &&
+    smStore.checkInfo.length > 0
+  ) {
+    return;
+  }
   selectedUserIds.value = rows.map((r) => r.userId);
   if (activeTab.value === 'assignAccounts') {
     void smStore.fetchAccountsByUsers(selectedUserIds.value);
@@ -257,8 +269,6 @@ function onTabChange() {
   smStore.resetBindings();
   selectedAccountIds.value = [];
   selectedUserIds.value = [];
-  selectedAccountRows.value = [];
-  selectedUserRows.value = [];
   userShowSelectedOnly.value = false;
   accountShowSelectedOnly.value = false;
   accountPage.current = 1;
@@ -349,8 +359,6 @@ async function saveBind() {
       smStore.resetBindings();
       selectedAccountIds.value = [];
       selectedUserIds.value = [];
-      selectedAccountRows.value = [];
-      selectedUserRows.value = [];
       userShowSelectedOnly.value = false;
       accountShowSelectedOnly.value = false;
       loadAccounts();
@@ -434,7 +442,7 @@ void loadApps().then(() => {
               height="100%"
               @selection-change="onAccountSelect"
             >
-            <ElTableColumn type="selection" width="48" />
+            <ElTableColumn type="selection" width="48" :reserve-selection="true" />
             <ElTableColumn
               prop="owner"
               :label="$t('systemManage.socialMediaAccount.owner')"
@@ -523,7 +531,7 @@ void loadApps().then(() => {
               height="100%"
               @selection-change="onUserSelect"
             >
-            <ElTableColumn type="selection" width="48" />
+            <ElTableColumn type="selection" width="48" :reserve-selection="true" />
             <ElTableColumn
               prop="userName"
               :label="$t('systemManage.socialMediaAccount.name')"
