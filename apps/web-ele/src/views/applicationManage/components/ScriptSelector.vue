@@ -2,7 +2,7 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 
 import { ElMessage } from 'element-plus';
-import { Edit, Plus } from '@element-plus/icons-vue';
+import { Delete, Edit, Plus } from '@element-plus/icons-vue';
 
 import {
   getDynamicFormDetailApi,
@@ -313,6 +313,23 @@ function onScriptIdChange(value: string) {
   }
 }
 
+function canDeleteScript(item: ScriptCard) {
+  const protectedScriptNames = new Set(['信息修改', '信息同步']);
+  const name = String(item.programName || '').trim();
+  return !!name && !protectedScriptNames.has(name);
+}
+
+function removeScript(item: ScriptCard) {
+  if (!canDeleteScript(item)) {
+    return;
+  }
+  const nextIds = modelIds.value.filter((id) => id !== item.id);
+  delete localScriptMap.value[item.id];
+  emit('update:modelValue', nextIds);
+  emit('change', nextIds);
+  emit('changeDetail', buildProgramTypeList(nextIds));
+}
+
 async function submitFn() {
   const valid = await drawerSubmitFormRef.value?.validateFn?.();
   if (!valid) {
@@ -393,6 +410,13 @@ async function submitFn() {
           <div class="icon-box">
             <el-icon class="icon" @click.stop="addTaskType(item)">
               <Edit />
+            </el-icon>
+            <el-icon
+              v-if="canDeleteScript(item)"
+              class="icon"
+              @click.stop="removeScript(item)"
+            >
+              <Delete />
             </el-icon>
           </div>
         </div>
