@@ -447,9 +447,12 @@ async function saveBind() {
       selectedAccountIds.value = [];
       selectedAccountUserIds.value = [];
       selectedUserIds.value = [];
+      accountTableRef.value?.clearSelection?.();
+      userTableRef.value?.clearSelection?.();
       userShowSelectedOnly.value = false;
       accountShowSelectedOnly.value = false;
       loadAccounts();
+      loadUsers();
     }
   } catch {
     /* client toast */
@@ -825,7 +828,7 @@ void loadApps().then(() => {
   box-shadow: 0 0 0 1px var(--el-border-color) inset;
 }
 .no-lines-table :deep(tr.locked-row td) {
-  background: var(--el-fill-color-light);
-  color: var(--el-text-color-secondary);
+  background: color-mix(in srgb, var(--el-fill-color-light) 45%, transparent);
+  color: color-mix(in srgb, var(--el-text-color-secondary) 78%, var(--el-text-color-primary));
 }
 </style>
