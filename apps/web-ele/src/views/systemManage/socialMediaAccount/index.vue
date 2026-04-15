@@ -52,25 +52,44 @@ const userTableRef = ref();
 
 const selectedAccountIds = ref<string[]>([]);
 const selectedUserIds = ref<string[]>([]);
+const selectedAccountUserIds = ref<string[]>([]);
 
 /** 与参考项目一致：Tab1 在系统用户表、Tab2 在社媒账号表展示「仅展示已勾选」 */
 const userShowSelectedOnly = ref(false);
 const accountShowSelectedOnly = ref(false);
 
+function getAccountKey(row: any) {
+  return String(row?.accountId ?? row?.id ?? '');
+}
+
+function getUserKey(row: any) {
+  return String(row?.userId ?? row?.id ?? '');
+}
+
+const checkInfoList = computed<any[]>(() =>
+  Array.isArray(smStore.checkInfo) ? smStore.checkInfo : [],
+);
+
 const displayUserRows = computed(() => {
   if (activeTab.value === 'assignUsers' && userShowSelectedOnly.value) {
-    return Array.isArray(smStore.checkInfo) ? [...smStore.checkInfo] : [];
+    return [...checkInfoList.value];
   }
   return userRows.value;
 });
 
 const displayAccountRows = computed(() => {
   if (activeTab.value === 'assignAccounts' && accountShowSelectedOnly.value) {
-    return Array.isArray(smStore.checkInfo) ? [...smStore.checkInfo] : [];
+    return [...checkInfoList.value];
   }
   return accountRows.value;
 });
 
+/**
+ * 与 social_media_web 一致：
+ * - system/index 用户表：仅当左侧选中账号对应唯一 userId 时，禁用该用户行（checkUserIds.includes）
+ * - social/index 社媒表：仅当左侧选中用户唯一时，禁用 userId 与之匹配的账号行
+ * 不可用整份 checkInfo 列表做锁定，否则会把接口返回的其它行也置灰。
+ */
 let syncingAccount = false;
 let syncingUser = false;
 
@@ -153,7 +172,7 @@ function syncAccountSelection() {
   syncingAccount = true;
   tb.clearSelection();
   for (const row of accountRows.value) {
-    if (selectedAccountIds.value.includes(row.accountId)) {
+    if (selectedAccountIds.value.includes(getAccountKey(row))) {
       tb.toggleRowSelection(row, true);
     }
   }
@@ -168,14 +187,15 @@ function syncAccountSelectionFromStore() {
   if (!tb) return;
   syncingAccount = true;
   tb.clearSelection();
-  const want = new Set(smStore.checkInfo.map((a: any) => a.accountId));
+  const want = new Set(checkInfoList.value.map((a: any) => getAccountKey(a)));
   const rows =
     activeTab.value === 'assignAccounts' && accountShowSelectedOnly.value
-      ? (Array.isArray(smStore.checkInfo) ? smStore.checkInfo : [])
+      ? checkInfoList.value
       : accountRows.value;
   for (const row of rows) {
-    if (want.has(row.accountId)) {
-      tb.toggleRowSelection(row, true);
+    if (want.has(getAccountKey(row))) {
+      // 对应社媒项目：联动回填时即使行已禁用，也要保持“已勾选 + 置灰”
+      tb.toggleRowSelection(row, true, true);
     }
   }
   nextTick(() => {
@@ -188,14 +208,15 @@ function syncUserSelectionFromStore() {
   if (!tb) return;
   syncingUser = true;
   tb.clearSelection();
-  const want = new Set(smStore.checkInfo.map((u: any) => u.userId));
+  const want = new Set(checkInfoList.value.map((u: any) => getUserKey(u)));
   const rows =
     activeTab.value === 'assignUsers' && userShowSelectedOnly.value
-      ? (Array.isArray(smStore.checkInfo) ? smStore.checkInfo : [])
+      ? checkInfoList.value
       : userRows.value;
   for (const row of rows) {
-    if (want.has(row.userId)) {
-      tb.toggleRowSelection(row, true);
+    if (want.has(getUserKey(row))) {
+      // 对应社媒项目：联动回填时即使行已禁用，也要保持“已勾选 + 置灰”
+      tb.toggleRowSelection(row, true, true);
     }
   }
   nextTick(() => {
@@ -203,16 +224,22 @@ function syncUserSelectionFromStore() {
   });
 }
 
-function onPickApp(id: string) {
+async function onPickApp(id: string) {
   currentAppId.value = id;
   smStore.setCheckAppId(id);
   accountPage.current = 1;
   selectedAccountIds.value = [];
+  selectedAccountUserIds.value = [];
   userShowSelectedOnly.value = false;
   accountShowSelectedOnly.value = false;
   smStore.resetBindings();
-  loadAccounts();
-  loadUsers();
+  if (activeTab.value === 'assignAccounts') {
+    await smStore.fetchAccountsByUsers(selectedUserIds.value);
+    loadAccounts();
+  } else {
+    await loadUsers();
+    loadAccounts();
+  }
 }
 
 function onAccountSelect(rows: any[]) {
@@ -225,7 +252,10 @@ function onAccountSelect(rows: any[]) {
   ) {
     return;
   }
-  selectedAccountIds.value = rows.map((r) => r.accountId);
+  selectedAccountIds.value = rows.map((r) => getAccountKey(r)).filter(Boolean);
+  selectedAccountUserIds.value = [
+    ...new Set(rows.map((r) => String(r?.userId ?? '')).filter(Boolean)),
+  ];
   if (activeTab.value === 'assignUsers') {
     /** 空选时由 store 直接清空，不请求 /accounts/users（保存后 clearSelection 会触发） */
     void smStore.fetchUsersByAccounts(selectedAccountIds.value);
@@ -244,7 +274,7 @@ function onUserSelect(rows: any[]) {
   ) {
     return;
   }
-  selectedUserIds.value = rows.map((r) => r.userId);
+  selectedUserIds.value = rows.map((r) => getUserKey(r)).filter(Boolean);
   if (activeTab.value === 'assignAccounts') {
     void smStore.fetchAccountsByUsers(selectedUserIds.value);
   } else {
@@ -271,6 +301,7 @@ function onTabChange() {
   userTableRef.value?.clearSelection?.();
   smStore.resetBindings();
   selectedAccountIds.value = [];
+  selectedAccountUserIds.value = [];
   selectedUserIds.value = [];
   userShowSelectedOnly.value = false;
   accountShowSelectedOnly.value = false;
@@ -319,15 +350,56 @@ function onUserOnlySelectedChange() {
 }
 
 function isDisabledUser(row: any) {
-  return String(row?.status ?? '') === '1';
+  return row?.status == 1;
+}
+
+function isLockFlagTrue(row: any) {
+  return row?.isLock === true;
+}
+
+function isLeftAccountTable() {
+  return activeTab.value === 'assignUsers';
+}
+
+function isLeftUserTable() {
+  return activeTab.value === 'assignAccounts';
+}
+
+function isLockedAccount(row: any) {
+  if (isLeftAccountTable() && isLockFlagTrue(row)) {
+    return true;
+  }
+  if (activeTab.value !== 'assignAccounts' || selectedUserIds.value.length !== 1) {
+    return false;
+  }
+  const sel = selectedUserIds.value[0];
+  return row?.userId == sel;
+}
+
+function isLockedUser(row: any) {
+  if (isLeftUserTable() && isLockFlagTrue(row)) {
+    return true;
+  }
+  if (activeTab.value !== 'assignUsers' || selectedAccountUserIds.value.length !== 1) {
+    return false;
+  }
+  return row?.userId == selectedAccountUserIds.value[0];
+}
+
+function accountSelectable(row: any) {
+  return !isLockedAccount(row);
 }
 
 function userSelectable(row: any) {
-  return !isDisabledUser(row);
+  return !isDisabledUser(row) && !isLockedUser(row);
+}
+
+function accountRowClassName({ row }: { row: any }) {
+  return isLockedAccount(row) ? 'locked-row' : '';
 }
 
 function userRowClassName({ row }: { row: any }) {
-  return isDisabledUser(row) ? 'disabled-row' : '';
+  return isDisabledUser(row) || isLockedUser(row) ? 'locked-row' : '';
 }
 
 async function saveBind() {
@@ -373,6 +445,7 @@ async function saveBind() {
       ElMessage.success($t('systemManage.opSuccess'));
       smStore.resetBindings();
       selectedAccountIds.value = [];
+      selectedAccountUserIds.value = [];
       selectedUserIds.value = [];
       userShowSelectedOnly.value = false;
       accountShowSelectedOnly.value = false;
@@ -453,11 +526,17 @@ void loadApps().then(() => {
               v-loading="accountLoading"
               :data="displayAccountRows"
               row-key="accountId"
+              :row-class-name="accountRowClassName"
               class="no-lines-table"
               height="100%"
               @selection-change="onAccountSelect"
             >
-            <ElTableColumn type="selection" width="48" :reserve-selection="true" />
+            <ElTableColumn
+              type="selection"
+              width="48"
+              :reserve-selection="true"
+              :selectable="accountSelectable"
+            />
             <ElTableColumn
               prop="owner"
               :label="$t('systemManage.socialMediaAccount.owner')"
@@ -745,7 +824,7 @@ void loadApps().then(() => {
   background-color: var(--el-fill-color);
   box-shadow: 0 0 0 1px var(--el-border-color) inset;
 }
-.no-lines-table :deep(tr.disabled-row td) {
+.no-lines-table :deep(tr.locked-row td) {
   background: var(--el-fill-color-light);
   color: var(--el-text-color-secondary);
 }
