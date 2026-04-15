@@ -44,8 +44,8 @@
     "missingSuiteId": "缺少分组标识，无法保存，请关闭后重试"
   },
   "socialMediaAccount": {
-    "assignSystemUserToAccount": "分配系统用户至账号",
-    "assignAccountToSystemUser": "分配账号至系统用户",
+    "assignSystemUserToAccount": "为社媒账号分配系统用户",
+    "assignAccountToSystemUser": "为系统用户分配社媒账号",
     "saveBind": "保存绑定",
     "searchPlaceholderSocial": "搜索账号/邮箱/分组",
     "searchPlaceholderSystem": "搜索用户名/昵称",

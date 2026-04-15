@@ -2,7 +2,7 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 
 import { ElMessage } from 'element-plus';
-import { Delete, Edit, Plus } from '@element-plus/icons-vue';
+import { Edit, Plus } from '@element-plus/icons-vue';
 
 import {
   getDynamicFormDetailApi,
@@ -373,13 +373,6 @@ async function submitFn() {
   cancelFn();
 }
 
-function removeFn(row: ScriptCard) {
-  const nextIds = modelIds.value.filter((id) => id !== row.id);
-  delete localScriptMap.value[row.id];
-  emit('update:modelValue', nextIds);
-  emit('change', nextIds);
-  emit('changeDetail', buildProgramTypeList(nextIds));
-}
 </script>
 
 <template>
@@ -400,9 +393,6 @@ function removeFn(row: ScriptCard) {
           <div class="icon-box">
             <el-icon class="icon" @click.stop="addTaskType(item)">
               <Edit />
-            </el-icon>
-            <el-icon class="icon" @click.stop="removeFn(item)">
-              <Delete />
             </el-icon>
           </div>
         </div>
