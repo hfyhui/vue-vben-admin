@@ -2,11 +2,19 @@ import type { VbenFormProps } from '#/adapter/form';
 
 import { h } from 'vue';
 
-import { getContainerAssetPageApi, type AssetGroupItem } from '#/api/core/asset';
+import {
+  getContainerAssetPageApi,
+  type AssetGroupItem,
+  type AssetOperatorItem,
+} from '#/api/core/asset';
 
 import { $t } from '#/locales';
 
 export type ContainerPoolSortOption = { label: string; value: string };
+export type ContainerPoolStatusOption = { label: string; value: string };
+export type ContainerPoolOperatorOption = AssetOperatorItem;
+export type ContainerPoolBrandOption = { label: string; value: string };
+export type ContainerPoolModelOption = { label: string; value: string };
 
 /** 与 POST /asset/container/page 返回 records 项一致（容器池列表） */
 export interface ContainerPoolRow {
@@ -49,6 +57,21 @@ export async function getContainerPoolListApi(_params: {
   containerSearch?: string;
   containerGroup?: string[];
   sortType?: string;
+  server?: string;
+  inputTime?: string;
+  chip?: string;
+  deviceIp?: string;
+  romVersion?: string;
+  phoneBrand?: string;
+  phoneModel?: string;
+  operator?: string;
+  phoneNum?: string;
+  deviceVersion?: string;
+  suiteNames?: string;
+  remark?: string;
+  accountNames?: string;
+  proxyIp?: string;
+  deviceStatusName?: string;
   [key: string]: any;
 }) {
   const {
@@ -58,16 +81,49 @@ export async function getContainerPoolListApi(_params: {
     containerSearch,
     containerGroup,
     sortType,
+    server,
+    inputTime,
+    chip,
+    deviceIp,
+    romVersion,
+    phoneBrand,
+    phoneModel,
+    operator,
+    phoneNum,
+    deviceVersion,
+    suiteNames,
+    remark,
+    accountNames,
+    proxyIp,
+    deviceStatusName,
   } = _params;
 
-  const data = await getContainerAssetPageApi({
+  const reqParams: Record<string, any> = {
     current: page ?? 1,
     size: pageSize ?? 10,
     screening: containerFilter,
     search: containerSearch,
     suiteIds: containerGroup,
     sortType: sortType,
-  });
+  };
+
+  if (server) reqParams.server = server;
+  if (inputTime) reqParams.inputTime = inputTime;
+  if (chip) reqParams.chip = chip;
+  if (deviceIp) reqParams.deviceIp = deviceIp;
+  if (romVersion) reqParams.romVersion = romVersion;
+  if (phoneBrand) reqParams.phoneBrand = phoneBrand;
+  if (phoneModel) reqParams.phoneModel = phoneModel;
+  if (operator) reqParams.operator = operator;
+  if (phoneNum) reqParams.phoneNum = phoneNum;
+  if (deviceVersion) reqParams.deviceVersion = deviceVersion;
+  if (suiteNames) reqParams.suiteNames = suiteNames;
+  if (remark) reqParams.remark = remark;
+  if (accountNames) reqParams.accountNames = accountNames;
+  if (proxyIp) reqParams.proxyIp = proxyIp;
+  if (deviceStatusName) reqParams.deviceStatusName = deviceStatusName;
+
+  const data = await getContainerAssetPageApi(reqParams);
 
   const list = (data.records || []) as ContainerPoolRow[];
 
@@ -80,6 +136,10 @@ export async function getContainerPoolListApi(_params: {
 export const getFormOptions = (
   sortOptions: ContainerPoolSortOption[] = [],
   groupOptions: AssetGroupItem[] = [],
+  statusOptions: ContainerPoolStatusOption[] = [],
+  operatorOptions: ContainerPoolOperatorOption[] = [],
+  brandOptions: ContainerPoolBrandOption[] = [],
+  modelOptions: ContainerPoolModelOption[] = [],
 ): VbenFormProps => ({
   collapsed: false,
   schema: [
@@ -128,6 +188,136 @@ export const getFormOptions = (
         options: sortOptions,
       },
     },
+    {
+      component: 'Input',
+      fieldName: 'server',
+      label: $t('containerPool.table.server'),
+      componentProps: { clearable: true, placeholder: $t('containerPool.filter.serverPlaceholder') },
+    },
+    {
+      component: 'DatePicker',
+      fieldName: 'inputTime',
+      label: $t('containerPool.table.inputTime'),
+      componentProps: {
+        style: { width: '100%' },
+        clearable: true,
+        type: 'datetime',
+        valueFormat: 'YYYY-MM-DD HH:mm:ss',
+        placeholder: $t('containerPool.filter.inputTimePlaceholder'),
+      },
+    },
+    {
+      component: 'Input',
+      fieldName: 'chip',
+      label: $t('containerPool.table.chip'),
+      componentProps: { clearable: true, placeholder: $t('containerPool.filter.chipPlaceholder') },
+    },
+    {
+      component: 'Input',
+      fieldName: 'deviceIp',
+      label: $t('containerPool.table.deviceIp'),
+      componentProps: { clearable: true, placeholder: $t('containerPool.filter.deviceIpPlaceholder') },
+    },
+    {
+      component: 'Input',
+      fieldName: 'romVersion',
+      label: $t('containerPool.table.romVersion'),
+      componentProps: { clearable: true, placeholder: $t('containerPool.filter.romVersionPlaceholder') },
+    },
+    {
+      component: 'Select',
+      fieldName: 'phoneBrand',
+      label: $t('containerPool.table.phoneBrand'),
+      componentProps: {
+        clearable: true,
+        filterable: true,
+        placeholder: $t('containerPool.filter.phoneBrandPlaceholder'),
+        options: brandOptions,
+      },
+    },
+    {
+      component: 'Select',
+      fieldName: 'phoneModel',
+      label: $t('containerPool.table.phoneModel'),
+      componentProps: {
+        clearable: true,
+        filterable: true,
+        placeholder: $t('containerPool.filter.phoneModelPlaceholder'),
+        options: modelOptions,
+      },
+    },
+    {
+      component: 'Select',
+      fieldName: 'operator',
+      label: $t('containerPool.table.operator'),
+      componentProps: {
+        clearable: true,
+        filterable: true,
+        placeholder: $t('containerPool.filter.operatorPlaceholder'),
+        options: operatorOptions
+          .filter((item) => Boolean(item?.id))
+          .map((item) => ({
+            label:
+              item.allName ??
+              item.operatorZhName ??
+              item.operatorEnName ??
+              item.id ??
+              '',
+            value:
+              item.operatorEnName ??
+              item.operatorZhName ??
+              item.id ??
+              '',
+          })),
+      },
+    },
+    {
+      component: 'Input',
+      fieldName: 'phoneNum',
+      label: $t('containerPool.table.phoneNumber'),
+      componentProps: { clearable: true, placeholder: $t('containerPool.filter.phoneNumPlaceholder') },
+    },
+    {
+      component: 'Input',
+      fieldName: 'deviceVersion',
+      label: $t('containerPool.table.deviceVersion'),
+      componentProps: { clearable: true, placeholder: $t('containerPool.filter.deviceVersionPlaceholder') },
+    },
+    {
+      component: 'Select',
+      fieldName: 'deviceStatusName',
+      label: $t('containerPool.table.status'),
+      componentProps: {
+        clearable: true,
+        filterable: true,
+        placeholder: $t('containerPool.filter.deviceStatusPlaceholder'),
+        options: statusOptions,
+      },
+    },
+    {
+      component: 'Input',
+      fieldName: 'suiteNames',
+      label: $t('containerPool.table.deviceGroup'),
+      componentProps: { clearable: true, placeholder: $t('containerPool.filter.suiteNamesPlaceholder') },
+    },
+    {
+      component: 'Input',
+      fieldName: 'accountNames',
+      label: $t('containerPool.table.account'),
+      componentProps: { clearable: true, placeholder: $t('containerPool.filter.accountNamesPlaceholder') },
+    },
+    {
+      component: 'Input',
+      fieldName: 'proxyIp',
+      label: $t('containerPool.table.proxy'),
+      componentProps: { clearable: true, placeholder: $t('containerPool.filter.proxyIpPlaceholder') },
+    },
+    {
+      component: 'Input',
+      fieldName: 'remark',
+      label: $t('containerPool.table.remark'),
+      componentProps: { clearable: true, placeholder: $t('containerPool.filter.remarkPlaceholder') },
+    },
   ],
   showCollapseButton: true,
   submitOnChange: false,
@@ -146,11 +336,14 @@ export const useColumns = (options: ContainerPoolTableConfigOptions = {}) => [
   { field: 'operator', title: $t('containerPool.table.operator'), minWidth: 100 },
   { field: 'phoneNum', title: $t('containerPool.table.phoneNumber'), minWidth: 120 },
   { field: 'deviceVersion', title: $t('containerPool.table.deviceVersion'), minWidth: 120 },
+  { field: 'deviceStatusName', title: $t('containerPool.table.status'), minWidth: 100 },
   {
     field: 'suiteNames',
     title: $t('containerPool.table.deviceGroup'),
     minWidth: 160,
   },
+  { field: 'accountNames', title: $t('containerPool.table.account'), minWidth: 120 },
+  { field: 'proxyIp', title: $t('containerPool.table.proxy'), minWidth: 160 },
   {
     field: 'remark',
     title: $t('containerPool.table.remark'),
@@ -215,8 +408,5 @@ export const useColumns = (options: ContainerPoolTableConfigOptions = {}) => [
       },
     },
   },
-  { field: 'accountNames', title: $t('containerPool.table.account'), minWidth: 120 },
-  { field: 'proxyIp', title: $t('containerPool.table.proxy'), minWidth: 160 },
-  { field: 'deviceStatusName', title: $t('containerPool.table.status'), minWidth: 100 },
 ];
 

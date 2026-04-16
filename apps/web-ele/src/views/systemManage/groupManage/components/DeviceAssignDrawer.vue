@@ -178,6 +178,7 @@ function onOnlySelectedChange(val: boolean) {
 
 function onSelect(selection: any[], row: any) {
   if (syncingSelection) return;
+  if (row?.isLock === true) return;
   const inSel = selection.some((r) => r.deviceId === row.deviceId);
   if (inSel) {
     selectedMap.value.set(row.deviceId, row);
@@ -191,7 +192,9 @@ function onSelectAll(selection: any[]) {
   const onPage = tableRows.value;
   if (selection.length) {
     for (const r of selection) {
-      selectedMap.value.set(r.deviceId, r);
+      if (r?.isLock !== true) {
+        selectedMap.value.set(r.deviceId, r);
+      }
     }
   } else {
     for (const r of onPage) {
@@ -330,7 +333,7 @@ async function save() {
         @select="onSelect"
         @select-all="onSelectAll"
       >
-        <ElTableColumn type="selection" width="48" align="center" />
+        <ElTableColumn type="selection" width="48" align="center" :selectable="(row) => row?.isLock !== true" />
         <ElTableColumn
           :label="$t('systemManage.groupManage.serialNumber')"
           min-width="100"
