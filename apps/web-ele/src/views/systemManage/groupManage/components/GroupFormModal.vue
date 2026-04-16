@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { computed, reactive, ref, watch } from 'vue';
 
-import { ElMessage } from 'element-plus';
+import { ElAutocomplete, ElMessage } from 'element-plus';
 
 import {
   getSocialSuitePageApi,
@@ -22,7 +22,6 @@ const props = defineProps<{
 
 const formRef = ref();
 const loading = ref(false);
-const suiteNameKeyword = ref('');
 const suiteOptions = ref<Array<{ id: string; suiteName: string; suiteDesc?: string }>>(
   [],
 );
@@ -48,19 +47,35 @@ const rules = computed(() => ({
   ],
 }));
 
-const filteredSuiteOptions = computed(() => {
-  const keyword = suiteNameKeyword.value.trim().toLowerCase();
-  if (!keyword) return suiteOptions.value;
-  return suiteOptions.value.filter((item) =>
-    item.suiteName.toLowerCase().includes(keyword),
-  );
-});
+function getSuiteNameSuggestions(queryString = '') {
+  const keyword = queryString.trim().toLowerCase();
+  return suiteOptions.value
+    .filter((item) => Boolean(item?.suiteName))
+    .filter((item) => {
+      if (!keyword) return true;
+      return (item.suiteName ?? '').toLowerCase().includes(keyword);
+    })
+    .map((item) => ({
+      value: item.suiteName ?? '',
+      suiteDesc: item.suiteDesc,
+    }));
+}
 
-const suiteSelectPopperClass = computed(() =>
-  suiteNameKeyword.value.trim() && !filteredSuiteOptions.value.length
-    ? 'group-suite-select-popper group-suite-select-popper--hidden'
-    : 'group-suite-select-popper',
-);
+function fetchSuiteSuggestions(
+  queryString: string,
+  callback: (items: Array<{ value: string; suiteDesc?: string }>) => void,
+) {
+  callback(getSuiteNameSuggestions(queryString));
+}
+
+function onSuiteAutocompleteSelect(item: Record<string, any>) {
+  const val = String(item?.value ?? '');
+  form.suiteName = val;
+  const hit = suiteOptions.value.find((s) => s.suiteName === val);
+  if (hit) {
+    form.suiteDesc = hit.suiteDesc ?? form.suiteDesc;
+  }
+}
 
 const dialogTitle = computed(() => {
   const initial = props.initial ?? {};
@@ -90,40 +105,14 @@ async function loadSuiteOptions() {
   suiteOptions.value = [];
 }
 
-function syncSuiteDescByName(name: string) {
-  suiteNameKeyword.value = name ?? '';
-  const hit = suiteOptions.value.find(
-    (s) => s.suiteName === name,
-  );
-  form.suiteDesc = hit?.suiteDesc ?? form.suiteDesc;
-}
-
-function onSuiteFilter(query: string) {
-  suiteNameKeyword.value = query;
-}
-
-function onSuiteBlur() {
-  const keyword = suiteNameKeyword.value.trim();
-  if (keyword && keyword !== form.suiteName) {
-    form.suiteName = keyword;
-    formRef.value?.clearValidate?.('suiteName');
-  }
-}
-
 watch(visible, async (v) => {
   if (!v) return;
   await loadSuiteOptions();
-  suiteNameKeyword.value = '';
   const p = props.initial ?? {};
   form.id = p.id;
   form.suiteName = p.suiteName ?? '';
   form.suiteDesc = p.suiteDesc ?? '';
 });
-
-async function onSuiteSelectVisibleChange(open: boolean) {
-  if (!open || suiteOptions.value.length) return;
-  await loadSuiteOptions();
-}
 
 function close() {
   visible.value = false;
@@ -173,29 +162,17 @@ async function submit() {
   >
     <ElForm ref="formRef" :model="form" :rules="rules" label-width="100px">
       <ElFormItem :label="$t('systemManage.groupManage.groupName')" prop="suiteName">
-        <ElSelect
+        <ElAutocomplete
           v-model="form.suiteName"
-          filterable
+          value-key="value"
+          :fetch-suggestions="fetchSuiteSuggestions"
           clearable
-          no-data-text=""
-          no-match-text=""
-          :teleported="false"
+          :trigger-on-focus="true"
+          :maxlength="50"
           :placeholder="$t('systemManage.groupManage.pleaseInputGroupName')"
           style="width: 100%"
-          :popper-class="suiteSelectPopperClass"
-          :filter-method="onSuiteFilter"
-          @change="syncSuiteDescByName"
-          @blur="onSuiteBlur"
-          @visible-change="onSuiteSelectVisibleChange"
-        >
-          <template #empty />
-          <ElOption
-            v-for="s in filteredSuiteOptions"
-            :key="s.id"
-            :label="s.suiteName"
-            :value="s.suiteName"
-          />
-        </ElSelect>
+          @select="onSuiteAutocompleteSelect"
+        />
       </ElFormItem>
       <ElFormItem :label="$t('systemManage.groupManage.groupDesc')" prop="suiteDesc">
         <ElInput
@@ -216,8 +193,3 @@ async function submit() {
   </ElDialog>
 </template>
 
-<style scoped>
-:deep(.group-suite-select-popper--hidden) {
-  display: none !important;
-}
-</style>
