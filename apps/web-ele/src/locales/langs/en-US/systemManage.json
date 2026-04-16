@@ -3,6 +3,7 @@
   "groupManage": {
     "title": "Group management",
     "addGroup": "Add group",
+    "editGroup": "Edit group",
     "belongGroup": "Group",
     "belongGroupFilterLabel": "Group:",
     "searchPlaceholder": "Please enter",
