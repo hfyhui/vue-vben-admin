@@ -18,7 +18,22 @@
     "accountGroup": "账号分组",
     "accountGroupPlaceholder": "请选择账号分组",
     "sortType": "排序条件",
-    "sortTypePlaceholder": "请选择排序"
+    "sortTypePlaceholder": "请选择排序",
+    "serverPlaceholder": "请输入所属服务器",
+    "inputTimePlaceholder": "请选择录入时间",
+    "chipPlaceholder": "请输入所属芯片",
+    "deviceIpPlaceholder": "请输入设备IP",
+    "romVersionPlaceholder": "请输入ROM版本",
+    "phoneBrandPlaceholder": "请选择手机品牌",
+    "phoneModelPlaceholder": "请选择手机型号",
+    "operatorPlaceholder": "请选择运营商",
+    "phoneNumPlaceholder": "请输入手机号码",
+    "deviceVersionPlaceholder": "请输入设备版本",
+    "deviceStatusPlaceholder": "请选择状态",
+    "suiteNamesPlaceholder": "请输入设备分组",
+    "accountNamesPlaceholder": "请输入关联账号",
+    "proxyIpPlaceholder": "请输入关联代理",
+    "remarkPlaceholder": "请输入备注"
   },
   "table": {
     "server": "所属服务器",

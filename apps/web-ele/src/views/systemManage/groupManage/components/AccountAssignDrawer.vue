@@ -72,7 +72,6 @@ function loginStatusLabel(code?: string) {
   return loginStatusOptions.value.find((o) => o.value === code)?.label ?? code;
 }
 
-
 async function ensureEnums() {
   await assetEnums.ensureAssetEnumsLoaded();
 }
@@ -176,6 +175,7 @@ function onOnlySelectedChange(val: boolean) {
 
 function onSelect(selection: any[], row: any) {
   if (syncingSelection) return;
+  if (row?.isLock === true) return;
   const inSel = selection.some((r) => r.id === row.id);
   if (inSel) {
     selectedMap.value.set(row.id, row);
@@ -189,7 +189,9 @@ function onSelectAll(selection: any[]) {
   const onPage = tableRows.value;
   if (selection.length) {
     for (const r of selection) {
-      selectedMap.value.set(r.id, r);
+      if (r?.isLock !== true) {
+        selectedMap.value.set(r.id, r);
+      }
     }
   } else {
     for (const r of onPage) {
@@ -328,7 +330,7 @@ async function save() {
         @select="onSelect"
         @select-all="onSelectAll"
       >
-        <ElTableColumn type="selection" width="48" align="center" />
+        <ElTableColumn type="selection" width="48" align="center" :selectable="(row) => row?.isLock !== true" />
         <ElTableColumn
           prop="id"
           :label="$t('systemManage.groupManage.accountId')"

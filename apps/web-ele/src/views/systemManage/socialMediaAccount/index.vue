@@ -357,16 +357,12 @@ function isLockFlagTrue(row: any) {
   return row?.isLock === true;
 }
 
-function isLeftAccountTable() {
-  return activeTab.value === 'assignUsers';
-}
-
 function isLeftUserTable() {
   return activeTab.value === 'assignAccounts';
 }
 
 function isLockedAccount(row: any) {
-  if (isLeftAccountTable() && isLockFlagTrue(row)) {
+  if (isLockFlagTrue(row)) {
     return true;
   }
   if (activeTab.value !== 'assignAccounts' || selectedUserIds.value.length !== 1) {

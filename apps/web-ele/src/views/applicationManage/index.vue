@@ -268,9 +268,6 @@ function canShowDelete(row: ApplicationItem) {
             <el-button type="primary" link @click="onEdit(row)">
               {{ $t('common.edit') }}
             </el-button>
-            <el-button v-if="canShowDelete(row)" type="danger" link :icon="Delete" @click="onDelete(row)">
-              {{ $t('common.del') }}
-            </el-button>
           </template>
           <template v-else>
             <el-button type="success" link @click="onEnable(row)">
@@ -279,7 +276,7 @@ function canShowDelete(row: ApplicationItem) {
             <el-button type="primary" link @click="onEdit(row)">
               {{ $t('common.edit') }}
             </el-button>
-            <el-button v-if="canShowDelete(row)" type="danger" link :icon="Delete" @click="onDelete(row)">
+            <el-button v-if="canShowDelete(row)" type="danger" link @click="onDelete(row)">
               {{ $t('common.del') }}
             </el-button>
           </template>
