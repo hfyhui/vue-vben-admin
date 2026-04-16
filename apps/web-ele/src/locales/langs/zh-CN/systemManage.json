@@ -15,7 +15,7 @@
     "orderNum": "序号",
     "deviceDetails": "设备详情",
     "accountDetails": "账号详情",
-    "deviceGroup": "设备分组",
+    "deviceGroup": "新增分组",
     "pleaseSelect": "请先选择要删除的分组",
     "confirmDeleteBatch": "确定批量删除所选分组？",
     "confirmDelete": "确定删除分组",
