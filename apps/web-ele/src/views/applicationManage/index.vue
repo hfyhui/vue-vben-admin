@@ -212,26 +212,6 @@ async function onDelete(row: ApplicationItem) {
   }
 }
 
-function canShowDelete(row: ApplicationItem) {
-  const protectedScriptNames = new Set(['信息修改', '信息同步']);
-  const scriptNames = [
-    row.programName,
-    row.scriptList,
-    ...(Array.isArray(row.programType)
-      ? row.programType.map((item) => item?.programName)
-      : []),
-  ]
-    .filter((name): name is string => typeof name === 'string')
-    .flatMap((name) => name.split(/[;,，；]/g))
-    .map((name) => name.trim())
-    .filter(Boolean);
-  // 仅“信息修改/信息同步”脚本不展示删除；其余脚本都应可删除
-  if (scriptNames.length === 0) {
-    return true;
-  }
-  return scriptNames.some((name) => !protectedScriptNames.has(name));
-}
-
 </script>
 
 <template>
@@ -276,7 +256,7 @@ function canShowDelete(row: ApplicationItem) {
             <el-button type="primary" link @click="onEdit(row)">
               {{ $t('common.edit') }}
             </el-button>
-            <el-button v-if="canShowDelete(row)" type="danger" link @click="onDelete(row)">
+            <el-button type="danger" link @click="onDelete(row)">
               {{ $t('common.del') }}
             </el-button>
           </template>

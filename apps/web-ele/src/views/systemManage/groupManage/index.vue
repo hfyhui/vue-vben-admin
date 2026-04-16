@@ -93,7 +93,11 @@ async function openEdit(row: any) {
   try {
     const res = await getSocialSuiteDetailApi(row.id);
     if (res && successCode(res.code)) {
-      formInitial.value = res.data ?? {};
+      const data = res.data ?? {};
+      formInitial.value = {
+        ...data,
+        suiteId: row.id,
+      };
       formVisible.value = true;
     }
   } catch {
