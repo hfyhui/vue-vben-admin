@@ -56,21 +56,22 @@ export async function getContainerPoolListApi(_params: {
   containerFilter?: string;
   containerSearch?: string;
   containerGroup?: string[];
+  relationStatus?: string;
   sortType?: string;
   server?: string;
   inputTime?: string;
   chip?: string;
+  systemVersion?: string;
+  brand?: string;
+  deviceMode?: string;
+  netOperator?: string;
+  phoneNumber?: string;
+  deviceArea?: string;
+  appAccount?: string;
+  networkIp?: string;
   deviceIp?: string;
-  romVersion?: string;
-  phoneBrand?: string;
-  phoneModel?: string;
-  operator?: string;
-  phoneNum?: string;
-  deviceVersion?: string;
   suiteNames?: string;
   remark?: string;
-  accountNames?: string;
-  proxyIp?: string;
   deviceStatusName?: string;
   [key: string]: any;
 }) {
@@ -80,21 +81,22 @@ export async function getContainerPoolListApi(_params: {
     containerFilter,
     containerSearch,
     containerGroup,
+    relationStatus,
     sortType,
     server,
     inputTime,
     chip,
+    systemVersion,
+    brand,
+    deviceMode,
+    netOperator,
+    phoneNumber,
+    deviceArea,
+    appAccount,
+    networkIp,
     deviceIp,
-    romVersion,
-    phoneBrand,
-    phoneModel,
-    operator,
-    phoneNum,
-    deviceVersion,
     suiteNames,
     remark,
-    accountNames,
-    proxyIp,
     deviceStatusName,
   } = _params;
 
@@ -104,6 +106,7 @@ export async function getContainerPoolListApi(_params: {
     screening: containerFilter,
     search: containerSearch,
     suiteIds: containerGroup,
+    relationStatus,
     sortType: sortType,
   };
 
@@ -111,16 +114,16 @@ export async function getContainerPoolListApi(_params: {
   if (inputTime) reqParams.inputTime = inputTime;
   if (chip) reqParams.chip = chip;
   if (deviceIp) reqParams.deviceIp = deviceIp;
-  if (romVersion) reqParams.romVersion = romVersion;
-  if (phoneBrand) reqParams.phoneBrand = phoneBrand;
-  if (phoneModel) reqParams.phoneModel = phoneModel;
-  if (operator) reqParams.operator = operator;
-  if (phoneNum) reqParams.phoneNum = phoneNum;
-  if (deviceVersion) reqParams.deviceVersion = deviceVersion;
+  if (systemVersion) reqParams.systemVersion = systemVersion;
+  if (brand) reqParams.brand = brand;
+  if (deviceMode) reqParams.deviceMode = deviceMode;
+  if (netOperator) reqParams.netOperator = netOperator;
+  if (phoneNumber) reqParams.phoneNumber = phoneNumber;
+  if (deviceArea) reqParams.deviceArea = deviceArea;
   if (suiteNames) reqParams.suiteNames = suiteNames;
   if (remark) reqParams.remark = remark;
-  if (accountNames) reqParams.accountNames = accountNames;
-  if (proxyIp) reqParams.proxyIp = proxyIp;
+  if (appAccount) reqParams.appAccount = appAccount;
+  if (networkIp) reqParams.networkIp = networkIp;
   if (deviceStatusName) reqParams.deviceStatusName = deviceStatusName;
 
   const data = await getContainerAssetPageApi(reqParams);
@@ -141,7 +144,7 @@ export const getFormOptions = (
   brandOptions: ContainerPoolBrandOption[] = [],
   modelOptions: ContainerPoolModelOption[] = [],
 ): VbenFormProps => ({
-  collapsed: false,
+  collapsed: true,
   schema: [
     {
       component: 'Input',
@@ -220,13 +223,13 @@ export const getFormOptions = (
     },
     {
       component: 'Input',
-      fieldName: 'romVersion',
+      fieldName: 'systemVersion',
       label: $t('containerPool.table.romVersion'),
       componentProps: { clearable: true, placeholder: $t('containerPool.filter.romVersionPlaceholder') },
     },
     {
       component: 'Select',
-      fieldName: 'phoneBrand',
+      fieldName: 'brand',
       label: $t('containerPool.table.phoneBrand'),
       componentProps: {
         clearable: true,
@@ -237,7 +240,7 @@ export const getFormOptions = (
     },
     {
       component: 'Select',
-      fieldName: 'phoneModel',
+      fieldName: 'deviceMode',
       label: $t('containerPool.table.phoneModel'),
       componentProps: {
         clearable: true,
@@ -248,7 +251,7 @@ export const getFormOptions = (
     },
     {
       component: 'Select',
-      fieldName: 'operator',
+      fieldName: 'netOperator',
       label: $t('containerPool.table.operator'),
       componentProps: {
         clearable: true,
@@ -273,13 +276,13 @@ export const getFormOptions = (
     },
     {
       component: 'Input',
-      fieldName: 'phoneNum',
+      fieldName: 'phoneNumber',
       label: $t('containerPool.table.phoneNumber'),
       componentProps: { clearable: true, placeholder: $t('containerPool.filter.phoneNumPlaceholder') },
     },
     {
       component: 'Input',
-      fieldName: 'deviceVersion',
+      fieldName: 'deviceArea',
       label: $t('containerPool.table.deviceVersion'),
       componentProps: { clearable: true, placeholder: $t('containerPool.filter.deviceVersionPlaceholder') },
     },
@@ -302,13 +305,13 @@ export const getFormOptions = (
     },
     {
       component: 'Input',
-      fieldName: 'accountNames',
+      fieldName: 'appAccount',
       label: $t('containerPool.table.account'),
       componentProps: { clearable: true, placeholder: $t('containerPool.filter.accountNamesPlaceholder') },
     },
     {
       component: 'Input',
-      fieldName: 'proxyIp',
+      fieldName: 'networkIp',
       label: $t('containerPool.table.proxy'),
       componentProps: { clearable: true, placeholder: $t('containerPool.filter.proxyIpPlaceholder') },
     },

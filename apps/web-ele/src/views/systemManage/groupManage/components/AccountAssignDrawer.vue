@@ -28,7 +28,44 @@ const searchMode = ref<'account' | 'userAccount'>('account');
 const searchForm = reactive<{ id?: string; appAccount?: string }>({});
 const onlySelected = ref(false);
 const selectedMap = ref(new Map<string, any>());
+/** 列表接口返回的完整行，用于「仅显示已选」时补全 isLock 等字段 */
+const lastKnownApiRowByAccountId = ref(new Map<string, any>());
+const selectionRowOrder = ref<string[]>([]);
 let syncingSelection = false;
+
+function accountMapKey(id: unknown): string {
+  if (id === null || id === undefined || id === '') return '';
+  return String(id);
+}
+
+function removeAccountKeyFromSelectionOrder(key: string) {
+  if (!key) return;
+  selectionRowOrder.value = selectionRowOrder.value.filter((k) => k !== key);
+}
+
+function appendAccountKeyToSelectionOrderIfNeeded(key: string) {
+  if (!key || selectionRowOrder.value.includes(key)) return;
+  selectionRowOrder.value.push(key);
+}
+
+function mergeApiPageOrderIntoAccountSelectionOrder(pageRows: any[]) {
+  const pageKeys = pageRows
+    .map((r) => accountMapKey(r.id))
+    .filter((k): k is string => Boolean(k) && selectedMap.value.has(k));
+  if (!pageKeys.length) return;
+  const pageSet = new Set(pageKeys);
+  const prev = selectionRowOrder.value;
+  const positions = pageKeys.map((k) => prev.indexOf(k)).filter((i) => i >= 0);
+  const insertAt = positions.length ? Math.min(...positions) : prev.length;
+  const withoutPage = prev.filter((k) => !pageSet.has(k));
+  const removedBefore = prev.slice(0, insertAt).filter((k) => pageSet.has(k)).length;
+  const newInsertAt = insertAt - removedBefore;
+  selectionRowOrder.value = [
+    ...withoutPage.slice(0, newInsertAt),
+    ...pageKeys,
+    ...withoutPage.slice(newInsertAt),
+  ];
+}
 
 const modeOptions = computed(() => [
   { label: $t('systemManage.groupManage.account'), value: 'account' as const },
@@ -78,10 +115,17 @@ async function ensureEnums() {
 
 function resetFromDetail() {
   selectedMap.value = new Map();
+  lastKnownApiRowByAccountId.value = new Map();
   const orgs = props.detail?.suiteAccOrgs ?? [];
+  const orderKeys: string[] = [];
   for (const r of orgs) {
-    if (r?.id != null) selectedMap.value.set(r.id, { ...r });
+    const k = accountMapKey(r?.id);
+    if (k) {
+      selectedMap.value.set(k, { ...r });
+      orderKeys.push(k);
+    }
   }
+  selectionRowOrder.value = orderKeys;
   onlySelected.value = false;
   searchForm.id = '';
   searchForm.appAccount = '';
@@ -109,6 +153,15 @@ async function loadList() {
     if (res && successCode(res.code)) {
       tableRows.value = res.data?.records ?? [];
       total.value = res.data?.total ?? 0;
+      for (const row of tableRows.value) {
+        const k = accountMapKey(row.id);
+        if (!k) continue;
+        lastKnownApiRowByAccountId.value.set(k, row);
+        if (selectedMap.value.has(k)) {
+          selectedMap.value.set(k, { ...selectedMap.value.get(k), ...row });
+        }
+      }
+      mergeApiPageOrderIntoAccountSelectionOrder(tableRows.value);
     } else {
       tableRows.value = [];
       total.value = 0;
@@ -133,7 +186,17 @@ function applyLocalFilter() {
     }
     return true;
   });
-  tableRows.value = filtered;
+  const byKey = new Map(filtered.map((el) => [accountMapKey(el.id), el]));
+  const orderedKeys = selectionRowOrder.value.filter((k) => byKey.has(k));
+  for (const el of filtered) {
+    const k = accountMapKey(el.id);
+    if (k && !orderedKeys.includes(k)) orderedKeys.push(k);
+  }
+  tableRows.value = orderedKeys.map((key) => {
+    const el = byKey.get(key)!;
+    const cached = lastKnownApiRowByAccountId.value.get(key);
+    return cached ? { ...el, ...cached } : el;
+  });
   total.value = filtered.length;
   nextTick(() => syncSelection());
 }
@@ -144,7 +207,7 @@ function syncSelection() {
   syncingSelection = true;
   tb.clearSelection();
   for (const row of tableRows.value) {
-    if (selectedMap.value.has(row.id)) {
+    if (selectedMap.value.has(accountMapKey(row.id))) {
       tb.toggleRowSelection(row, true);
     }
   }
@@ -175,12 +238,15 @@ function onOnlySelectedChange(val: boolean) {
 
 function onSelect(selection: any[], row: any) {
   if (syncingSelection) return;
-  if (row?.isLock === true) return;
-  const inSel = selection.some((r) => r.id === row.id);
+  if (row?.isLock) return;
+  const key = accountMapKey(row.id);
+  const inSel = selection.some((r) => accountMapKey(r.id) === key);
   if (inSel) {
-    selectedMap.value.set(row.id, row);
+    selectedMap.value.set(key, row);
+    appendAccountKeyToSelectionOrderIfNeeded(key);
   } else {
-    selectedMap.value.delete(row.id);
+    selectedMap.value.delete(key);
+    removeAccountKeyFromSelectionOrder(key);
   }
 }
 
@@ -188,14 +254,19 @@ function onSelectAll(selection: any[]) {
   if (syncingSelection) return;
   const onPage = tableRows.value;
   if (selection.length) {
-    for (const r of selection) {
-      if (r?.isLock !== true) {
-        selectedMap.value.set(r.id, r);
+    for (const r of onPage) {
+      if (!r?.isLock) {
+        const k = accountMapKey(r.id);
+        selectedMap.value.set(k, r);
+        appendAccountKeyToSelectionOrderIfNeeded(k);
       }
     }
+    mergeApiPageOrderIntoAccountSelectionOrder(onPage);
   } else {
     for (const r of onPage) {
-      selectedMap.value.delete(r.id);
+      const k = accountMapKey(r.id);
+      selectedMap.value.delete(k);
+      removeAccountKeyFromSelectionOrder(k);
     }
   }
 }
@@ -232,6 +303,24 @@ function resolveSuiteId(d: Record<string, any> | null | undefined) {
   return v;
 }
 
+/** 与旧版 SetAccount submit 一致：accountIds + suiteAccOrgs 为当前勾选账号；suiteOrgs 保留详情里的设备关联 */
+function buildOrderedSelectedAccounts(): any[] {
+  const rows: any[] = [];
+  for (const k of selectionRowOrder.value) {
+    if (selectedMap.value.has(k)) {
+      const row = selectedMap.value.get(k);
+      if (row) rows.push(row);
+    }
+  }
+  for (const k of selectedMap.value.keys()) {
+    if (!selectionRowOrder.value.includes(k)) {
+      const row = selectedMap.value.get(k);
+      if (row) rows.push(row);
+    }
+  }
+  return rows;
+}
+
 async function save() {
   const d = props.detail;
   const suiteId = resolveSuiteId(d);
@@ -241,12 +330,16 @@ async function save() {
   }
   saving.value = true;
   try {
-    const accountIds = [...selectedMap.value.keys()];
+    const suiteAccOrgs = buildOrderedSelectedAccounts();
+    const accountIds = suiteAccOrgs.map((r) => r.id).filter((id) => id != null && id !== '');
     const res = await updateSocialAccountSuiteApi({
-      id: suiteId,
+      suiteId,
       suiteName: d?.suiteName,
       suiteDesc: d?.suiteDesc,
+      suiteType: d?.suiteType,
       accountIds,
+      suiteAccOrgs,
+      suiteOrgs: d?.suiteOrgs,
     });
     if (res && successCode(res.code)) {
       ElMessage.success($t('systemManage.opSuccess'));
@@ -330,7 +423,12 @@ async function save() {
         @select="onSelect"
         @select-all="onSelectAll"
       >
-        <ElTableColumn type="selection" width="48" align="center" :selectable="(row) => row?.isLock !== true" />
+        <ElTableColumn
+          type="selection"
+          width="48"
+          align="center"
+          :selectable="(row: any) => !row?.isLock"
+        />
         <ElTableColumn
           prop="id"
           :label="$t('systemManage.groupManage.accountId')"

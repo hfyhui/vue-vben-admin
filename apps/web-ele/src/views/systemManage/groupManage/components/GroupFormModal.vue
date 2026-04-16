@@ -137,10 +137,9 @@ async function submit() {
       (s) => s.suiteName === form.suiteName,
     );
     const payload: Record<string, any> = {
-      id: initial.id,
+      suiteId: hit?.id,
       suiteName: form.suiteName,
       suiteDesc: form.suiteDesc,
-      suiteId: hit?.id,
       suiteType: initial.suiteType,
     };
     payload.mobiles = Array.isArray(initial.suiteOrgs) ? [...initial.suiteOrgs] : [];
