@@ -3,6 +3,7 @@
   "groupManage": {
     "title": "分组管理",
     "addGroup": "新增分组",
+    "editGroup": "编辑分组",
     "belongGroup": "所属分组",
     "belongGroupFilterLabel": "所属分组：",
     "searchPlaceholder": "请输入",

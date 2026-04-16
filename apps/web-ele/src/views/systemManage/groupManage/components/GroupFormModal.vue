@@ -62,6 +62,13 @@ const suiteSelectPopperClass = computed(() =>
     : 'group-suite-select-popper',
 );
 
+const dialogTitle = computed(() => {
+  const initial = props.initial ?? {};
+  return initial.suiteId
+    ? $t('systemManage.groupManage.editGroup')
+    : $t('systemManage.groupManage.addGroup');
+});
+
 function successCode(code: number) {
   return code === 200 || code === 100000;
 }
@@ -159,7 +166,7 @@ async function submit() {
 <template>
   <ElDialog
     v-model="visible"
-    :title="$t('systemManage.groupManage.deviceGroup')"
+    :title="dialogTitle"
     width="640px"
     destroy-on-close
     @closed="formRef?.resetFields?.()"
