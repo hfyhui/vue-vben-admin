@@ -22,6 +22,7 @@ const props = defineProps<{
 
 const formRef = ref();
 const loading = ref(false);
+const suiteNameKeyword = ref('');
 const suiteOptions = ref<Array<{ id: string; suiteName: string; suiteDesc?: string }>>(
   [],
 );
@@ -39,43 +40,83 @@ const rules = computed(() => ({
       message: $t('systemManage.groupManage.pleaseInputGroupName'),
       trigger: 'blur',
     },
-    { max: 50, message: '≤50', trigger: 'blur' },
+    {
+      max: 50,
+      message: '分组名称长度不能超过50个字符',
+      trigger: 'blur',
+    },
   ],
 }));
+
+const filteredSuiteOptions = computed(() => {
+  const keyword = suiteNameKeyword.value.trim().toLowerCase();
+  if (!keyword) return suiteOptions.value;
+  return suiteOptions.value.filter((item) =>
+    item.suiteName.toLowerCase().includes(keyword),
+  );
+});
+
+const suiteSelectPopperClass = computed(() =>
+  suiteNameKeyword.value.trim() && !filteredSuiteOptions.value.length
+    ? 'group-suite-select-popper group-suite-select-popper--hidden'
+    : 'group-suite-select-popper',
+);
 
 function successCode(code: number) {
   return code === 200 || code === 100000;
 }
 
 async function loadSuiteOptions() {
-  const res = await getSocialSuitePageApi({ current: 1, size: 10000 });
-  if (res && successCode(res.code)) {
-    suiteOptions.value = (res.data?.records ?? []).map((r: any) => ({
-      id: r.id,
-      suiteName: r.suiteName,
-      suiteDesc: r.suiteDesc,
-    }));
+  try {
+    const res = await getSocialSuitePageApi({ current: 1, size: 200 });
+    if (res && successCode(res.code)) {
+      suiteOptions.value = (res.data?.records ?? []).map((r: any) => ({
+        id: r.id,
+        suiteName: r.suiteName,
+        suiteDesc: r.suiteDesc,
+      }));
+      return;
+    }
+  } catch {
+    /* client */
   }
+  suiteOptions.value = [];
 }
 
-function onSuitePick(name: string) {
+function syncSuiteDescByName(name: string) {
+  suiteNameKeyword.value = name ?? '';
   const hit = suiteOptions.value.find(
-    (s) => s.suiteName === name
+    (s) => s.suiteName === name,
   );
   form.suiteDesc = hit?.suiteDesc ?? form.suiteDesc;
 }
 
-watch(
-  () => [visible.value, props.initial] as const,
-  async ([v]) => {
-    if (!v) return;
-    await loadSuiteOptions();
-    const p = props.initial;
-    form.id = p.id;
-    form.suiteName = p.suiteName;
-    form.suiteDesc = p.suiteDesc;
-  },
-);
+function onSuiteFilter(query: string) {
+  suiteNameKeyword.value = query;
+}
+
+function onSuiteBlur() {
+  const keyword = suiteNameKeyword.value.trim();
+  if (keyword && keyword !== form.suiteName) {
+    form.suiteName = keyword;
+    formRef.value?.clearValidate?.('suiteName');
+  }
+}
+
+watch(visible, async (v) => {
+  if (!v) return;
+  await loadSuiteOptions();
+  suiteNameKeyword.value = '';
+  const p = props.initial ?? {};
+  form.id = p.id;
+  form.suiteName = p.suiteName ?? '';
+  form.suiteDesc = p.suiteDesc ?? '';
+});
+
+async function onSuiteSelectVisibleChange(open: boolean) {
+  if (!open || suiteOptions.value.length) return;
+  await loadSuiteOptions();
+}
 
 function close() {
   visible.value = false;
@@ -91,7 +132,7 @@ async function submit() {
 
   loading.value = true;
   try {
-    const initial = (props.initial) as Record<string, any>;
+    const initial = (props.initial ?? {}) as Record<string, any>;
     const hit = suiteOptions.value.find(
       (s) => s.suiteName === form.suiteName,
     );
@@ -100,6 +141,7 @@ async function submit() {
       suiteName: form.suiteName,
       suiteDesc: form.suiteDesc,
       suiteId: hit?.id,
+      suiteType: initial.suiteType,
     };
     payload.mobiles = Array.isArray(initial.suiteOrgs) ? [...initial.suiteOrgs] : [];
 
@@ -128,14 +170,21 @@ async function submit() {
         <ElSelect
           v-model="form.suiteName"
           filterable
-          allow-create
-          default-first-option
-          :placeholder="$t('common.select')"
+          clearable
+          no-data-text=""
+          no-match-text=""
+          :teleported="false"
+          :placeholder="$t('systemManage.groupManage.pleaseInputGroupName')"
           style="width: 100%"
-          @change="onSuitePick"
+          :popper-class="suiteSelectPopperClass"
+          :filter-method="onSuiteFilter"
+          @change="syncSuiteDescByName"
+          @blur="onSuiteBlur"
+          @visible-change="onSuiteSelectVisibleChange"
         >
+          <template #empty />
           <ElOption
-            v-for="s in suiteOptions"
+            v-for="s in filteredSuiteOptions"
             :key="s.id"
             :label="s.suiteName"
             :value="s.suiteName"
@@ -160,3 +209,9 @@ async function submit() {
     </template>
   </ElDialog>
 </template>
+
+<style scoped>
+:deep(.group-suite-select-popper--hidden) {
+  display: none !important;
+}
+</style>
