@@ -4,7 +4,6 @@ import { h } from 'vue';
 
 import {
   getContainerAssetPageApi,
-  type AssetGroupItem,
   type AssetOperatorItem,
 } from '#/api/core/asset';
 
@@ -15,6 +14,16 @@ export type ContainerPoolStatusOption = { label: string; value: string };
 export type ContainerPoolOperatorOption = AssetOperatorItem;
 export type ContainerPoolBrandOption = { label: string; value: string };
 export type ContainerPoolModelOption = { label: string; value: string };
+export type ContainerPoolChipFilterOption = { label: string; value: string };
+
+/** 容器池筛选：芯片类型（与后端约定一致，固定枚举） */
+export const CONTAINER_POOL_CHIP_FILTER_OPTIONS: ContainerPoolChipFilterOption[] =
+  [
+    { label: 'ARM_3588', value: 'ARM_3588' },
+    { label: 'ARM_3399', value: 'ARM_3399' },
+    { label: 'C_ARM_392000', value: 'C_ARM_392000' },
+    { label: 'AIBOX_L02', value: 'AIBOX_L02' },
+  ];
 
 /** 与 POST /asset/container/page 返回 records 项一致（容器池列表） */
 export interface ContainerPoolRow {
@@ -138,7 +147,6 @@ export async function getContainerPoolListApi(_params: {
 
 export const getFormOptions = (
   sortOptions: ContainerPoolSortOption[] = [],
-  groupOptions: AssetGroupItem[] = [],
   statusOptions: ContainerPoolStatusOption[] = [],
   operatorOptions: ContainerPoolOperatorOption[] = [],
   brandOptions: ContainerPoolBrandOption[] = [],
@@ -162,23 +170,6 @@ export const getFormOptions = (
       componentProps: {
         placeholder: $t('containerPool.filter.containerSearchPlaceholder'),
         clearable: true,
-      },
-    },
-    {
-      component: 'Select',
-      fieldName: 'containerGroup',
-      label: $t('containerPool.filter.containerGroup'),
-      componentProps: {
-        placeholder: $t('containerPool.filter.containerGroupPlaceholder'),
-        clearable: true,
-        filterable: true,
-        multiple: true,
-        collapseTags: false,
-        options: groupOptions
-          .map((item) => ({
-            label: item.suiteName ?? '',
-            value: item.id as string,
-          })),
       },
     },
     {
@@ -210,10 +201,15 @@ export const getFormOptions = (
       },
     },
     {
-      component: 'Input',
+      component: 'Select',
       fieldName: 'chip',
       label: $t('containerPool.table.chip'),
-      componentProps: { clearable: true, placeholder: $t('containerPool.filter.chipPlaceholder') },
+      componentProps: {
+        clearable: true,
+        filterable: true,
+        placeholder: $t('containerPool.filter.chipPlaceholder'),
+        options: CONTAINER_POOL_CHIP_FILTER_OPTIONS,
+      },
     },
     {
       component: 'Input',

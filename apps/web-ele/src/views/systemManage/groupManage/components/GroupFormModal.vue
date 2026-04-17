@@ -132,8 +132,10 @@ async function submit() {
     const hit = suiteOptions.value.find(
       (s) => s.suiteName === form.suiteName,
     );
+    const suiteId =
+      initial.suiteId ?? initial.id ?? hit?.id;
     const payload: Record<string, any> = {
-      suiteId: hit?.id,
+      suiteId,
       suiteName: form.suiteName,
       suiteDesc: form.suiteDesc,
       suiteType: initial.suiteType,
