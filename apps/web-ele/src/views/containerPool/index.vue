@@ -85,7 +85,7 @@ async function loadContainerPoolNum() {
 }
 
 const [Grid, gridApi] = useVbenVxeGrid({
-  formOptions: getFormOptions([], [], [], [], []),
+  formOptions: getFormOptions([], [], [], [], [], []),
   showSearchForm: true,
   gridOptions: {
     columns: useColumns({
@@ -182,6 +182,7 @@ function applyFormOptions() {
       operatorOptions.value,
       brandOptions.value,
       modelOptions.value,
+      groupOptions.value,
     ),
   });
 }

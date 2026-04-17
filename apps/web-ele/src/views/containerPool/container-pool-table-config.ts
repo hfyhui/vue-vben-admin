@@ -64,7 +64,6 @@ export async function getContainerPoolListApi(_params: {
   pageSize: number;
   containerFilter?: string;
   containerSearch?: string;
-  containerGroup?: string[];
   relationStatus?: string;
   sortType?: string;
   server?: string;
@@ -78,8 +77,8 @@ export async function getContainerPoolListApi(_params: {
   deviceArea?: string;
   appAccount?: string;
   networkIp?: string;
-  deviceIp?: string;
-  suiteNames?: string;
+  mobileDeviceIp?: string;
+  suiteIds?: string[];
   remark?: string;
   deviceStatusName?: string;
   [key: string]: any;
@@ -89,7 +88,6 @@ export async function getContainerPoolListApi(_params: {
     pageSize,
     containerFilter,
     containerSearch,
-    containerGroup,
     relationStatus,
     sortType,
     server,
@@ -103,8 +101,8 @@ export async function getContainerPoolListApi(_params: {
     deviceArea,
     appAccount,
     networkIp,
-    deviceIp,
-    suiteNames,
+    mobileDeviceIp,
+    suiteIds,
     remark,
     deviceStatusName,
   } = _params;
@@ -114,7 +112,6 @@ export async function getContainerPoolListApi(_params: {
     size: pageSize ?? 10,
     screening: containerFilter,
     search: containerSearch,
-    suiteIds: containerGroup,
     relationStatus,
     sortType: sortType,
   };
@@ -122,14 +119,14 @@ export async function getContainerPoolListApi(_params: {
   if (server) reqParams.server = server;
   if (inputTime) reqParams.inputTime = inputTime;
   if (chip) reqParams.chip = chip;
-  if (deviceIp) reqParams.deviceIp = deviceIp;
+  if (mobileDeviceIp) reqParams.mobileDeviceIp = mobileDeviceIp;
   if (systemVersion) reqParams.systemVersion = systemVersion;
   if (brand) reqParams.brand = brand;
   if (deviceMode) reqParams.deviceMode = deviceMode;
   if (netOperator) reqParams.netOperator = netOperator;
   if (phoneNumber) reqParams.phoneNumber = phoneNumber;
   if (deviceArea) reqParams.deviceArea = deviceArea;
-  if (suiteNames) reqParams.suiteNames = suiteNames;
+  if (Array.isArray(suiteIds) && suiteIds.length) reqParams.suiteIds = suiteIds;
   if (remark) reqParams.remark = remark;
   if (appAccount) reqParams.appAccount = appAccount;
   if (networkIp) reqParams.networkIp = networkIp;
@@ -151,6 +148,7 @@ export const getFormOptions = (
   operatorOptions: ContainerPoolOperatorOption[] = [],
   brandOptions: ContainerPoolBrandOption[] = [],
   modelOptions: ContainerPoolModelOption[] = [],
+  groupOptions: Array<{ id?: string; suiteName?: string }> = [],
 ): VbenFormProps => ({
   collapsed: true,
   schema: [
@@ -213,7 +211,7 @@ export const getFormOptions = (
     },
     {
       component: 'Input',
-      fieldName: 'deviceIp',
+      fieldName: 'mobileDeviceIp',
       label: $t('containerPool.table.deviceIp'),
       componentProps: { clearable: true, placeholder: $t('containerPool.filter.deviceIpPlaceholder') },
     },
@@ -294,10 +292,21 @@ export const getFormOptions = (
       },
     },
     {
-      component: 'Input',
-      fieldName: 'suiteNames',
+      component: 'Select',
+      fieldName: 'suiteIds',
       label: $t('containerPool.table.deviceGroup'),
-      componentProps: { clearable: true, placeholder: $t('containerPool.filter.suiteNamesPlaceholder') },
+      componentProps: {
+        clearable: true,
+        filterable: true,
+        multiple: true,
+        placeholder: $t('containerPool.filter.suiteNamesPlaceholder'),
+        options: groupOptions
+          .filter((item) => Boolean(item?.id))
+          .map((item) => ({
+            label: item.suiteName ?? '',
+            value: item.id ?? '',
+          })),
+      },
     },
     {
       component: 'Input',
