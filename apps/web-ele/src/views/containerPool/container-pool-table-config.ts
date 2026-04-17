@@ -81,7 +81,6 @@ export async function getContainerPoolListApi(_params: {
   timeRange?: string[];
   startTime?: string;
   endTime?: string;
-  deviceStatusName?: string;
   [key: string]: any;
 }) {
   const {
@@ -107,7 +106,6 @@ export async function getContainerPoolListApi(_params: {
     timeRange,
     startTime,
     endTime,
-    deviceStatusName,
   } = _params;
   const rangeStart = Array.isArray(timeRange) ? timeRange[0] : undefined;
   const rangeEnd = Array.isArray(timeRange) ? timeRange[1] : undefined;
@@ -138,7 +136,6 @@ export async function getContainerPoolListApi(_params: {
   if (networkIp) reqParams.networkIp = networkIp;
   if (finalStartTime) reqParams.startTime = finalStartTime;
   if (finalEndTime) reqParams.endTime = finalEndTime;
-  if (deviceStatusName) reqParams.deviceStatusName = deviceStatusName;
 
   const data = await getContainerAssetPageApi(reqParams);
 
@@ -324,7 +321,7 @@ export const getFormOptions = (
     },
     {
       component: 'Select',
-      fieldName: 'deviceStatusName',
+      fieldName: 'relationStatus',
       label: $t('containerPool.table.status'),
       componentProps: {
         clearable: true,
