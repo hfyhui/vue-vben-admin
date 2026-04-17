@@ -13,7 +13,6 @@ export type ContainerPoolSortOption = { label: string; value: string };
 export type ContainerPoolStatusOption = { label: string; value: string };
 export type ContainerPoolOperatorOption = AssetOperatorItem;
 export type ContainerPoolBrandOption = { label: string; value: string };
-export type ContainerPoolModelOption = { label: string; value: string };
 export type ContainerPoolChipFilterOption = { label: string; value: string };
 
 /** 容器池筛选：芯片类型（与后端约定一致，固定枚举） */
@@ -67,7 +66,6 @@ export async function getContainerPoolListApi(_params: {
   relationStatus?: string;
   sortType?: string;
   server?: string;
-  inputTime?: string;
   chip?: string;
   systemVersion?: string;
   brand?: string;
@@ -80,6 +78,9 @@ export async function getContainerPoolListApi(_params: {
   mobileDeviceIp?: string;
   suiteIds?: string[];
   remark?: string;
+  timeRange?: string[];
+  startTime?: string;
+  endTime?: string;
   deviceStatusName?: string;
   [key: string]: any;
 }) {
@@ -91,7 +92,6 @@ export async function getContainerPoolListApi(_params: {
     relationStatus,
     sortType,
     server,
-    inputTime,
     chip,
     systemVersion,
     brand,
@@ -104,8 +104,15 @@ export async function getContainerPoolListApi(_params: {
     mobileDeviceIp,
     suiteIds,
     remark,
+    timeRange,
+    startTime,
+    endTime,
     deviceStatusName,
   } = _params;
+  const rangeStart = Array.isArray(timeRange) ? timeRange[0] : undefined;
+  const rangeEnd = Array.isArray(timeRange) ? timeRange[1] : undefined;
+  const finalStartTime = startTime || rangeStart;
+  const finalEndTime = endTime || rangeEnd;
 
   const reqParams: Record<string, any> = {
     current: page ?? 1,
@@ -117,7 +124,6 @@ export async function getContainerPoolListApi(_params: {
   };
 
   if (server) reqParams.server = server;
-  if (inputTime) reqParams.inputTime = inputTime;
   if (chip) reqParams.chip = chip;
   if (mobileDeviceIp) reqParams.mobileDeviceIp = mobileDeviceIp;
   if (systemVersion) reqParams.systemVersion = systemVersion;
@@ -130,6 +136,8 @@ export async function getContainerPoolListApi(_params: {
   if (remark) reqParams.remark = remark;
   if (appAccount) reqParams.appAccount = appAccount;
   if (networkIp) reqParams.networkIp = networkIp;
+  if (finalStartTime) reqParams.startTime = finalStartTime;
+  if (finalEndTime) reqParams.endTime = finalEndTime;
   if (deviceStatusName) reqParams.deviceStatusName = deviceStatusName;
 
   const data = await getContainerAssetPageApi(reqParams);
@@ -147,7 +155,6 @@ export const getFormOptions = (
   statusOptions: ContainerPoolStatusOption[] = [],
   operatorOptions: ContainerPoolOperatorOption[] = [],
   brandOptions: ContainerPoolBrandOption[] = [],
-  modelOptions: ContainerPoolModelOption[] = [],
   groupOptions: Array<{ id?: string; suiteName?: string }> = [],
 ): VbenFormProps => ({
   collapsed: true,
@@ -188,14 +195,16 @@ export const getFormOptions = (
     },
     {
       component: 'DatePicker',
-      fieldName: 'inputTime',
+      fieldName: 'timeRange',
       label: $t('containerPool.table.inputTime'),
       componentProps: {
         style: { width: '100%' },
         clearable: true,
-        type: 'datetime',
+        type: 'datetimerange',
         valueFormat: 'YYYY-MM-DD HH:mm:ss',
-        placeholder: $t('containerPool.filter.inputTimePlaceholder'),
+        startPlaceholder: $t('containerPool.filter.startTimePlaceholder'),
+        endPlaceholder: $t('containerPool.filter.endTimePlaceholder'),
+        rangeSeparator: ' ~ ',
       },
     },
     {
@@ -233,14 +242,12 @@ export const getFormOptions = (
       },
     },
     {
-      component: 'Select',
+      component: 'Input',
       fieldName: 'deviceMode',
       label: $t('containerPool.table.phoneModel'),
       componentProps: {
         clearable: true,
-        filterable: true,
         placeholder: $t('containerPool.filter.phoneModelPlaceholder'),
-        options: modelOptions,
       },
     },
     {
@@ -282,17 +289,6 @@ export const getFormOptions = (
     },
     {
       component: 'Select',
-      fieldName: 'deviceStatusName',
-      label: $t('containerPool.table.status'),
-      componentProps: {
-        clearable: true,
-        filterable: true,
-        placeholder: $t('containerPool.filter.deviceStatusPlaceholder'),
-        options: statusOptions,
-      },
-    },
-    {
-      component: 'Select',
       fieldName: 'suiteIds',
       label: $t('containerPool.table.deviceGroup'),
       componentProps: {
@@ -326,6 +322,17 @@ export const getFormOptions = (
       label: $t('containerPool.table.remark'),
       componentProps: { clearable: true, placeholder: $t('containerPool.filter.remarkPlaceholder') },
     },
+    {
+      component: 'Select',
+      fieldName: 'deviceStatusName',
+      label: $t('containerPool.table.status'),
+      componentProps: {
+        clearable: true,
+        filterable: true,
+        placeholder: $t('containerPool.filter.deviceStatusPlaceholder'),
+        options: statusOptions,
+      },
+    },
   ],
   showCollapseButton: true,
   submitOnChange: false,
@@ -344,7 +351,6 @@ export const useColumns = (options: ContainerPoolTableConfigOptions = {}) => [
   { field: 'operator', title: $t('containerPool.table.operator'), minWidth: 100 },
   { field: 'phoneNum', title: $t('containerPool.table.phoneNumber'), minWidth: 120 },
   { field: 'deviceVersion', title: $t('containerPool.table.deviceVersion'), minWidth: 120 },
-  { field: 'deviceStatusName', title: $t('containerPool.table.status'), minWidth: 100 },
   {
     field: 'suiteNames',
     title: $t('containerPool.table.deviceGroup'),
@@ -416,5 +422,6 @@ export const useColumns = (options: ContainerPoolTableConfigOptions = {}) => [
       },
     },
   },
+  { field: 'deviceStatusName', title: $t('containerPool.table.status'), minWidth: 100 },
 ];
 

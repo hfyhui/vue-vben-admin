@@ -19,7 +19,6 @@ import {
   resetContainerApi,
   type AssetGroupItem,
   type MobileDeviceBrandItem,
-  type MobileDeviceCategoryItem,
   type AssetOperatorItem,
   type ContainerPoolNumData,
 } from '#/api/core/asset';
@@ -29,7 +28,6 @@ import { useAssetEnumsStore } from '#/store';
 
 import {
   type ContainerPoolBrandOption,
-  type ContainerPoolModelOption,
   type ContainerPoolStatusOption,
   type ContainerPoolSortOption,
   getContainerPoolListApi,
@@ -43,7 +41,6 @@ const sortOptions = ref<ContainerPoolSortOption[]>([]);
 const statusOptions = ref<ContainerPoolStatusOption[]>([]);
 const operatorOptions = ref<AssetOperatorItem[]>([]);
 const brandOptions = ref<ContainerPoolBrandOption[]>([]);
-const modelOptions = ref<ContainerPoolModelOption[]>([]);
 const groupOptions = ref<AssetGroupItem[]>([]);
 const assetEnumsStore = useAssetEnumsStore();
 const locking = ref(false);
@@ -85,7 +82,7 @@ async function loadContainerPoolNum() {
 }
 
 const [Grid, gridApi] = useVbenVxeGrid({
-  formOptions: getFormOptions([], [], [], [], [], []),
+  formOptions: getFormOptions([], [], [], [], []),
   showSearchForm: true,
   gridOptions: {
     columns: useColumns({
@@ -181,18 +178,9 @@ function applyFormOptions() {
       statusOptions.value,
       operatorOptions.value,
       brandOptions.value,
-      modelOptions.value,
       groupOptions.value,
     ),
   });
-}
-
-function catVal(c: MobileDeviceCategoryItem) {
-  return c.model ?? c.category ?? '';
-}
-
-function catLabel(c: MobileDeviceCategoryItem) {
-  return c.deiceName ?? c.title ?? c.deviceName ?? c.model ?? c.category ?? '';
 }
 
 async function loadSortOptions() {
@@ -244,31 +232,18 @@ async function loadBrandModelOptions() {
     ];
 
     const brandSet = new Set<string>();
-    const modelMap = new Map<string, string>();
     for (const brandItem of allModels) {
       const brand = String(brandItem?.brand ?? '').trim();
       if (brand) brandSet.add(brand);
-      for (const cat of brandItem?.categories ?? []) {
-        const value = String(catVal(cat) ?? '').trim();
-        const label = String(catLabel(cat) ?? '').trim();
-        if (value && !modelMap.has(value)) {
-          modelMap.set(value, label || value);
-        }
-      }
     }
 
     brandOptions.value = [...brandSet].map((item) => ({
       label: item,
       value: item,
     }));
-    modelOptions.value = [...modelMap.entries()].map(([value, label]) => ({
-      label,
-      value,
-    }));
   } catch (error) {
     console.error('[containerPool] 获取品牌型号列表失败:', error);
     brandOptions.value = [];
-    modelOptions.value = [];
   }
   applyFormOptions();
 }
