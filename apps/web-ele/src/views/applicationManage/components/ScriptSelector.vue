@@ -313,6 +313,23 @@ function onScriptIdChange(value: string) {
   }
 }
 
+function canDeleteScript(item: ScriptCard) {
+  const protectedScriptNames = new Set(['信息修改', '信息同步']);
+  const name = String(item.programName || '').trim();
+  return !!name && !protectedScriptNames.has(name);
+}
+
+function removeScript(item: ScriptCard) {
+  if (!canDeleteScript(item)) {
+    return;
+  }
+  const nextIds = modelIds.value.filter((id) => id !== item.id);
+  delete localScriptMap.value[item.id];
+  emit('update:modelValue', nextIds);
+  emit('change', nextIds);
+  emit('changeDetail', buildProgramTypeList(nextIds));
+}
+
 async function submitFn() {
   const valid = await drawerSubmitFormRef.value?.validateFn?.();
   if (!valid) {
@@ -373,13 +390,6 @@ async function submitFn() {
   cancelFn();
 }
 
-function removeFn(row: ScriptCard) {
-  const nextIds = modelIds.value.filter((id) => id !== row.id);
-  delete localScriptMap.value[row.id];
-  emit('update:modelValue', nextIds);
-  emit('change', nextIds);
-  emit('changeDetail', buildProgramTypeList(nextIds));
-}
 </script>
 
 <template>
@@ -401,7 +411,11 @@ function removeFn(row: ScriptCard) {
             <el-icon class="icon" @click.stop="addTaskType(item)">
               <Edit />
             </el-icon>
-            <el-icon class="icon" @click.stop="removeFn(item)">
+            <el-icon
+              v-if="canDeleteScript(item)"
+              class="icon"
+              @click.stop="removeScript(item)"
+            >
               <Delete />
             </el-icon>
           </div>

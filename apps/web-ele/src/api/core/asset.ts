@@ -346,6 +346,7 @@ export async function getContainerAssetPageApi<T = DeviceItem>(
   params: PageQuery,
 ): Promise<PageResult<T>> {
   const reqParams = {
+    ...params,
     current: params.current ?? 1,
     size: params.size ?? 20,
     screening: params.screening,

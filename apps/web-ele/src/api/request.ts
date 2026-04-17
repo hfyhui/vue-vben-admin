@@ -27,6 +27,13 @@ const authApiBaseURL = import.meta.env.VITE_GLOB_AUTH_API_URL || '/auth';
 const customAuthorization = import.meta.env.VITE_GLOB_AUTHORIZATION;
 const backendSuccessCodes = new Set([200, 100000]);
 
+function isUnauthorizedByMessage(msg: unknown) {
+  return (
+    typeof msg === 'string' &&
+    msg === 'UNAUTHORIZED'
+  );
+}
+
 /**
  * platform/social/auth 等后端约定：HTTP 200 且 body.code === 401，或 HTTP 401，表示登录失效。
  * 与 createRequestClient 中 doReAuthenticate 行为一致（清 token、提示、跳转登录或弹窗）。
@@ -229,8 +236,8 @@ function createBackendClient(baseURL: string) {
           if (backendSuccessCodes.has(code)) {
             return responseData;
           }
-          // 业务码 401：登录状态过期（HTTP 可能仍为 200）
-          if (code === 401) {
+          // 业务码 401，或 msg=UNAUTHORIZED：登录状态过期（HTTP 可能仍为 200/500）
+          if (code === 401 || isUnauthorizedByMessage(msg)) {
             const tip =
               typeof msg === 'string' && msg ? msg : undefined;
             await handleBackendUnauthorized(tip);

@@ -43,6 +43,7 @@ const accountTotal = ref(0);
 const userTotal = ref(0);
 const accountPage = reactive({ current: 1, size: 100 });
 const userPage = reactive({ current: 1, size: 100 });
+const pageSizeOptions = [10, 20, 50, 100];
 const accountKeyword = ref('');
 const userKeyword = ref('');
 
@@ -51,27 +52,44 @@ const userTableRef = ref();
 
 const selectedAccountIds = ref<string[]>([]);
 const selectedUserIds = ref<string[]>([]);
-const selectedAccountRows = ref<any[]>([]);
-const selectedUserRows = ref<any[]>([]);
+const selectedAccountUserIds = ref<string[]>([]);
 
 /** 与参考项目一致：Tab1 在系统用户表、Tab2 在社媒账号表展示「仅展示已勾选」 */
 const userShowSelectedOnly = ref(false);
 const accountShowSelectedOnly = ref(false);
 
+function getAccountKey(row: any) {
+  return String(row?.accountId ?? row?.id ?? '');
+}
+
+function getUserKey(row: any) {
+  return String(row?.userId ?? row?.id ?? '');
+}
+
+const checkInfoList = computed<any[]>(() =>
+  Array.isArray(smStore.checkInfo) ? smStore.checkInfo : [],
+);
+
 const displayUserRows = computed(() => {
   if (activeTab.value === 'assignUsers' && userShowSelectedOnly.value) {
-    return [...selectedUserRows.value];
+    return [...checkInfoList.value];
   }
   return userRows.value;
 });
 
 const displayAccountRows = computed(() => {
   if (activeTab.value === 'assignAccounts' && accountShowSelectedOnly.value) {
-    return [...selectedAccountRows.value];
+    return [...checkInfoList.value];
   }
   return accountRows.value;
 });
 
+/**
+ * 与 social_media_web 一致：
+ * - system/index 用户表：仅当左侧选中账号对应唯一 userId 时，禁用该用户行（checkUserIds.includes）
+ * - social/index 社媒表：仅当左侧选中用户唯一时，禁用 userId 与之匹配的账号行
+ * 不可用整份 checkInfo 列表做锁定，否则会把接口返回的其它行也置灰。
+ */
 let syncingAccount = false;
 let syncingUser = false;
 
@@ -89,10 +107,10 @@ async function loadApps() {
     if (res?.code === 200 || res?.code === 100000) {
       const records = res.data?.records ?? [];
       apps.value = records;
-      const firstId = records[0]?.id
+      const firstId = records[0]?.id ?? '';
       currentAppId.value = firstId;
       smStore.setCheckAppList(records);
-      smStore.setCheckAppId(firstId);
+      if (firstId) smStore.setCheckAppId(firstId);
     }
   } catch {
     apps.value = [];
@@ -154,7 +172,7 @@ function syncAccountSelection() {
   syncingAccount = true;
   tb.clearSelection();
   for (const row of accountRows.value) {
-    if (selectedAccountIds.value.includes(row.accountId)) {
+    if (selectedAccountIds.value.includes(getAccountKey(row))) {
       tb.toggleRowSelection(row, true);
     }
   }
@@ -169,14 +187,15 @@ function syncAccountSelectionFromStore() {
   if (!tb) return;
   syncingAccount = true;
   tb.clearSelection();
-  const want = new Set(smStore.checkInfo.map((a: any) => a.accountId));
+  const want = new Set(checkInfoList.value.map((a: any) => getAccountKey(a)));
   const rows =
     activeTab.value === 'assignAccounts' && accountShowSelectedOnly.value
-      ? (Array.isArray(smStore.checkInfo) ? smStore.checkInfo : [])
+      ? checkInfoList.value
       : accountRows.value;
   for (const row of rows) {
-    if (want.has(row.accountId)) {
-      tb.toggleRowSelection(row, true);
+    if (want.has(getAccountKey(row))) {
+      // 对应社媒项目：联动回填时即使行已禁用，也要保持“已勾选 + 置灰”
+      tb.toggleRowSelection(row, true, true);
     }
   }
   nextTick(() => {
@@ -189,14 +208,15 @@ function syncUserSelectionFromStore() {
   if (!tb) return;
   syncingUser = true;
   tb.clearSelection();
-  const want = new Set(smStore.checkInfo.map((u: any) => u.userId));
+  const want = new Set(checkInfoList.value.map((u: any) => getUserKey(u)));
   const rows =
     activeTab.value === 'assignUsers' && userShowSelectedOnly.value
-      ? (Array.isArray(smStore.checkInfo) ? smStore.checkInfo : [])
+      ? checkInfoList.value
       : userRows.value;
   for (const row of rows) {
-    if (want.has(row.userId)) {
-      tb.toggleRowSelection(row, true);
+    if (want.has(getUserKey(row))) {
+      // 对应社媒项目：联动回填时即使行已禁用，也要保持“已勾选 + 置灰”
+      tb.toggleRowSelection(row, true, true);
     }
   }
   nextTick(() => {
@@ -204,22 +224,38 @@ function syncUserSelectionFromStore() {
   });
 }
 
-function onPickApp(id: string) {
+async function onPickApp(id: string) {
   currentAppId.value = id;
   smStore.setCheckAppId(id);
   accountPage.current = 1;
   selectedAccountIds.value = [];
+  selectedAccountUserIds.value = [];
   userShowSelectedOnly.value = false;
   accountShowSelectedOnly.value = false;
   smStore.resetBindings();
-  loadAccounts();
-  loadUsers();
+  if (activeTab.value === 'assignAccounts') {
+    await smStore.fetchAccountsByUsers(selectedUserIds.value);
+    loadAccounts();
+  } else {
+    await loadUsers();
+    loadAccounts();
+  }
 }
 
 function onAccountSelect(rows: any[]) {
   if (syncingAccount) return;
-  selectedAccountRows.value = rows;
-  selectedAccountIds.value = rows.map((r) => r.accountId);
+  if (
+    activeTab.value === 'assignAccounts' &&
+    accountShowSelectedOnly.value &&
+    rows.length === 0 &&
+    smStore.checkInfo.length > 0
+  ) {
+    return;
+  }
+  selectedAccountIds.value = rows.map((r) => getAccountKey(r)).filter(Boolean);
+  selectedAccountUserIds.value = [
+    ...new Set(rows.map((r) => String(r?.userId ?? '')).filter(Boolean)),
+  ];
   if (activeTab.value === 'assignUsers') {
     /** 空选时由 store 直接清空，不请求 /accounts/users（保存后 clearSelection 会触发） */
     void smStore.fetchUsersByAccounts(selectedAccountIds.value);
@@ -230,8 +266,15 @@ function onAccountSelect(rows: any[]) {
 
 function onUserSelect(rows: any[]) {
   if (syncingUser) return;
-  selectedUserRows.value = rows;
-  selectedUserIds.value = rows.map((r) => r.userId);
+  if (
+    activeTab.value === 'assignUsers' &&
+    userShowSelectedOnly.value &&
+    rows.length === 0 &&
+    smStore.checkInfo.length > 0
+  ) {
+    return;
+  }
+  selectedUserIds.value = rows.map((r) => getUserKey(r)).filter(Boolean);
   if (activeTab.value === 'assignAccounts') {
     void smStore.fetchAccountsByUsers(selectedUserIds.value);
   } else {
@@ -254,11 +297,12 @@ watch(
 );
 
 function onTabChange() {
+  accountTableRef.value?.clearSelection?.();
+  userTableRef.value?.clearSelection?.();
   smStore.resetBindings();
   selectedAccountIds.value = [];
+  selectedAccountUserIds.value = [];
   selectedUserIds.value = [];
-  selectedAccountRows.value = [];
-  selectedUserRows.value = [];
   userShowSelectedOnly.value = false;
   accountShowSelectedOnly.value = false;
   accountPage.current = 1;
@@ -305,6 +349,55 @@ function onUserOnlySelectedChange() {
   });
 }
 
+function isDisabledUser(row: any) {
+  return row?.status == 1;
+}
+
+function isLockFlagTrue(row: any) {
+  return row?.isLock === true;
+}
+
+function isLeftUserTable() {
+  return activeTab.value === 'assignAccounts';
+}
+
+function isLockedAccount(row: any) {
+  if (isLockFlagTrue(row)) {
+    return true;
+  }
+  if (activeTab.value !== 'assignAccounts' || selectedUserIds.value.length !== 1) {
+    return false;
+  }
+  const sel = selectedUserIds.value[0];
+  return row?.userId == sel;
+}
+
+function isLockedUser(row: any) {
+  if (isLeftUserTable() && isLockFlagTrue(row)) {
+    return true;
+  }
+  if (activeTab.value !== 'assignUsers' || selectedAccountUserIds.value.length !== 1) {
+    return false;
+  }
+  return row?.userId == selectedAccountUserIds.value[0];
+}
+
+function accountSelectable(row: any) {
+  return !isLockedAccount(row);
+}
+
+function userSelectable(row: any) {
+  return !isDisabledUser(row) && !isLockedUser(row);
+}
+
+function accountRowClassName({ row }: { row: any }) {
+  return isLockedAccount(row) ? 'locked-row' : '';
+}
+
+function userRowClassName({ row }: { row: any }) {
+  return isDisabledUser(row) || isLockedUser(row) ? 'locked-row' : '';
+}
+
 async function saveBind() {
   const accountRowsSel = accountTableRef.value?.getSelectionRows?.() ?? [];
   const userRowsSel = userTableRef.value?.getSelectionRows?.() ?? [];
@@ -348,12 +441,14 @@ async function saveBind() {
       ElMessage.success($t('systemManage.opSuccess'));
       smStore.resetBindings();
       selectedAccountIds.value = [];
+      selectedAccountUserIds.value = [];
       selectedUserIds.value = [];
-      selectedAccountRows.value = [];
-      selectedUserRows.value = [];
+      accountTableRef.value?.clearSelection?.();
+      userTableRef.value?.clearSelection?.();
       userShowSelectedOnly.value = false;
       accountShowSelectedOnly.value = false;
       loadAccounts();
+      loadUsers();
     }
   } catch {
     /* client toast */
@@ -430,11 +525,17 @@ void loadApps().then(() => {
               v-loading="accountLoading"
               :data="displayAccountRows"
               row-key="accountId"
+              :row-class-name="accountRowClassName"
               class="no-lines-table"
               height="100%"
               @selection-change="onAccountSelect"
             >
-            <ElTableColumn type="selection" width="48" />
+            <ElTableColumn
+              type="selection"
+              width="48"
+              :reserve-selection="true"
+              :selectable="accountSelectable"
+            />
             <ElTableColumn
               prop="owner"
               :label="$t('systemManage.socialMediaAccount.owner')"
@@ -473,10 +574,18 @@ void loadApps().then(() => {
             <ElPagination
               background
               size="small"
-              layout="total, prev, pager, next"
+              layout="total, sizes, prev, pager, next"
               :total="accountTotal"
+              :page-sizes="pageSizeOptions"
               :page-size="accountPage.size"
               :current-page="accountPage.current"
+              @size-change="
+                (s) => {
+                  accountPage.size = s;
+                  accountPage.current = 1;
+                  loadAccounts();
+                }
+              "
               @current-change="
                 (p) => {
                   accountPage.current = p;
@@ -519,11 +628,17 @@ void loadApps().then(() => {
               v-loading="userLoading"
               :data="displayUserRows"
               row-key="userId"
+              :row-class-name="userRowClassName"
               class="no-lines-table"
               height="100%"
               @selection-change="onUserSelect"
             >
-            <ElTableColumn type="selection" width="48" />
+            <ElTableColumn
+              type="selection"
+              width="48"
+              :reserve-selection="true"
+              :selectable="userSelectable"
+            />
             <ElTableColumn
               prop="userName"
               :label="$t('systemManage.socialMediaAccount.name')"
@@ -544,10 +659,18 @@ void loadApps().then(() => {
             <ElPagination
               background
               size="small"
-              layout="total, prev, pager, next"
+              layout="total, sizes, prev, pager, next"
               :total="userTotal"
+              :page-sizes="pageSizeOptions"
               :page-size="userPage.size"
               :current-page="userPage.current"
+              @size-change="
+                (s) => {
+                  userPage.size = s;
+                  userPage.current = 1;
+                  loadUsers();
+                }
+              "
               @current-change="
                 (p) => {
                   userPage.current = p;
@@ -680,10 +803,28 @@ void loadApps().then(() => {
 .pager :deep(.el-pagination) {
   --el-pagination-bg-color: transparent;
   --el-pagination-text-color: var(--el-text-color-regular);
+  --el-pagination-button-color: var(--el-text-color-regular);
+  --el-pagination-button-disabled-color: var(--el-text-color-disabled);
+  --el-pagination-button-disabled-bg-color: var(--el-fill-color);
 }
 .pager :deep(.el-pagination.is-background .btn-next),
 .pager :deep(.el-pagination.is-background .btn-prev),
 .pager :deep(.el-pagination.is-background .el-pager li) {
   background-color: var(--el-fill-color);
+  color: var(--el-text-color-regular);
+  border: 1px solid var(--el-border-color);
+}
+.pager :deep(.el-pagination.is-background .el-pager li.is-active) {
+  background-color: color-mix(in srgb, var(--el-color-primary) 18%, var(--el-fill-color));
+  color: var(--el-color-primary);
+  border-color: color-mix(in srgb, var(--el-color-primary) 35%, var(--el-border-color));
+}
+.pager :deep(.el-pagination .el-pagination__sizes .el-select .el-input__wrapper) {
+  background-color: var(--el-fill-color);
+  box-shadow: 0 0 0 1px var(--el-border-color) inset;
+}
+.no-lines-table :deep(tr.locked-row td) {
+  background: color-mix(in srgb, var(--el-fill-color-light) 45%, transparent);
+  color: color-mix(in srgb, var(--el-text-color-secondary) 78%, var(--el-text-color-primary));
 }
 </style>

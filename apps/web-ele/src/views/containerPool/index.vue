@@ -9,11 +9,17 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 
 import {
   addDeviceRemarkApi,
+  getAssetAiboxDeviceModelsApi,
+  getAssetCloudDeviceModelsApi,
+  getAssetFutureDeviceModelsApi,
   getAssetGroupApi,
+  getAssetOperatorListApi,
   getContainerPoolNumApi,
   lockDeviceApi,
   resetContainerApi,
   type AssetGroupItem,
+  type MobileDeviceBrandItem,
+  type AssetOperatorItem,
   type ContainerPoolNumData,
 } from '#/api/core/asset';
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
@@ -21,6 +27,8 @@ import { $t } from '#/locales';
 import { useAssetEnumsStore } from '#/store';
 
 import {
+  type ContainerPoolBrandOption,
+  type ContainerPoolStatusOption,
   type ContainerPoolSortOption,
   getContainerPoolListApi,
   getFormOptions,
@@ -30,6 +38,9 @@ import * as DeviceGroupModalModule from './device-group-modal.vue';
 import * as QuickNewDeviceModalModule from './quick-new-device-modal.vue';
 
 const sortOptions = ref<ContainerPoolSortOption[]>([]);
+const statusOptions = ref<ContainerPoolStatusOption[]>([]);
+const operatorOptions = ref<AssetOperatorItem[]>([]);
+const brandOptions = ref<ContainerPoolBrandOption[]>([]);
 const groupOptions = ref<AssetGroupItem[]>([]);
 const assetEnumsStore = useAssetEnumsStore();
 const locking = ref(false);
@@ -71,7 +82,7 @@ async function loadContainerPoolNum() {
 }
 
 const [Grid, gridApi] = useVbenVxeGrid({
-  formOptions: getFormOptions([], []),
+  formOptions: getFormOptions([], [], [], [], []),
   showSearchForm: true,
   gridOptions: {
     columns: useColumns({
@@ -162,7 +173,13 @@ const [Grid, gridApi] = useVbenVxeGrid({
 
 function applyFormOptions() {
   gridApi.setState({
-    formOptions: getFormOptions(sortOptions.value, groupOptions.value),
+    formOptions: getFormOptions(
+      sortOptions.value,
+      statusOptions.value,
+      operatorOptions.value,
+      brandOptions.value,
+      groupOptions.value,
+    ),
   });
 }
 
@@ -174,6 +191,59 @@ async function loadSortOptions() {
   } catch (error) {
     console.error('[containerPool] 获取排序枚举失败:', error);
     sortOptions.value = [];
+  }
+  applyFormOptions();
+}
+
+async function loadStatusOptions() {
+  try {
+    statusOptions.value = await assetEnumsStore.getEnumOptionsAsync(
+      'NEW_DEVICE_STATUS',
+    );
+  } catch (error) {
+    console.error('[containerPool] 获取设备状态枚举失败:', error);
+    statusOptions.value = [];
+  }
+  applyFormOptions();
+}
+
+async function loadOperatorOptions() {
+  try {
+    const response = await getAssetOperatorListApi();
+    operatorOptions.value = Array.isArray(response?.data) ? response.data : [];
+  } catch (error) {
+    console.error('[containerPool] 获取运营商列表失败:', error);
+    operatorOptions.value = [];
+  }
+  applyFormOptions();
+}
+
+async function loadBrandModelOptions() {
+  try {
+    const [aiboxRes, futureRes, cloudRes] = await Promise.all([
+      getAssetAiboxDeviceModelsApi(),
+      getAssetFutureDeviceModelsApi(),
+      getAssetCloudDeviceModelsApi(),
+    ]);
+    const allModels: MobileDeviceBrandItem[] = [
+      ...(aiboxRes?.code === 100000 ? (aiboxRes.data?.mobileDeviceModels ?? []) : []),
+      ...(futureRes?.code === 100000 ? (futureRes.data?.mobileDeviceModels ?? []) : []),
+      ...(cloudRes?.code === 100000 ? (cloudRes.data?.mobileDeviceModels ?? []) : []),
+    ];
+
+    const brandSet = new Set<string>();
+    for (const brandItem of allModels) {
+      const brand = String(brandItem?.brand ?? '').trim();
+      if (brand) brandSet.add(brand);
+    }
+
+    brandOptions.value = [...brandSet].map((item) => ({
+      label: item,
+      value: item,
+    }));
+  } catch (error) {
+    console.error('[containerPool] 获取品牌型号列表失败:', error);
+    brandOptions.value = [];
   }
   applyFormOptions();
 }
@@ -399,6 +469,9 @@ const [QuickNewDeviceModalComp, quickNewDeviceModalApi] = useVbenModal({
 onMounted(() => {
   loadGroupOptions();
   loadSortOptions();
+  loadStatusOptions();
+  loadOperatorOptions();
+  loadBrandModelOptions();
   loadContainerPoolNum();
 });
 </script>

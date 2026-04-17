@@ -29,7 +29,46 @@ const searchMode = ref<'device' | 'status'>('device');
 const searchForm = reactive<{ deviceIdx?: string; deviceStatuses?: string }>({});
 const onlySelected = ref(false);
 const selectedMap = ref(new Map<string, any>());
+/** 分页列表接口返回的完整行，用于「仅显示已选」时补全 isLock 等字段（详情里的 suiteOrgs 可能不含） */
+const lastKnownApiRowByDeviceId = ref(new Map<string, any>());
+/** 与列表/接口顺序一致，避免「仅显示已选」时用 Map 顺序导致锁定行跑到最后 */
+const selectionRowOrder = ref<string[]>([]);
 let syncingSelection = false;
+
+function deviceMapKey(id: unknown): string {
+  if (id === null || id === undefined || id === '') return '';
+  return String(id);
+}
+
+function removeKeyFromSelectionOrder(key: string) {
+  if (!key) return;
+  selectionRowOrder.value = selectionRowOrder.value.filter((k) => k !== key);
+}
+
+function appendKeyToSelectionOrderIfNeeded(key: string) {
+  if (!key || selectionRowOrder.value.includes(key)) return;
+  selectionRowOrder.value.push(key);
+}
+
+/** 用当前页接口返回顺序，校正已选项之间的相对位置（与全量列表一致） */
+function mergeApiPageOrderIntoSelectionOrder(pageRows: any[]) {
+  const pageKeys = pageRows
+    .map((r) => deviceMapKey(r.deviceId))
+    .filter((k): k is string => Boolean(k) && selectedMap.value.has(k));
+  if (!pageKeys.length) return;
+  const pageSet = new Set(pageKeys);
+  const prev = selectionRowOrder.value;
+  const positions = pageKeys.map((k) => prev.indexOf(k)).filter((i) => i >= 0);
+  const insertAt = positions.length ? Math.min(...positions) : prev.length;
+  const withoutPage = prev.filter((k) => !pageSet.has(k));
+  const removedBefore = prev.slice(0, insertAt).filter((k) => pageSet.has(k)).length;
+  const newInsertAt = insertAt - removedBefore;
+  selectionRowOrder.value = [
+    ...withoutPage.slice(0, newInsertAt),
+    ...pageKeys,
+    ...withoutPage.slice(newInsertAt),
+  ];
+}
 
 const modeOptions = computed(() => [
   { label: $t('systemManage.groupManage.device'), value: 'device' as const },
@@ -50,24 +89,22 @@ function successCode(code: number) {
 
 function statusLabel(code?: string) {
   if (!code) return '';
-  const opts = statusOptions.value;
-  return opts.find((o) => o.value === code)?.label ?? code;
+  return statusOptions.value.find((o) => o.value === code)?.label ?? '';
 }
 
 function brandLabel(code?: string) {
   if (!code) return '';
   const children = assetEnums.getEnumByKey<any>('MOBILE_BRAND')?.children ?? [];
-  const hit = children.find((c: any) => c.name === code);
-  return hit?.content ?? code;
+  return children.find((c: any) => c.name === code)?.content ?? '';
 }
 
-
+/** 先按枚举码，再退回接口名称（避免 suiteOrgs 里名称字段为 i18n 路径时优先展示错） */
 function displayStatus(row: any) {
-  return row.deviceStatusName || statusLabel(row.deviceStatus) || '';
+  return statusLabel(row.deviceStatus) || row.deviceStatusName || '';
 }
 
 function displayBrand(row: any) {
-  return row.deviceCategoryName || brandLabel(row.deviceCategory) || '';
+  return brandLabel(row.deviceCategory) || row.deviceCategoryName || '';
 }
 
 async function ensureEnums() {
@@ -76,10 +113,17 @@ async function ensureEnums() {
 
 function resetFromDetail() {
   selectedMap.value = new Map();
+  lastKnownApiRowByDeviceId.value = new Map();
   const orgs = props.detail?.suiteOrgs ?? [];
+  const orderKeys: string[] = [];
   for (const r of orgs) {
-    if (r?.deviceId) selectedMap.value.set(`${r.deviceId ?? ''}`, { ...r });
+    const k = deviceMapKey(r?.deviceId);
+    if (k) {
+      selectedMap.value.set(k, { ...r });
+      orderKeys.push(k);
+    }
   }
+  selectionRowOrder.value = orderKeys;
   onlySelected.value = false;
   searchForm.deviceIdx = '';
   searchForm.deviceStatuses = '';
@@ -107,6 +151,15 @@ async function loadList() {
     if (res && successCode(res.code)) {
       tableRows.value = res.data?.records ?? [];
       total.value = res.data?.total ?? 0;
+      for (const row of tableRows.value) {
+        const k = deviceMapKey(row.deviceId);
+        if (!k) continue;
+        lastKnownApiRowByDeviceId.value.set(k, row);
+        if (selectedMap.value.has(k)) {
+          selectedMap.value.set(k, { ...selectedMap.value.get(k), ...row });
+        }
+      }
+      mergeApiPageOrderIntoSelectionOrder(tableRows.value);
     } else {
       tableRows.value = [];
       total.value = 0;
@@ -132,11 +185,22 @@ function applyLocalFilter() {
     }
     return true;
   });
-  tableRows.value = filtered.map((el) => ({
-    ...el,
-    deviceStatusName: el.deviceStatusName ?? statusLabel(el.deviceStatus),
-    deviceCategoryName: el.deviceCategoryName ?? brandLabel(el.deviceCategory),
-  }));
+  const byKey = new Map(filtered.map((el) => [deviceMapKey(el.deviceId), el]));
+  const orderedKeys = selectionRowOrder.value.filter((k) => byKey.has(k));
+  for (const el of filtered) {
+    const k = deviceMapKey(el.deviceId);
+    if (k && !orderedKeys.includes(k)) orderedKeys.push(k);
+  }
+  tableRows.value = orderedKeys.map((key) => {
+    const el = byKey.get(key)!;
+    const cached = lastKnownApiRowByDeviceId.value.get(key);
+    const merged = cached ? { ...el, ...cached } : el;
+    return {
+      ...merged,
+      deviceStatusName: statusLabel(merged.deviceStatus) || merged.deviceStatusName || '',
+      deviceCategoryName: brandLabel(merged.deviceCategory) || merged.deviceCategoryName || '',
+    };
+  });
   total.value = filtered.length;
   nextTick(() => syncSelection());
 }
@@ -147,7 +211,7 @@ function syncSelection() {
   syncingSelection = true;
   tb.clearSelection();
   for (const row of tableRows.value) {
-    if (selectedMap.value.has(row.deviceId)) {
+    if (selectedMap.value.has(deviceMapKey(row.deviceId))) {
       tb.toggleRowSelection(row, true);
     }
   }
@@ -178,11 +242,15 @@ function onOnlySelectedChange(val: boolean) {
 
 function onSelect(selection: any[], row: any) {
   if (syncingSelection) return;
-  const inSel = selection.some((r) => r.deviceId === row.deviceId);
+  if (row?.isLock) return;
+  const key = deviceMapKey(row.deviceId);
+  const inSel = selection.some((r) => deviceMapKey(r.deviceId) === key);
   if (inSel) {
-    selectedMap.value.set(row.deviceId, row);
+    selectedMap.value.set(key, row);
+    appendKeyToSelectionOrderIfNeeded(key);
   } else {
-    selectedMap.value.delete(row.deviceId);
+    selectedMap.value.delete(key);
+    removeKeyFromSelectionOrder(key);
   }
 }
 
@@ -190,12 +258,19 @@ function onSelectAll(selection: any[]) {
   if (syncingSelection) return;
   const onPage = tableRows.value;
   if (selection.length) {
-    for (const r of selection) {
-      selectedMap.value.set(r.deviceId, r);
+    for (const r of onPage) {
+      if (!r?.isLock) {
+        const k = deviceMapKey(r.deviceId);
+        selectedMap.value.set(k, r);
+        appendKeyToSelectionOrderIfNeeded(k);
+      }
     }
+    mergeApiPageOrderIntoSelectionOrder(onPage);
   } else {
     for (const r of onPage) {
-      selectedMap.value.delete(r.deviceId);
+      const k = deviceMapKey(r.deviceId);
+      selectedMap.value.delete(k);
+      removeKeyFromSelectionOrder(k);
     }
   }
 }
@@ -241,11 +316,19 @@ async function save() {
   }
   saving.value = true;
   try {
-    const mobiles = [...selectedMap.value.values()];
+    const mobiles = selectionRowOrder.value
+      .filter((k) => selectedMap.value.has(k))
+      .map((k) => selectedMap.value.get(k));
+    for (const k of selectedMap.value.keys()) {
+      if (!selectionRowOrder.value.includes(k)) {
+        mobiles.push(selectedMap.value.get(k));
+      }
+    }
     const res = await updateSocialSuiteApi({
-      id: suiteId,
+      suiteId,
       suiteName: d?.suiteName,
       suiteDesc: d?.suiteDesc,
+      suiteType: d?.suiteType,
       mobiles,
     });
     if (res && successCode(res.code)) {
@@ -330,7 +413,12 @@ async function save() {
         @select="onSelect"
         @select-all="onSelectAll"
       >
-        <ElTableColumn type="selection" width="48" align="center" />
+        <ElTableColumn
+          type="selection"
+          width="48"
+          align="center"
+          :selectable="(row: any) => !row?.isLock"
+        />
         <ElTableColumn
           :label="$t('systemManage.groupManage.serialNumber')"
           min-width="100"

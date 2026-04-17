@@ -1,4 +1,4 @@
-import { socialClient } from '../request';
+import { proxyClient } from '../request';
 
 export type SocialPageBody = {
   current?: number;
@@ -8,7 +8,7 @@ export type SocialPageBody = {
 
 /** GET .../social/device/page（baseURL 含 /social，路径用 /device/page） */
 export async function getSocialDevicePageApi(params: SocialPageBody) {
-  return socialClient.get<{
+  return proxyClient.get<{
     code: number;
     data: { records: any[]; total: number };
     msg?: string;
@@ -17,7 +17,7 @@ export async function getSocialDevicePageApi(params: SocialPageBody) {
 
 /** POST .../social/account/list */
 export async function postSocialAccountListApi(data: SocialPageBody) {
-  return socialClient.post<{
+  return proxyClient.post<{
     code: number;
     data: { records: any[]; total: number };
     msg?: string;
@@ -26,7 +26,7 @@ export async function postSocialAccountListApi(data: SocialPageBody) {
 
 /** POST .../social/account-suite/update */
 export async function updateSocialAccountSuiteApi(data: Record<string, any>) {
-  return socialClient.post<{ code: number; data?: any; msg?: string }>(
+  return proxyClient.post<{ code: number; data?: any; msg?: string }>(
     '/account-suite/update',
     data,
   );

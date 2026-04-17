@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { computed, reactive, ref, watch } from 'vue';
 
-import { ElMessage } from 'element-plus';
+import { ElAutocomplete, ElMessage } from 'element-plus';
 
 import {
   getSocialSuitePageApi,
@@ -39,43 +39,80 @@ const rules = computed(() => ({
       message: $t('systemManage.groupManage.pleaseInputGroupName'),
       trigger: 'blur',
     },
-    { max: 50, message: '≤50', trigger: 'blur' },
+    {
+      max: 50,
+      message: '分组名称长度不能超过50个字符',
+      trigger: 'blur',
+    },
   ],
 }));
+
+function getSuiteNameSuggestions(queryString = '') {
+  const keyword = queryString.trim().toLowerCase();
+  return suiteOptions.value
+    .filter((item) => Boolean(item?.suiteName))
+    .filter((item) => {
+      if (!keyword) return true;
+      return (item.suiteName ?? '').toLowerCase().includes(keyword);
+    })
+    .map((item) => ({
+      value: item.suiteName ?? '',
+      suiteDesc: item.suiteDesc,
+    }));
+}
+
+function fetchSuiteSuggestions(
+  queryString: string,
+  callback: (items: Array<{ value: string; suiteDesc?: string }>) => void,
+) {
+  callback(getSuiteNameSuggestions(queryString));
+}
+
+function onSuiteAutocompleteSelect(item: Record<string, any>) {
+  const val = String(item?.value ?? '');
+  form.suiteName = val;
+  const hit = suiteOptions.value.find((s) => s.suiteName === val);
+  if (hit) {
+    form.suiteDesc = hit.suiteDesc ?? form.suiteDesc;
+  }
+}
+
+const dialogTitle = computed(() => {
+  const initial = props.initial ?? {};
+  return initial.suiteId
+    ? $t('systemManage.groupManage.editGroup')
+    : $t('systemManage.groupManage.addGroup');
+});
 
 function successCode(code: number) {
   return code === 200 || code === 100000;
 }
 
 async function loadSuiteOptions() {
-  const res = await getSocialSuitePageApi({ current: 1, size: 10000 });
-  if (res && successCode(res.code)) {
-    suiteOptions.value = (res.data?.records ?? []).map((r: any) => ({
-      id: r.id,
-      suiteName: r.suiteName,
-      suiteDesc: r.suiteDesc,
-    }));
+  try {
+    const res = await getSocialSuitePageApi({ current: 1, size: 200 });
+    if (res && successCode(res.code)) {
+      suiteOptions.value = (res.data?.records ?? []).map((r: any) => ({
+        id: r.id,
+        suiteName: r.suiteName,
+        suiteDesc: r.suiteDesc,
+      }));
+      return;
+    }
+  } catch {
+    /* client */
   }
+  suiteOptions.value = [];
 }
 
-function onSuitePick(name: string) {
-  const hit = suiteOptions.value.find(
-    (s) => s.suiteName === name
-  );
-  form.suiteDesc = hit?.suiteDesc ?? form.suiteDesc;
-}
-
-watch(
-  () => [visible.value, props.initial] as const,
-  async ([v]) => {
-    if (!v) return;
-    await loadSuiteOptions();
-    const p = props.initial;
-    form.id = p.id;
-    form.suiteName = p.suiteName;
-    form.suiteDesc = p.suiteDesc;
-  },
-);
+watch(visible, async (v) => {
+  if (!v) return;
+  await loadSuiteOptions();
+  const p = props.initial ?? {};
+  form.id = p.id;
+  form.suiteName = p.suiteName ?? '';
+  form.suiteDesc = p.suiteDesc ?? '';
+});
 
 function close() {
   visible.value = false;
@@ -91,15 +128,17 @@ async function submit() {
 
   loading.value = true;
   try {
-    const initial = (props.initial) as Record<string, any>;
+    const initial = (props.initial ?? {}) as Record<string, any>;
     const hit = suiteOptions.value.find(
       (s) => s.suiteName === form.suiteName,
     );
+    const suiteId =
+      initial.suiteId ?? initial.id ?? hit?.id;
     const payload: Record<string, any> = {
-      id: initial.id,
+      suiteId,
       suiteName: form.suiteName,
       suiteDesc: form.suiteDesc,
-      suiteId: hit?.id,
+      suiteType: initial.suiteType,
     };
     payload.mobiles = Array.isArray(initial.suiteOrgs) ? [...initial.suiteOrgs] : [];
 
@@ -118,29 +157,24 @@ async function submit() {
 <template>
   <ElDialog
     v-model="visible"
-    :title="$t('systemManage.groupManage.deviceGroup')"
+    :title="dialogTitle"
     width="640px"
     destroy-on-close
     @closed="formRef?.resetFields?.()"
   >
     <ElForm ref="formRef" :model="form" :rules="rules" label-width="100px">
       <ElFormItem :label="$t('systemManage.groupManage.groupName')" prop="suiteName">
-        <ElSelect
+        <ElAutocomplete
           v-model="form.suiteName"
-          filterable
-          allow-create
-          default-first-option
-          :placeholder="$t('common.select')"
+          value-key="value"
+          :fetch-suggestions="fetchSuiteSuggestions"
+          clearable
+          :trigger-on-focus="true"
+          :maxlength="50"
+          :placeholder="$t('systemManage.groupManage.pleaseInputGroupName')"
           style="width: 100%"
-          @change="onSuitePick"
-        >
-          <ElOption
-            v-for="s in suiteOptions"
-            :key="s.id"
-            :label="s.suiteName"
-            :value="s.suiteName"
-          />
-        </ElSelect>
+          @select="onSuiteAutocompleteSelect"
+        />
       </ElFormItem>
       <ElFormItem :label="$t('systemManage.groupManage.groupDesc')" prop="suiteDesc">
         <ElInput
@@ -160,3 +194,4 @@ async function submit() {
     </template>
   </ElDialog>
 </template>
+

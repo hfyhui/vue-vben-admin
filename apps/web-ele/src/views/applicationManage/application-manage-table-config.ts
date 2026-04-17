@@ -40,6 +40,7 @@ export const getFormOptions = (): VbenFormProps => ({
       label: $t('applicationManage.search.applicationName'),
       componentProps: {
         placeholder: $t('applicationManage.search.applicationNamePlaceholder'),
+        clearable: true,
       },
     },
     {
@@ -52,6 +53,7 @@ export const getFormOptions = (): VbenFormProps => ({
           { label: $t('common.disable'), value: 1 },
         ],
         placeholder: $t('applicationManage.search.statusPlaceholder'),
+        clearable: true,
       },
     },
   ],
