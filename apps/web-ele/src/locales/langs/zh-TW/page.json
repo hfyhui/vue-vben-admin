@@ -1,0 +1,24 @@
+{
+  "auth": {
+    "login": "登錄",
+    "register": "註冊",
+    "codeLogin": "驗證碼登錄",
+    "qrcodeLogin": "二維碼登錄",
+    "forgetPassword": "忘記密碼"
+  },
+  "dashboard": {
+    "applicationManage": "應用管理",
+    "systemManage": "系統管理",
+    "groupManage": "分組管理",
+    "socialMediaAccount": "社媒賬號管理",
+    "customerManage": "客戶管理",
+    "licenseManage": "license管理",
+    "productList": "產品清單",
+    "associationCenter": "關聯中心",
+    "associationConfig": "關聯配置",
+    "assetManage": "資產管理",
+    "accountPool": "賬號池",
+    "containerPool": "容器池",
+    "proxyPool": "代理池"
+  }
+}
