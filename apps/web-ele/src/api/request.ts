@@ -185,6 +185,8 @@ function createBackendClient(baseURL: string) {
     fulfilled: async (config) => {
       const accessStore = useAccessStore();
       config.headers = config.headers || {};
+      // 与语言切换同步：后端按 Accept-Language 返回文案（zh-CN / zh-TW / en-US）
+      config.headers['Accept-Language'] = preferences.app.locale;
       // 优先使用环境变量固定 Authorization；未配置时回退为登录态 token。
       if (customAuthorization) {
         config.headers.Authorization = customAuthorization;
@@ -296,3 +298,10 @@ export const authClient = createBackendClient(authApiBaseURL);
 export const requestClient = apiClient;
 
 export const baseRequestClient = new RequestClient({ baseURL: apiURL });
+baseRequestClient.addRequestInterceptor({
+  fulfilled: async (config) => {
+    config.headers = config.headers || {};
+    config.headers['Accept-Language'] = preferences.app.locale;
+    return config;
+  },
+});

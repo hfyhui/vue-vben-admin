@@ -110,6 +110,8 @@ export function setupVbenVxeTable(setupOptions: SetupVxeTable) {
 
   const localMap = {
     'zh-CN': zhCN,
+    /** vxe 无独立繁体包时沿用简体资源，避免切换语言后表格文案为空 */
+    'zh-TW': zhCN,
     'en-US': enUS,
   };
 
