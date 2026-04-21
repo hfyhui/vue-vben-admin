@@ -96,7 +96,7 @@ const gridOptions: VxeGridProps<any> = {
     {
       field: 'action',
       title: $t('customerManage.table.operation'),
-      width: 240,
+      width: 280,
       slots: { default: 'action' },
       fixed: 'right',
     },
