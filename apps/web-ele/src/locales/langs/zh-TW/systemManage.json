@@ -58,5 +58,17 @@
     "email": "郵箱",
     "group": "分組",
     "name": "用戶名"
+  },
+  "proxyManage": {
+    "assignSystemUserToContainer": "為容器分配系統用戶",
+    "assignContainerToSystemUser": "為系統用戶分配容器",
+    "searchPlaceholderContainer": "搜索所有者/設備IP/設備分組",
+    "searchPlaceholderSystem": "搜索用戶名/暱稱",
+    "owner": "所有者",
+    "server": "所屬服務器",
+    "deviceIp": "設備IP",
+    "deviceVersion": "設備版本",
+    "deviceGroup": "設備分組",
+    "remark": "備註"
   }
 }

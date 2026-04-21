@@ -58,5 +58,17 @@
     "email": "Email",
     "group": "Group",
     "name": "Username"
+  },
+  "proxyManage": {
+    "assignSystemUserToContainer": "Assign system users to containers",
+    "assignContainerToSystemUser": "Assign containers to system users",
+    "searchPlaceholderContainer": "Search owner / device IP / device group",
+    "searchPlaceholderSystem": "Search username / nickname",
+    "owner": "Owner",
+    "server": "Server",
+    "deviceIp": "Device IP",
+    "deviceVersion": "Device version",
+    "deviceGroup": "Device group",
+    "remark": "Remark"
   }
 }
