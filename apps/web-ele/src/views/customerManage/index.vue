@@ -188,7 +188,7 @@ async function onView(row: any) {
     showViewForm.value = true;
   } catch (error) {
     console.error('获取客户详情失败:', error);
-    ElMessage.error('获取客户详情失败');
+    ElMessage.error($t('customerManage.message.detailLoadFailed'));
   }
 }
 
@@ -204,12 +204,12 @@ async function onEdit(row: any) {
 }
 async function onDelete(row: any) {
   try {
-    await ElMessageBox.confirm('确定要删除该客户吗？', '提示', {
+    await ElMessageBox.confirm($t('customerManage.message.deleteConfirm'), $t('customerManage.message.batchDeleteConfirmTitle'), {
       type: 'warning',
     });
     let res = await deleteCustomerApi(row.id);
     if(res.code === 100000){
-      ElMessage.success('删除成功');
+      ElMessage.success($t('customerManage.message.deleteSuccess'));
       gridApi.query();
     }
   } catch (error) {
@@ -242,13 +242,13 @@ function createImportHandler(customerId: string) {
 }
 async function onBatchDelete() {
   if (selectedRowIds.value.length === 0) {
-    ElMessage.warning('请先选择要删除的客户');
+    ElMessage.warning($t('customerManage.message.selectDelete'));
     return;
   }
   try {
     await ElMessageBox.confirm(
-      `确定要删除选中的 ${selectedRowIds.value.length} 个客户吗？`, 
-      '批量删除确认', 
+      $t('customerManage.message.batchDeleteConfirm', { count: selectedRowIds.value.length }), 
+      $t('customerManage.message.batchDeleteConfirmTitle'), 
       {
         type: 'warning',
       }
@@ -257,7 +257,7 @@ async function onBatchDelete() {
     const ids = selectedRowIds.value;
     let res = await batchDeleteCustomerApi(ids);
     if(res.code === 100000){
-      ElMessage.success(`成功删除 ${ids.length} 个客户`);
+      ElMessage.success($t('customerManage.message.batchDeleteSuccess', { count: ids.length }));
       gridApi.query();
     }
     // 清空跨分页选中状态
@@ -271,7 +271,7 @@ async function submit(values: any) {
     if (editData.value && editData.value.id) {
       const res = await updateCustomerApi(editData.value.id, values)
       if(res.code === 100000){
-        ElMessage.success('编辑成功');
+        ElMessage.success($t('customerManage.message.editSuccess'));
         // 只有接口调用成功才关闭弹框和刷新列表
         editData.value = null;
         showForm.value = false;
@@ -283,7 +283,7 @@ async function submit(values: any) {
     } else {
       const res = await createCustomerApi(values);
       if(res.code === 100000){
-        ElMessage.success('新增成功');
+        ElMessage.success($t('customerManage.message.addSuccess'));
         // 只有接口调用成功才关闭弹框和刷新列表
         editData.value = null;
         showForm.value = false;
@@ -370,7 +370,7 @@ async function submit(values: any) {
           style="display: inline-block;margin-right: 10px;"
         >
           <ElButton link>
-            导入license
+            {{ $t('customerManage.action.importLicense') }}
           </ElButton>
         </ElUpload>
         <ElButton link @click="onEdit(row)">

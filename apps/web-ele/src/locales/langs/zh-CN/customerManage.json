@@ -13,7 +13,8 @@
     "delete": "删除",
     "batchDelete": "批量删除",
     "view": "查看",
-    "import": "导入"
+    "import": "导入",
+    "importLicense": "导入 License"
   },
   "table": {
     "customerName": "客户名称",
@@ -66,7 +67,9 @@
   },
   "message": {
     "deleteConfirm": "确定要删除该客户吗？",
-    "batchDeleteConfirm": "确定要删除选中的客户吗？",
+    "batchDeleteConfirm": "确定要删除选中的 {count} 个客户吗？",
+    "batchDeleteConfirmTitle": "批量删除确认",
+    "batchDeleteSuccess": "成功删除 {count} 个客户",
     "selectDelete": "请先选择要删除的客户",
     "deleteSuccess": "删除成功",
     "editSuccess": "编辑成功",
@@ -75,7 +78,8 @@
     "completeShareholders": "请完善股东信息",
     "importSuccess": "导入成功",
     "importFailed": "导入失败",
-    "invalidFileType": "只能导入.lic格式的文件"
+    "invalidFileType": "只能导入.lic格式的文件",
+    "detailLoadFailed": "获取客户详情失败"
   },
   "types": {
     "company": "公司",

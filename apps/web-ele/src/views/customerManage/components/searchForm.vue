@@ -1,11 +1,3 @@
-<!--
- * @Author: 小妹 cuiling.liu@callfanai.com
- * @Date: 2025-08-15 16:35:33
- * @LastEditors: 小妹 cuiling.liu@callfanai.com
- * @LastEditTime: 2025-08-20 16:53:57
- * @FilePath: \workSpace\callfans-platform-admin\apps\web-ele\src\views\customerManage\components\searchForm.vue
- * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
--->
 <script setup lang="ts">
 import { useVbenForm } from '#/adapter/form';
 import { $t } from '#/locales';
@@ -22,7 +14,7 @@ const [SearchForm, formApi] = useVbenForm({
     {
       component: 'Input',
       fieldName: 'customersName',
-      labelWidth: 60,
+      labelWidth: 110,
       label: $t('customerManage.search.customerName') || '客户名称',
       componentProps: {
         placeholder:
@@ -39,7 +31,7 @@ const [SearchForm, formApi] = useVbenForm({
     {
       component: 'Select',
       fieldName: 'customersType',
-      labelWidth: 60,
+      labelWidth: 100,
       label: $t('customerManage.search.customerType') || '客户类型',
       componentProps: {
         options:

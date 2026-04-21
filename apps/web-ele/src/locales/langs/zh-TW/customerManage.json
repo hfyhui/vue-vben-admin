@@ -13,7 +13,8 @@
     "delete": "刪除",
     "batchDelete": "批量刪除",
     "view": "查看",
-    "import": "導入"
+    "import": "導入",
+    "importLicense": "導入 License"
   },
   "table": {
     "customerName": "客戶名稱",
@@ -66,7 +67,9 @@
   },
   "message": {
     "deleteConfirm": "確定要刪除該客戶嗎？",
-    "batchDeleteConfirm": "確定要刪除選中的客戶嗎？",
+    "batchDeleteConfirm": "確定要刪除選中的 {count} 個客戶嗎？",
+    "batchDeleteConfirmTitle": "批量刪除確認",
+    "batchDeleteSuccess": "成功刪除 {count} 個客戶",
     "selectDelete": "請先選擇要刪除的客戶",
     "deleteSuccess": "刪除成功",
     "editSuccess": "編輯成功",
@@ -75,7 +78,8 @@
     "completeShareholders": "請完善股東信息",
     "importSuccess": "導入成功",
     "importFailed": "導入失敗",
-    "invalidFileType": "只能導入.lic格式的文件"
+    "invalidFileType": "只能導入.lic格式的文件",
+    "detailLoadFailed": "獲取客戶詳情失敗"
   },
   "types": {
     "company": "公司",
