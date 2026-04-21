@@ -85,6 +85,7 @@
   "selectDeviceBeforePin": "请先选择设备后再置顶",
   "selectDeviceBeforeOfficialEnable": "请先在设备看板中选择需要正式启用的数据",
   "selectDeviceBeforeContainerReset": "请先在设备看板中选择需要重置的设备",
+  "containerResetConfirmMessage": "确定要将选中的 {count} 台设备执行容器重置操作吗？",
   "containerResetSuccess": "容器重置成功",
   "containerResetFailed": "容器重置失败",
   "officialEnableSuccess": "正式启用成功",

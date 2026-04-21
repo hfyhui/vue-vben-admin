@@ -83,6 +83,7 @@
   "selectDeviceBeforePin": "請先選擇設備後再置頂",
   "selectDeviceBeforeOfficialEnable": "請先在設備看板中選擇需要正式啟用的數據",
   "selectDeviceBeforeContainerReset": "請先在設備看板中選擇需要重置的設備",
+  "containerResetConfirmMessage": "確定要將選中的 {count} 臺設備執行容器重置操作嗎？",
   "containerResetSuccess": "容器重置成功",
   "containerResetFailed": "容器重置失敗",
   "officialEnableSuccess": "正式啟用成功",

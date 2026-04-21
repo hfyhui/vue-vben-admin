@@ -83,6 +83,7 @@
   "selectDeviceBeforePin": "Please select devices before pinning",
   "selectDeviceBeforeOfficialEnable": "Please select data to officially enable in the device board",
   "selectDeviceBeforeContainerReset": "Please select devices to reset in the device board",
+  "containerResetConfirmMessage": "Are you sure you want to reset containers for the selected {count} device(s)?",
   "containerResetSuccess": "Container reset succeeded",
   "containerResetFailed": "Container reset failed",
   "officialEnableSuccess": "Official enable succeeded",

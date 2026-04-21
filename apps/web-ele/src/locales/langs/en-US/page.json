@@ -20,6 +20,8 @@
     "assetManage": "Asset Management",
     "accountPool": "Account Pool",
     "containerPool": "Container Pool",
-    "proxyPool": "Proxy Pool"
+    "proxyPool": "Proxy Pool",
+    "proxyManage": "Network Proxy Management",
+    "containerResourceManage": "Container Resource Management"
   }
 }

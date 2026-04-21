@@ -19,6 +19,8 @@
     "assetManage": "資產管理",
     "accountPool": "賬號池",
     "containerPool": "容器池",
-    "proxyPool": "代理池"
+    "proxyPool": "代理池",
+    "proxyManage": "網路代理管理",
+    "containerResourceManage": "容器資源管理"
   }
 }
