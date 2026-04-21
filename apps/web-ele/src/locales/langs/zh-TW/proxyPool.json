@@ -96,6 +96,8 @@
     "groupSetFailed": "代理分組失敗",
     "deviceListLoadFailed": "設備列表加載失敗，請稍後重試",
     "missingProxyId": "代理ID缺失",
+    "ipRequired": "請輸入IP",
+    "ipFormatInvalid": "格式錯誤，IPv4地址格式（例如 192.168.1.1）",
     "editRemark": "請輸入代理備註",
     "editRemarkTitle": "編輯代理備註",
     "editRemarkPlaceholder": "請輸入備註",

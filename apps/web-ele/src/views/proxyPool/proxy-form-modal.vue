@@ -134,9 +134,22 @@ const [Form, formApi] = useVbenForm({
       rules: z
         .string()
         .trim()
-        .min(1, { message: '请输入IP' })
-        .regex(/^(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}$/, {
-          message: '格式错误，IPv4地址格式（例如 192.168.1.1）',
+        .superRefine((val, ctx) => {
+          if (val.length === 0) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: $t('proxyPool.message.ipRequired'),
+            });
+            return;
+          }
+          const ipv4 =
+            /^(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}$/;
+          if (!ipv4.test(val)) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: $t('proxyPool.message.ipFormatInvalid'),
+            });
+          }
         }),
       componentProps: {
         placeholder: $t('proxyPool.form.ipPlaceholder'),
