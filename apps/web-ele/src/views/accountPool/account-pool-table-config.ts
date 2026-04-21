@@ -160,6 +160,7 @@ export const getFormOptions = (
         clearable: true,
         filterable: true,
         multiple: true,
+        reserveKeyword: false,
         collapseTags: true,
         collapseTagsTooltip: true,
         options: platformOptions
@@ -188,6 +189,7 @@ export const getFormOptions = (
         clearable: true,
         filterable: true,
         multiple: true,
+        reserveKeyword: false,
         collapseTags: false,
         options: groupOptions.map((item) => ({
           label: item.suiteName,

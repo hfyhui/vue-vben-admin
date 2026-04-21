@@ -10,7 +10,7 @@ const [SearchForm, formApi] = useVbenForm({
     {
       component: 'Input',
       fieldName: 'customerName',
-      labelWidth: 60,
+      labelWidth: 110,
       label: $t('licenseManage.search.customerName') || '客户名称',
       componentProps: {
         placeholder:
@@ -27,7 +27,7 @@ const [SearchForm, formApi] = useVbenForm({
     {
       component: 'Select',
       fieldName: 'authorizationType',
-      labelWidth: 60,
+      labelWidth: 110,
       label: $t('licenseManage.form.licenseType') || '证书类型',
       componentProps: {
         options: [
@@ -45,7 +45,7 @@ const [SearchForm, formApi] = useVbenForm({
     {
       component: 'DatePicker',
       fieldName: 'expirationTimes',
-      labelWidth: 60,
+      labelWidth: 110,
       label: $t('licenseManage.form.expireTime') || '过期时间',
       componentProps: {
         type: 'datetimerange',

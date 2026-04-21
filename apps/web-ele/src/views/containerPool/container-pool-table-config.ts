@@ -155,6 +155,9 @@ export const getFormOptions = (
   groupOptions: Array<{ id?: string; suiteName?: string }> = [],
 ): VbenFormProps => ({
   collapsed: true,
+  commonConfig: {
+    labelWidth: 120,
+  },
   schema: [
     {
       component: 'Input',
