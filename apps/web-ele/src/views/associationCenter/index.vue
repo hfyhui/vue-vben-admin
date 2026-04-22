@@ -172,7 +172,7 @@ async function onContainerReset() {
   const count = deviceIds.length;
   try {
     await ElMessageBox.confirm(
-      `确定要将选中的 ${count} 台设备执行容器重置操作吗？`,
+      $t('associationCenter.containerResetConfirmMessage', { count }),
       $t('associationCenter.containerReset'),
       {
         type: 'warning',

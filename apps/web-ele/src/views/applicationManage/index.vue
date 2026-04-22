@@ -4,7 +4,6 @@ import { ref } from 'vue';
 
 import { Page } from '@vben/common-ui';
 
-import { Delete } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
@@ -221,7 +220,7 @@ async function onDelete(row: ApplicationItem) {
           <ElButton class="mr-2" type="primary" @click="onAdd">
             {{ $t('applicationManage.action.add') }}
           </ElButton>
-          <ElButton type="danger" :icon="Delete" @click="onBatchDelete">
+          <ElButton type="danger" @click="onBatchDelete">
             {{ $t('applicationManage.action.batchDelete') }}
           </ElButton>
         </template>

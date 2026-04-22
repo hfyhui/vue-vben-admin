@@ -96,6 +96,8 @@
     "groupSetFailed": "Proxy grouping failed",
     "deviceListLoadFailed": "Failed to load device list. Please try again.",
     "missingProxyId": "Missing proxyId",
+    "ipRequired": "Please enter IP",
+    "ipFormatInvalid": "Invalid format. Use IPv4 format (for example 192.168.1.1).",
     "editRemark": "Enter proxy remark",
     "editRemarkTitle": "Edit proxy remark",
     "editRemarkPlaceholder": "Enter remark",

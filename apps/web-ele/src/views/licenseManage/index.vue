@@ -77,7 +77,7 @@ const gridOptions: VxeGridProps<any> = {
     {
       field: 'action',
       title: $t('licenseManage.actionTitle'),
-      width: 180,
+      width: 240,
       slots: { default: 'action' },
       fixed: 'right',
     },

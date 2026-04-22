@@ -381,6 +381,7 @@ defineExpose({
           class="filter-input"
           filterable
           multiple
+          :reserve-keyword="false"
           clearable
           @change="handleSearch"
         >
