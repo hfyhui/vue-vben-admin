@@ -75,7 +75,7 @@
   "containerResourceManage": {
     "assignSystemUserToContainer": "分配系统用户至容器",
     "assignContainerToSystemUser": "分配容器至系统用户",
-    "searchPlaceholderContainer": "搜索所有者/所属服务器/设备IP/设备分组",
+    "searchPlaceholderContainer": "搜索所有者/所属服务器/设备IP/设备版本/设备分组/备注",
     "searchPlaceholderSystem": "搜索用户名/昵称",
     "colOwner": "所有者",
     "colServer": "所属服务器",

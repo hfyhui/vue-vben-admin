@@ -2,8 +2,16 @@
 import { onMounted, ref } from 'vue';
 
 import { Page } from '@vben/common-ui';
+import { Connection, Refresh, Search } from '@element-plus/icons-vue';
+import { ElMessage } from 'element-plus';
 import type { ElTable as ElTableType } from 'element-plus';
 
+import {
+  allocationContainerAllocateApi,
+  getAllocationContainerListApi,
+  getAllocationContainerPageApi,
+  getAllocationContainerUserListApi,
+} from '#/api/core/asset';
 import { postSystemAccountsUsersPageApi } from '#/api/core/social-system-accounts';
 import { $t } from '#/locales';
 
@@ -11,6 +19,7 @@ const activeTab = ref<'assignContainers' | 'assignSystemUsers'>('assignContainer
 
 const containerKeyword = ref('');
 const systemUserKeyword = ref('');
+const containerRows = ref<any[]>([]);
 const systemUserRows = ref<any[]>([]);
 const containerTotal = ref(0);
 const systemUserTotal = ref(0);
@@ -21,25 +30,96 @@ const pageSizeOptions = [10, 20, 50, 100];
 
 const containerTableRef = ref<InstanceType<typeof ElTableType>>();
 const systemUserTableRef = ref<InstanceType<typeof ElTableType>>();
+const selectedContainerRows = ref<any[]>([]);
+const selectedSystemUserRows = ref<any[]>([]);
+const selectedContainerIds = ref<string[]>([]);
+let syncingSystemUserSelection = false;
+let syncingContainerSelection = false;
+const containerLoading = ref(false);
 const systemUserLoading = ref(false);
 
-function getOwnerList(row: { owners?: string[] } | null | undefined): string[] {
-  if (!row?.owners?.length) return [];
-  return row.owners.map((x) => String(x).trim()).filter(Boolean);
-}
-
-function onTabChange() {
-  containerTableRef.value?.clearSelection();
-  systemUserTableRef.value?.clearSelection();
-  void loadSystemUsers();
-}
-function onSave() {}
-function searchContainers() {}
-function resetContainers() {
-  containerKeyword.value = '';
-}
 function successCode(code: number) {
   return code === 200 || code === 100000;
+}
+
+function getOwnerList(row: { userInfos?: any[] } | null | undefined): string[] {
+  if (!Array.isArray(row?.userInfos)) return [];
+  return row.userInfos
+    .map((item) => String(item?.nickName ?? item?.userName ?? '').trim())
+    .filter(Boolean);
+}
+
+function normalizeSearchValue(value: unknown): string {
+  return String(value ?? '').trim().toLowerCase();
+}
+
+function isRowDisabled(row: any) {
+  return row?.status === 1 || row?.status === '1' || row?.isLock === true;
+}
+
+function rowSelectable(row: any) {
+  return !isRowDisabled(row);
+}
+
+function rowClassName({ row }: { row: any }) {
+  return isRowDisabled(row) ? 'locked-row' : '';
+}
+
+function containerRowKey(row: any) {
+  return String(row?.deviceId ?? row?.id ?? '');
+}
+
+function systemUserRowKey(row: any) {
+  return String(row?.userId ?? row?.id ?? '');
+}
+
+function filterContainerRowsByKeyword(rows: any[], keyword: string) {
+  const kw = normalizeSearchValue(keyword);
+  if (!kw) return rows;
+  return rows.filter((row) => {
+    const owners = getOwnerList(row);
+    const fields = [
+      ...owners,
+      row?.status,
+      row?.server,
+      row?.deviceId,
+      row?.deviceIp,
+      row?.deviceVersion,
+      ...(Array.isArray(row?.suiteNames) ? row.suiteNames : []),
+      row?.remark,
+    ];
+    return fields.some((value) => normalizeSearchValue(value).includes(kw));
+  });
+}
+
+function toIdList(rows: any[], keys: string[]): string[] {
+  return rows
+    .map((row) => {
+      for (const key of keys) {
+        const value = row?.[key];
+        if (value !== null && value !== undefined && String(value).trim()) {
+          return String(value).trim();
+        }
+      }
+      return '';
+    })
+    .filter(Boolean);
+}
+
+async function loadContainers() {
+  containerLoading.value = true;
+  try {
+    const res = await getAllocationContainerPageApi({
+      current: containerPage.value,
+      size: pageSize.value,
+      condition: containerKeyword.value || undefined,
+    });
+    const records = res.records ?? [];
+    containerRows.value = filterContainerRowsByKeyword(records, containerKeyword.value);
+    containerTotal.value = res.total ?? 0;
+  } finally {
+    containerLoading.value = false;
+  }
 }
 
 async function loadSystemUsers() {
@@ -62,17 +142,205 @@ async function loadSystemUsers() {
   }
 }
 
+async function syncUsersSelectionByDevices(deviceIds: string[]) {
+  const table = systemUserTableRef.value;
+  if (!table) return;
+  if (!deviceIds.length) {
+    syncingSystemUserSelection = true;
+    table.clearSelection();
+    selectedSystemUserRows.value = [];
+    syncingSystemUserSelection = false;
+    return;
+  }
+  const res = await getAllocationContainerListApi({
+    deviceIds,
+    current: 1,
+    size: 100000,
+  });
+  const bindUserIds = new Set(
+    (res.records ?? [])
+      .map((row: any) => String(row?.userId ?? row?.id ?? '').trim())
+      .filter((id): id is string => Boolean(id)),
+  );
+  syncingSystemUserSelection = true;
+  table.clearSelection();
+  const selectedRows: any[] = [];
+  for (const row of systemUserRows.value) {
+    const id = String(row?.userId ?? row?.id ?? '').trim();
+    if (id && bindUserIds.has(id) && rowSelectable(row)) {
+      selectedRows.push(row);
+      table.toggleRowSelection(row, true);
+    }
+  }
+  selectedSystemUserRows.value = selectedRows;
+  syncingSystemUserSelection = false;
+}
+
+async function syncContainersSelectionByUsers(userIds: string[]) {
+  const table = containerTableRef.value;
+  if (!table) return;
+  if (!userIds.length) {
+    syncingContainerSelection = true;
+    table.clearSelection();
+    selectedContainerRows.value = [];
+    syncingContainerSelection = false;
+    return;
+  }
+  const res = await getAllocationContainerUserListApi({
+    userIds,
+    current: 1,
+    size: 100000,
+  });
+  const bindDeviceIds = new Set(
+    (res.records ?? [])
+      .map((row: any) => String(row?.deviceId ?? row?.id ?? '').trim())
+      .filter((id): id is string => Boolean(id)),
+  );
+  syncingContainerSelection = true;
+  table.clearSelection();
+  const selectedRows: any[] = [];
+  for (const row of containerRows.value) {
+    const id = String(row?.deviceId ?? row?.id ?? '').trim();
+    if (id && bindDeviceIds.has(id) && rowSelectable(row)) {
+      selectedRows.push(row);
+      table.toggleRowSelection(row, true);
+    }
+  }
+  selectedContainerRows.value = selectedRows;
+  selectedContainerIds.value = toIdList(selectedRows, ['deviceId', 'id']);
+  syncingContainerSelection = false;
+}
+
+function onContainerSelect(rows: any[]) {
+  if (syncingContainerSelection) return;
+  selectedContainerRows.value = rows;
+  selectedContainerIds.value = toIdList(rows, ['deviceId', 'id']);
+  if (activeTab.value === 'assignContainers') {
+    void syncUsersSelectionByDevices(selectedContainerIds.value);
+  }
+}
+
+function onSystemUserSelect(rows: any[]) {
+  if (syncingSystemUserSelection) return;
+  selectedSystemUserRows.value = rows;
+  if (activeTab.value === 'assignSystemUsers') {
+    const userIds = toIdList(rows, ['userId', 'id']);
+    void syncContainersSelectionByUsers(userIds);
+  }
+}
+
+function onTabChange() {
+  containerTableRef.value?.clearSelection();
+  systemUserTableRef.value?.clearSelection();
+  selectedContainerRows.value = [];
+  selectedSystemUserRows.value = [];
+  selectedContainerIds.value = [];
+  void loadContainers();
+  void loadSystemUsers();
+}
+
+async function onSave() {
+  const bindDirection = activeTab.value === 'assignSystemUsers';
+  const userIds = toIdList(selectedSystemUserRows.value, ['userId', 'id']);
+  const deviceIds = toIdList(selectedContainerRows.value, ['deviceId', 'id']);
+
+  if (!bindDirection && deviceIds.length === 0) {
+    ElMessage.warning($t('systemManage.socialMediaAccount.pleaseSelectLeftList'));
+    return;
+  }
+  if (bindDirection && userIds.length === 0) {
+    ElMessage.warning($t('systemManage.socialMediaAccount.pleaseSelectLeftList'));
+    return;
+  }
+
+  let delIds: string[] = [];
+  if (bindDirection) {
+    const relationRes = await getAllocationContainerUserListApi({
+      userIds,
+      current: 1,
+      size: 100000,
+    });
+    const defaultIds = (relationRes.records ?? [])
+      .map((row: any) => String(row?.deviceId ?? row?.id ?? '').trim())
+      .filter((id): id is string => Boolean(id));
+    const tempInfo = deviceIds;
+    delIds = defaultIds.filter((id) => !tempInfo.includes(id));
+  } else {
+    const relationRes = await getAllocationContainerListApi({
+      deviceIds,
+      current: 1,
+      size: 100000,
+    });
+    const defaultIds = (relationRes.records ?? [])
+      .map((row: any) => String(row?.userId ?? row?.id ?? '').trim())
+      .filter((id): id is string => Boolean(id));
+    const tempInfo = userIds;
+    delIds = defaultIds.filter((id) => !tempInfo.includes(id));
+  }
+
+  const res = await allocationContainerAllocateApi({
+    userIds,
+    deviceIds,
+    bindDirection,
+    delIds,
+  });
+  if (res && successCode(res.code)) {
+    ElMessage.success($t('systemManage.opSuccess'));
+    selectedContainerRows.value = [];
+    selectedSystemUserRows.value = [];
+    containerTableRef.value?.clearSelection();
+    systemUserTableRef.value?.clearSelection();
+    await loadContainers();
+    await loadSystemUsers();
+  }
+}
+
+function searchContainers() {
+  containerPage.value = 1;
+  void loadContainers().then(() => {
+    if (activeTab.value === 'assignSystemUsers') {
+      const userIds = toIdList(selectedSystemUserRows.value, ['userId', 'id']);
+      void syncContainersSelectionByUsers(userIds);
+    }
+  });
+}
+function onContainerSizeChange(size: number) {
+  pageSize.value = size;
+  containerPage.value = 1;
+  void loadContainers();
+}
+function onContainerCurrentChange(page: number) {
+  containerPage.value = page;
+  void loadContainers();
+}
+function resetContainers() {
+  containerKeyword.value = '';
+  searchContainers();
+}
 function searchSystemUsers() {
   systemUserPage.value = 1;
+  void loadSystemUsers().then(() => {
+    if (activeTab.value === 'assignContainers') {
+      void syncUsersSelectionByDevices(selectedContainerIds.value);
+    }
+  });
+}
+function onSystemUserSizeChange(size: number) {
+  pageSize.value = size;
+  systemUserPage.value = 1;
+  void loadSystemUsers();
+}
+function onSystemUserCurrentChange(page: number) {
+  systemUserPage.value = page;
   void loadSystemUsers();
 }
 function resetSystemUsers() {
   systemUserKeyword.value = '';
-  systemUserPage.value = 1;
-  void loadSystemUsers();
+  searchSystemUsers();
 }
 
 onMounted(() => {
+  void loadContainers();
   void loadSystemUsers();
 });
 </script>
@@ -110,11 +378,15 @@ onMounted(() => {
 
         <ElTable
           ref="containerTableRef"
+          v-loading="containerLoading"
           :data="containerRows"
+          :row-key="containerRowKey"
+          :row-class-name="rowClassName"
           class="no-lines-table"
           height="420"
+          @selection-change="onContainerSelect"
         >
-          <ElTableColumn type="selection" width="48" />
+          <ElTableColumn type="selection" width="48" :selectable="rowSelectable" />
           <ElTableColumn
             :label="$t('systemManage.containerResourceManage.colOwner')"
             min-width="140"
@@ -137,7 +409,7 @@ onMounted(() => {
             </template>
           </ElTableColumn>
           <ElTableColumn
-            prop="serverName"
+            prop="server"
             :label="$t('systemManage.containerResourceManage.colServer')"
             min-width="140"
             show-overflow-tooltip
@@ -155,11 +427,15 @@ onMounted(() => {
             show-overflow-tooltip
           />
           <ElTableColumn
-            prop="deviceGroup"
+            prop="suiteNames"
             :label="$t('systemManage.containerResourceManage.colDeviceGroup')"
             min-width="140"
             show-overflow-tooltip
-          />
+          >
+            <template #default="{ row }">
+              {{ Array.isArray(row?.suiteNames) ? row.suiteNames.join(', ') : '—' }}
+            </template>
+          </ElTableColumn>
           <ElTableColumn
             prop="remark"
             :label="$t('systemManage.containerResourceManage.colRemark')"
@@ -177,17 +453,8 @@ onMounted(() => {
             :page-sizes="pageSizeOptions"
             :page-size="pageSize"
             :current-page="containerPage"
-            @size-change="
-              (size) => {
-                pageSize = size;
-                containerPage = 1;
-              }
-            "
-            @current-change="
-              (page) => {
-                containerPage = page;
-              }
-            "
+            @size-change="onContainerSizeChange"
+            @current-change="onContainerCurrentChange"
           />
         </div>
       </section>
@@ -212,11 +479,13 @@ onMounted(() => {
           ref="systemUserTableRef"
           v-loading="systemUserLoading"
           :data="systemUserRows"
-          :row-key="(row) => String(row.userId ?? row.id ?? '')"
+          :row-key="systemUserRowKey"
+          :row-class-name="rowClassName"
           class="no-lines-table"
           height="420"
+          @selection-change="onSystemUserSelect"
         >
-          <ElTableColumn type="selection" width="48" />
+          <ElTableColumn type="selection" width="48" :selectable="rowSelectable" />
           <ElTableColumn
             prop="userName"
             :label="$t('systemManage.socialMediaAccount.name')"
@@ -238,19 +507,8 @@ onMounted(() => {
             :page-sizes="pageSizeOptions"
             :page-size="pageSize"
             :current-page="systemUserPage"
-            @size-change="
-              (size) => {
-                pageSize = size;
-                systemUserPage = 1;
-                loadSystemUsers();
-              }
-            "
-            @current-change="
-              (page) => {
-                systemUserPage = page;
-                loadSystemUsers();
-              }
-            "
+            @size-change="onSystemUserSizeChange"
+            @current-change="onSystemUserCurrentChange"
           />
         </div>
       </section>
@@ -333,5 +591,9 @@ onMounted(() => {
 }
 .owner-tooltip-lines > div + div {
   margin-top: 2px;
+}
+.no-lines-table :deep(tr.locked-row td) {
+  background: color-mix(in srgb, var(--el-fill-color-light) 45%, transparent);
+  color: color-mix(in srgb, var(--el-text-color-secondary) 78%, var(--el-text-color-primary));
 }
 </style>

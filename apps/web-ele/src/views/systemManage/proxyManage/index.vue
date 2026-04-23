@@ -149,7 +149,7 @@ async function syncUsersSelectionByNetworks(networkIds: string[]) {
   const res = await getAllocationNetworkListApi({
     networkIds,
     current: 1,
-    size: 10_000,
+    size: 100000,
   });
   const bindUserIds = new Set(
     (res.records ?? [])
@@ -185,7 +185,7 @@ async function syncContainersSelectionByUsers(userIds: string[]) {
   const res = await getAllocationNetworkUserListApi({
     userIds,
     current: 1,
-    size: 10_000,
+    size: 100000,
   });
   const bindNetworkIds = new Set(
     (res.records ?? [])
@@ -248,31 +248,6 @@ function toIdList(rows: any[], keys: string[]): string[] {
     .filter(Boolean);
 }
 
-function buildDelIds(bindDirection: boolean, userIds: string[], networkIds: string[]): string[] {
-  if (!bindDirection) {
-    const defaultUserIds = new Set<string>();
-    for (const row of selectedContainerRows.value) {
-      const users = Array.isArray(row?.userInfos) ? row.userInfos : [];
-      for (const user of users) {
-        const id = String(user?.userId ?? '').trim();
-        if (id) defaultUserIds.add(id);
-      }
-    }
-    return [...defaultUserIds].filter((id) => !userIds.includes(id));
-  }
-
-  const selectedUserSet = new Set(userIds);
-  const defaultNetworkIds = new Set<string>();
-  for (const row of containerRows.value) {
-    const users = Array.isArray(row?.userInfos) ? row.userInfos : [];
-    const hit = users.some((user: any) => selectedUserSet.has(String(user?.userId ?? '').trim()));
-    if (!hit) continue;
-    const networkId = String(row?.networkId ?? row?.proxyId ?? row?.id ?? '').trim();
-    if (networkId) defaultNetworkIds.add(networkId);
-  }
-  return [...defaultNetworkIds].filter((id) => !networkIds.includes(id));
-}
-
 async function onSave() {
   const bindDirection = activeTab.value === 'assignSystemUsers';
   const userIds = toIdList(selectedSystemUserRows.value, ['userId', 'id']);
@@ -293,15 +268,24 @@ async function onSave() {
     const relationRes = await getAllocationNetworkUserListApi({
       userIds,
       current: 1,
-      size: 10_000,
+      size: 100000,
     });
-    const currentBindIds = (relationRes.records ?? [])
+    const defaultIds = (relationRes.records ?? [])
       .map((row: any) => String(row?.networkId ?? row?.proxyId ?? row?.id ?? '').trim())
       .filter((id): id is string => Boolean(id));
-    const uniqueCurrentBindIds = Array.from(new Set<string>(currentBindIds));
-    delIds = uniqueCurrentBindIds.filter((id) => !networkIds.includes(id));
+    const tempInfo = networkIds;
+    delIds = defaultIds.filter((id) => !tempInfo.includes(id));
   } else {
-    delIds = buildDelIds(bindDirection, userIds, networkIds);
+    const relationRes = await getAllocationNetworkListApi({
+      networkIds,
+      current: 1,
+      size: 100000,
+    });
+    const defaultIds = (relationRes.records ?? [])
+      .map((row: any) => String(row?.userId ?? row?.id ?? '').trim())
+      .filter((id): id is string => Boolean(id));
+    const tempInfo = userIds;
+    delIds = defaultIds.filter((id) => !tempInfo.includes(id));
   }
   const res = await allocationNetworkAllocateApi({
     userIds,
