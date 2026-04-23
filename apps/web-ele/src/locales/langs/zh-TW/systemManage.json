@@ -62,13 +62,26 @@
   "proxyManage": {
     "assignSystemUserToContainer": "為容器分配系統用戶",
     "assignContainerToSystemUser": "為系統用戶分配容器",
-    "searchPlaceholderContainer": "搜索所有者/設備IP/設備分組",
+    "searchPlaceholderContainer": "搜索所有者/所屬地區/IP/鏈接/到期時間/設備分組/備註",
     "searchPlaceholderSystem": "搜索用戶名/暱稱",
-    "owner": "所有者",
-    "server": "所屬服務器",
-    "deviceIp": "設備IP",
-    "deviceVersion": "設備版本",
-    "deviceGroup": "設備分組",
-    "remark": "備註"
+    "colOwner": "所有者",
+    "colRegion": "所屬地區",
+    "colIp": "IP",
+    "colLink": "鏈接",
+    "colExpireTime": "到期時間",
+    "colDeviceGroup": "設備分組",
+    "colRemark": "備註"
+  },
+  "containerResourceManage": {
+    "assignSystemUserToContainer": "為容器分配系統用戶",
+    "assignContainerToSystemUser": "為系統用戶分配容器",
+    "searchPlaceholderContainer": "搜索所有者/所屬服務器/設備IP/設備分組",
+    "searchPlaceholderSystem": "搜索用戶名/暱稱",
+    "colOwner": "所有者",
+    "colServer": "所屬服務器",
+    "colDeviceIp": "設備IP",
+    "colDeviceVersion": "設備版本",
+    "colDeviceGroup": "設備分組",
+    "colRemark": "備註"
   }
 }

@@ -62,13 +62,26 @@
   "proxyManage": {
     "assignSystemUserToContainer": "分配系统用户至代理",
     "assignContainerToSystemUser": "分配代理至系统用户",
-    "searchPlaceholderContainer": "搜索所有者/设备IP/设备分组",
+    "searchPlaceholderContainer": "搜索所有者/所属地区/IP/链接/到期时间/设备分组/备注",
     "searchPlaceholderSystem": "搜索用户名/昵称",
-    "owner": "所有者",
-    "server": "所属服务器",
-    "deviceIp": "设备IP",
-    "deviceVersion": "设备版本",
-    "deviceGroup": "设备分组",
-    "remark": "备注"
+    "colOwner": "所有者",
+    "colRegion": "所属地区",
+    "colIp": "IP",
+    "colLink": "链接",
+    "colExpireTime": "到期时间",
+    "colDeviceGroup": "设备分组",
+    "colRemark": "备注"
+  },
+  "containerResourceManage": {
+    "assignSystemUserToContainer": "分配系统用户至容器",
+    "assignContainerToSystemUser": "分配容器至系统用户",
+    "searchPlaceholderContainer": "搜索所有者/所属服务器/设备IP/设备分组",
+    "searchPlaceholderSystem": "搜索用户名/昵称",
+    "colOwner": "所有者",
+    "colServer": "所属服务器",
+    "colDeviceIp": "设备IP",
+    "colDeviceVersion": "设备版本",
+    "colDeviceGroup": "设备分组",
+    "colRemark": "备注"
   }
 }

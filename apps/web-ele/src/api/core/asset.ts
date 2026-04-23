@@ -341,6 +341,83 @@ export async function getProxyAssetPageApi<T = any>(
   });
 }
 
+/** 网络分配分页 POST /allocation/network/page */
+export async function getAllocationNetworkPageApi<T = any>(
+  params: PageQuery,
+): Promise<PageResult<T>> {
+  const reqParams = {
+    ...params,
+    current: params.current ?? 1,
+    size: params.size ?? 20,
+  };
+  const response = await proxyClient.post<PageResult<T>>(
+    '/allocation/network/page',
+    reqParams,
+  );
+  return resolvePageResult<T>(response, {
+    current: reqParams.current,
+    size: reqParams.size,
+  });
+}
+
+export interface AllocationNetworkAllocateParams {
+  userIds?: string[];
+  networkIds?: string[];
+  /** true: 网络分配给用户；false: 用户分配网络 */
+  bindDirection?: boolean;
+  delIds?: string[];
+}
+
+/** 分配网络 POST /allocation/network/allocate */
+export async function allocationNetworkAllocateApi(
+  params: AllocationNetworkAllocateParams,
+): Promise<ApiResponse<null>> {
+  return proxyClient.post<ApiResponse<null>>('/allocation/network/allocate', params);
+}
+
+export interface AllocationNetworkUserListParams extends PageQuery {
+  userIds?: string[];
+}
+
+export interface AllocationNetworkListParams extends PageQuery {
+  networkIds?: string[];
+}
+
+/** 根据代理ID查询用户列表 POST /allocation/network/list */
+export async function getAllocationNetworkListApi<T = any>(
+  params: AllocationNetworkListParams,
+): Promise<PageResult<T>> {
+  const reqParams = {
+    ...params,
+    current: params.current ?? 1,
+    size: params.size ?? 20,
+  };
+  const response = await proxyClient.post<PageResult<T>>('/allocation/network/list', reqParams);
+  return resolvePageResult<T>(response, {
+    current: reqParams.current,
+    size: reqParams.size,
+  });
+}
+
+/** 根据用户ID查询代理列表 POST /allocation/network/user/list */
+export async function getAllocationNetworkUserListApi<T = any>(
+  params: AllocationNetworkUserListParams,
+): Promise<PageResult<T>> {
+  const reqParams = {
+    ...params,
+    current: params.current ?? 1,
+    size: params.size ?? 20,
+  };
+  const response = await proxyClient.post<PageResult<T>>(
+    '/allocation/network/user/list',
+    reqParams,
+  );
+  return resolvePageResult<T>(response, {
+    current: reqParams.current,
+    size: reqParams.size,
+  });
+}
+
 /** 获取容器资产分页信息 POST /asset/container/page */
 export async function getContainerAssetPageApi<T = DeviceItem>(
   params: PageQuery,
