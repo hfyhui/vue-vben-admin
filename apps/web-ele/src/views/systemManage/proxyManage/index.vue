@@ -198,7 +198,7 @@ async function syncUsersSelectionByNetworks(networkIds: string[]) {
   const selectedRows: any[] = [];
   for (const row of systemUserRows.value) {
     const id = String(row?.userId ?? row?.id ?? '').trim();
-    if (id && (bindUserIds.has(id) || isLockedSystemUser(row))) {
+    if (id && bindUserIds.has(id)) {
       selectedRows.push(row);
       table.toggleRowSelection(row, true, true);
     }
