@@ -89,8 +89,7 @@ function isOwnerLockedSystemUser(row: any) {
   const ownerSet = getSelectedContainerOwnerSet();
   if (!ownerSet.size) return false;
   const userName = String(row?.userName ?? '').trim();
-  const nickName = String(row?.nickName ?? '').trim();
-  return (userName && ownerSet.has(userName)) || (nickName && ownerSet.has(nickName));
+  return userName && ownerSet.has(userName);
 }
 
 function isLockedSystemUser(row: any) {
@@ -244,7 +243,7 @@ async function syncContainersSelectionByUsers(userIds: string[]) {
     current: 1,
     size: 100000,
   });
-  const bindDeviceIds = new Set(
+  const bindDeviceIds = new Set<string>(
     (res.records ?? [])
       .map((row: any) => String(row?.deviceId ?? row?.id ?? '').trim())
       .filter((id): id is string => Boolean(id)),

@@ -65,8 +65,22 @@ function mapProxyRecord(raw: Record<string, any>) {
 }
 
 function getOwnerList(row: any): string[] {
+  if (!Array.isArray(row?.userInfos)) return [];
   return row.userInfos
-    .map((item: any) => item?.userName)
+    .map((item: any) => String(item?.userName ?? '').trim())
+    .filter(Boolean);
+}
+
+function getOwnerLockList(row: Record<string, any> | null | undefined): string[] {
+  if (Array.isArray(row?.owners)) {
+    return row.owners.map((item: any) => String(item ?? '').trim()).filter(Boolean);
+  }
+  const rawOwner = String(row?.owner ?? '').trim();
+  if (!rawOwner) return [];
+  return rawOwner
+    .split(/[,\u3001\uff0c]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
 }
 
 function getOwnerText(row: { owners?: string[] } | null | undefined) {
@@ -89,12 +103,11 @@ function isLockedSystemUser(row: any) {
   if (isRowDisabled(row)) return true;
   if (activeTab.value !== 'assignContainers') return false;
   const ownerSet = new Set(
-    selectedContainerRows.value.flatMap((item) => getOwnerList(item)),
+    selectedContainerRows.value.flatMap((item) => getOwnerLockList(item)),
   );
   if (!ownerSet.size) return false;
   const userName = String(row?.userName ?? '').trim();
-  const nickName = String(row?.nickName ?? '').trim();
-  return (userName && ownerSet.has(userName)) || (nickName && ownerSet.has(nickName));
+  return userName && ownerSet.has(userName);
 }
 
 function systemUserSelectable(row: any) {
@@ -229,12 +242,12 @@ async function syncContainersSelectionByUsers(userIds: string[]) {
     current: 1,
     size: 100000,
   });
-  const bindNetworkIds = new Set(
+  const bindNetworkIds = new Set<string>(
     (res.records ?? [])
       .map((row: any) => String(row?.networkId ?? row?.proxyId ?? row?.id ?? '').trim())
       .filter((id): id is string => Boolean(id)),
   );
-  const allSelectedIds = Array.from(bindNetworkIds);
+  const allSelectedIds: string[] = Array.from(bindNetworkIds);
   syncingContainerSelection = true;
   table.clearSelection();
   for (const row of containerRows.value) {
