@@ -62,7 +62,7 @@
   "proxyManage": {
     "assignSystemUserToContainer": "為容器分配系統用戶",
     "assignContainerToSystemUser": "為系統用戶分配容器",
-    "searchPlaceholderContainer": "搜索所有者/所屬地區/IP/鏈接/到期時間/設備分組/備註",
+    "searchPlaceholderContainer": "搜索所有者/所屬地區/IP/鏈接/設備分組/備註",
     "searchPlaceholderSystem": "搜索用戶名/暱稱",
     "colOwner": "所有者",
     "colRegion": "所屬地區",

@@ -67,10 +67,6 @@ function getOwnerList(row: { owners?: string[] } | null | undefined): string[] {
   return row.owners.map((x) => String(x).trim()).filter(Boolean);
 }
 
-function normalizeSearchValue(value: unknown): string {
-  return String(value ?? '').trim().toLowerCase();
-}
-
 function isRowDisabled(row: any) {
   return row?.status === '1' || row?.isLock === true;
 }
@@ -125,24 +121,6 @@ const displaySystemUserRows = computed(() => {
   return systemUserRows.value;
 });
 
-/** 当前页兜底：按表格所有展示字段匹配关键字 */
-function filterContainerRowsByKeyword(rows: Array<Record<string, any>>, keyword: string) {
-  const kw = normalizeSearchValue(keyword);
-  if (!kw) return rows;
-  return rows.filter((row) => {
-    const fields = [
-      ...(Array.isArray(row.owners) ? row.owners : []),
-      row.region,
-      row.ip,
-      row.link,
-      row.expireTime,
-      row.deviceGroup,
-      row.remark,
-    ];
-    return fields.some((value) => normalizeSearchValue(value).includes(kw));
-  });
-}
-
 async function loadContainers() {
   containerLoading.value = true;
   try {
@@ -152,7 +130,7 @@ async function loadContainers() {
       condition: containerKeyword.value || undefined,
     });
     const mappedRows = (res.records ?? []).map((r) => mapProxyRecord(r as Record<string, any>));
-    containerRows.value = filterContainerRowsByKeyword(mappedRows, containerKeyword.value);
+    containerRows.value = mappedRows;
     containerTotal.value = res.total ?? 0;
   } finally {
     containerLoading.value = false;
@@ -330,7 +308,7 @@ function toIdList(rows: any[], keys: string[]): string[] {
 }
 
 async function onSave() {
-  const bindDirection = activeTab.value === 'assignSystemUsers';
+  const bindDirection = activeTab.value === 'assignContainers';
   const userIds = toIdList(selectedSystemUserRows.value, ['userId', 'id']);
   const networkIds = toIdList(selectedContainerRows.value, ['networkId', 'proxyId', 'id']);
 

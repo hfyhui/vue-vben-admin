@@ -62,7 +62,7 @@
   "proxyManage": {
     "assignSystemUserToContainer": "分配系统用户至代理",
     "assignContainerToSystemUser": "分配代理至系统用户",
-    "searchPlaceholderContainer": "搜索所有者/所属地区/IP/链接/到期时间/设备分组/备注",
+    "searchPlaceholderContainer": "搜索所有者/所属地区/IP/链接/设备分组/备注",
     "searchPlaceholderSystem": "搜索用户名/昵称",
     "colOwner": "所有者",
     "colRegion": "所属地区",

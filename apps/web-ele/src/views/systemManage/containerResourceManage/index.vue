@@ -51,10 +51,6 @@ function getOwnerList(row: { userInfos?: any[] } | null | undefined): string[] {
     .filter(Boolean);
 }
 
-function normalizeSearchValue(value: unknown): string {
-  return String(value ?? '').trim().toLowerCase();
-}
-
 function isRowDisabled(row: any) {
   return row?.status === 1 || row?.status === '1' || row?.isLock === true;
 }
@@ -87,25 +83,6 @@ const displaySystemUserRows = computed(() => {
   return systemUserRows.value;
 });
 
-function filterContainerRowsByKeyword(rows: any[], keyword: string) {
-  const kw = normalizeSearchValue(keyword);
-  if (!kw) return rows;
-  return rows.filter((row) => {
-    const owners = getOwnerList(row);
-    const fields = [
-      ...owners,
-      row?.status,
-      row?.server,
-      row?.deviceId,
-      row?.deviceIp,
-      row?.deviceVersion,
-      ...(Array.isArray(row?.suiteNames) ? row.suiteNames : []),
-      row?.remark,
-    ];
-    return fields.some((value) => normalizeSearchValue(value).includes(kw));
-  });
-}
-
 function toIdList(rows: any[], keys: string[]): string[] {
   return rows
     .map((row) => {
@@ -129,7 +106,7 @@ async function loadContainers() {
       condition: containerKeyword.value || undefined,
     });
     const records = res.records ?? [];
-    containerRows.value = filterContainerRowsByKeyword(records, containerKeyword.value);
+    containerRows.value = records;
     containerTotal.value = res.total ?? 0;
   } finally {
     containerLoading.value = false;
@@ -272,7 +249,7 @@ function onTabChange() {
 }
 
 async function onSave() {
-  const bindDirection = activeTab.value === 'assignSystemUsers';
+  const bindDirection = activeTab.value === 'assignContainers';
   const userIds = toIdList(selectedSystemUserRows.value, ['userId', 'id']);
   const deviceIds = toIdList(selectedContainerRows.value, ['deviceId', 'id']);
 

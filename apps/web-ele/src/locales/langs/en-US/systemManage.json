@@ -62,7 +62,7 @@
   "proxyManage": {
     "assignSystemUserToContainer": "Assign system users to containers",
     "assignContainerToSystemUser": "Assign containers to system users",
-    "searchPlaceholderContainer": "Search owner / region / IP / link / expiration time / device group / remarks",
+    "searchPlaceholderContainer": "Search owner / region / IP / link / device group / remarks",
     "searchPlaceholderSystem": "Search username / nickname",
     "colOwner": "Owner",
     "colRegion": "Region",
