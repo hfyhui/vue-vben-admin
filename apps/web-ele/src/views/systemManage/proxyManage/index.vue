@@ -654,7 +654,10 @@ onMounted(() => {
           />
         </ElTable>
 
-        <div class="pager">
+        <div
+          v-show="!(activeTab === 'assignSystemUsers' && containerShowSelectedOnly)"
+          class="pager"
+        >
           <ElPagination
             background
             size="small"
@@ -738,7 +741,10 @@ onMounted(() => {
           />
         </ElTable>
 
-        <div class="pager">
+        <div
+          v-show="!(activeTab === 'assignContainers' && systemUserShowSelectedOnly)"
+          class="pager"
+        >
           <ElPagination
             background
             size="small"
