@@ -248,6 +248,16 @@ async function syncContainersSelectionByUsers(userIds: string[]) {
       .filter((id): id is string => Boolean(id)),
   );
   const allSelectedIds: string[] = Array.from(bindNetworkIds);
+  const currentContainerMap = new Map<string, any>();
+  for (const row of containerRows.value) {
+    const id = getIdFromRow(row, ['networkId', 'proxyId', 'id']);
+    if (id) currentContainerMap.set(id, row);
+  }
+  const previousSelectedMap = new Map<string, any>();
+  for (const row of selectedContainerRows.value) {
+    const id = getIdFromRow(row, ['networkId', 'proxyId', 'id']);
+    if (id) previousSelectedMap.set(id, row);
+  }
   syncingContainerSelection = true;
   table.clearSelection();
   for (const row of containerRows.value) {
@@ -256,8 +266,21 @@ async function syncContainersSelectionByUsers(userIds: string[]) {
       table.toggleRowSelection(row, true);
     }
   }
+  const mergedSelectedRows = allSelectedIds
+    .map((id) => {
+      if (currentContainerMap.has(id)) return currentContainerMap.get(id);
+      if (previousSelectedMap.has(id)) return previousSelectedMap.get(id);
+      const fallback = (res.records ?? []).find((item: any) => {
+        const itemId = getIdFromRow(item, ['networkId', 'proxyId', 'id']);
+        return itemId === id;
+      });
+      return fallback ? mapProxyRecord(fallback as Record<string, any>) : null;
+    })
+    .filter(Boolean);
   selectedContainerIds.value = allSelectedIds;
-  selectedContainerRows.value = Array.isArray(res.records) ? [...res.records] : [];
+  selectedContainerRows.value = mergedSelectedRows.map((row) =>
+    mapProxyRecord(row as Record<string, any>),
+  );
   await nextTick();
   syncingContainerSelection = false;
 }
@@ -354,6 +377,16 @@ function toIdList(rows: any[], keys: string[]): string[] {
       return '';
     })
     .filter(Boolean);
+}
+
+function getIdFromRow(row: any, keys: string[]): string {
+  for (const key of keys) {
+    const value = row?.[key];
+    if (value !== null && value !== undefined && String(value).trim()) {
+      return String(value).trim();
+    }
+  }
+  return '';
 }
 
 async function onSave() {
