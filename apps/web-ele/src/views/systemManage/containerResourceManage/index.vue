@@ -200,6 +200,8 @@ async function syncUsersSelectionByDevices(deviceIds: string[]) {
     syncingSystemUserSelection = true;
     table.clearSelection();
     selectedSystemUserRows.value = [];
+    selectedSystemUserIds.value = [];
+    await nextTick();
     syncingSystemUserSelection = false;
     return;
   }
@@ -235,6 +237,8 @@ async function syncContainersSelectionByUsers(userIds: string[]) {
     syncingContainerSelection = true;
     table.clearSelection();
     selectedContainerRows.value = [];
+    selectedContainerIds.value = [];
+    await nextTick();
     syncingContainerSelection = false;
     return;
   }
@@ -264,14 +268,6 @@ async function syncContainersSelectionByUsers(userIds: string[]) {
 
 function onContainerSelect(rows: any[]) {
   if (syncingContainerSelection) return;
-  if (
-    activeTab.value === 'assignSystemUsers' &&
-    containerShowSelectedOnly.value &&
-    rows.length === 0 &&
-    selectedContainerIds.value.length > 0
-  ) {
-    return;
-  }
   const currentPageRows = displayContainerRows.value;
   const currentPageIds = new Set(toIdList(currentPageRows, ['deviceId', 'id']));
   const remainRows = selectedContainerRows.value.filter((row) => {
@@ -287,14 +283,6 @@ function onContainerSelect(rows: any[]) {
 
 function onSystemUserSelect(rows: any[]) {
   if (syncingSystemUserSelection) return;
-  if (
-    activeTab.value === 'assignContainers' &&
-    systemUserShowSelectedOnly.value &&
-    rows.length === 0 &&
-    selectedSystemUserIds.value.length > 0
-  ) {
-    return;
-  }
   const currentPageRows = displaySystemUserRows.value;
   const currentPageIds = new Set(toUserIdList(currentPageRows));
   const remainRows = selectedSystemUserRows.value.filter((row) => {
@@ -328,8 +316,8 @@ function onTabChange() {
 
 async function onSave() {
   const bindDirection = activeTab.value === 'assignContainers';
-  const userIds = toUserIdList(selectedSystemUserRows.value);
-  const deviceIds = toIdList(selectedContainerRows.value, ['deviceId', 'id']);
+  const userIds = Array.from(new Set(selectedSystemUserIds.value.filter(Boolean)));
+  const deviceIds = Array.from(new Set(selectedContainerIds.value.filter(Boolean)));
 
   // 按当前 tab 校验左侧主列表
   if (activeTab.value === 'assignContainers' && deviceIds.length === 0) {
@@ -450,17 +438,10 @@ function syncSystemUserSelection() {
 }
 
 function onSystemUserOnlySelectedChange() {
-  const snapshotIds = [...selectedSystemUserIds.value];
-  const snapshotRows = [...selectedSystemUserRows.value];
-  syncingSystemUserSelection = true;
   nextTick(() => {
-    if (!selectedSystemUserIds.value.length && snapshotIds.length) {
-      selectedSystemUserIds.value = snapshotIds;
+    if (activeTab.value === 'assignContainers') {
+      syncSystemUserSelection();
     }
-    if (!selectedSystemUserRows.value.length && snapshotRows.length) {
-      selectedSystemUserRows.value = snapshotRows;
-    }
-    syncSystemUserSelection();
   });
 }
 
@@ -482,17 +463,10 @@ function syncContainerSelection() {
 }
 
 function onContainerOnlySelectedChange() {
-  const snapshotIds = [...selectedContainerIds.value];
-  const snapshotRows = [...selectedContainerRows.value];
-  syncingContainerSelection = true;
   nextTick(() => {
-    if (!selectedContainerIds.value.length && snapshotIds.length) {
-      selectedContainerIds.value = snapshotIds;
+    if (activeTab.value === 'assignSystemUsers') {
+      syncContainerSelection();
     }
-    if (!selectedContainerRows.value.length && snapshotRows.length) {
-      selectedContainerRows.value = snapshotRows;
-    }
-    syncContainerSelection();
   });
 }
 

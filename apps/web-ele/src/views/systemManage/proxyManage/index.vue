@@ -235,6 +235,7 @@ async function syncUsersSelectionByNetworks(networkIds: string[]) {
     syncingSystemUserSelection = true;
     table.clearSelection();
     selectedSystemUserRows.value = [];
+    selectedSystemUserIds.value = [];
     await nextTick();
     syncingSystemUserSelection = false;
     return;
@@ -289,6 +290,7 @@ async function syncContainersSelectionByUsers(userIds: string[]) {
     syncingContainerSelection = true;
     table.clearSelection();
     selectedContainerRows.value = [];
+    selectedContainerIds.value = [];
     await nextTick();
     syncingContainerSelection = false;
     return;
@@ -392,14 +394,6 @@ function onTabChange() {
 }
 function onContainerSelect(rows: any[]) {
   if (syncingContainerSelection) return;
-  if (
-    activeTab.value === 'assignSystemUsers' &&
-    containerShowSelectedOnly.value &&
-    rows.length === 0 &&
-    selectedContainerIds.value.length > 0
-  ) {
-    return;
-  }
   const currentPageRows = displayContainerRows.value;
   const currentPageIds = new Set(toIdList(currentPageRows, ['networkId', 'proxyId', 'id']));
   const remainRows = selectedContainerRows.value.filter((row) => {
@@ -415,14 +409,6 @@ function onContainerSelect(rows: any[]) {
 
 function onSystemUserSelect(rows: any[]) {
   if (syncingSystemUserSelection) return;
-  if (
-    activeTab.value === 'assignContainers' &&
-    systemUserShowSelectedOnly.value &&
-    rows.length === 0 &&
-    selectedSystemUserIds.value.length > 0
-  ) {
-    return;
-  }
   const currentPageRows = displaySystemUserRows.value;
   const currentPageIds = new Set(toIdList(currentPageRows, ['userId', 'id']));
   const remainRows = selectedSystemUserRows.value.filter((row) => {
@@ -463,8 +449,8 @@ function getIdFromRow(row: any, keys: string[]): string {
 
 async function onSave() {
   const bindDirection = activeTab.value === 'assignContainers';
-  const userIds = toIdList(selectedSystemUserRows.value, ['userId', 'id']);
-  const networkIds = toIdList(selectedContainerRows.value, ['networkId', 'proxyId', 'id']);
+  const userIds = Array.from(new Set(selectedSystemUserIds.value.filter(Boolean)));
+  const networkIds = Array.from(new Set(selectedContainerIds.value.filter(Boolean)));
 
   // 与社媒分配页一致：校验“当前左侧激活列表”必须有选择
   if (activeTab.value === 'assignContainers' && networkIds.length === 0) {
@@ -549,33 +535,18 @@ function resetSystemUsers() {
 }
 
 function onSystemUserOnlySelectedChange() {
-  const snapshotIds = [...selectedSystemUserIds.value];
-  const snapshotRows = [...selectedSystemUserRows.value];
-  // 切换数据源会触发表格一次空 selection-change，先加锁避免把已选缓存清空
-  syncingSystemUserSelection = true;
   nextTick(() => {
-    if (!selectedSystemUserIds.value.length && snapshotIds.length) {
-      selectedSystemUserIds.value = snapshotIds;
+    if (activeTab.value === 'assignContainers') {
+      syncSystemUserSelection();
     }
-    if (!selectedSystemUserRows.value.length && snapshotRows.length) {
-      selectedSystemUserRows.value = snapshotRows;
-    }
-    syncSystemUserSelection();
   });
 }
 
 function onContainerOnlySelectedChange() {
-  const snapshotIds = [...selectedContainerIds.value];
-  const snapshotRows = [...selectedContainerRows.value];
-  syncingContainerSelection = true;
   nextTick(() => {
-    if (!selectedContainerIds.value.length && snapshotIds.length) {
-      selectedContainerIds.value = snapshotIds;
+    if (activeTab.value === 'assignSystemUsers') {
+      syncContainerSelection();
     }
-    if (!selectedContainerRows.value.length && snapshotRows.length) {
-      selectedContainerRows.value = snapshotRows;
-    }
-    syncContainerSelection();
   });
 }
 
