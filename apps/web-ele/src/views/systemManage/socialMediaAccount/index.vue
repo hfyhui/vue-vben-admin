@@ -303,6 +303,8 @@ function onTabChange() {
   selectedAccountIds.value = [];
   selectedAccountUserIds.value = [];
   selectedUserIds.value = [];
+  accountKeyword.value = '';
+  userKeyword.value = '';
   userShowSelectedOnly.value = false;
   accountShowSelectedOnly.value = false;
   accountPage.current = 1;
