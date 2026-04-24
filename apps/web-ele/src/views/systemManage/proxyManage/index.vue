@@ -25,7 +25,8 @@ const containerTotal = ref(0);
 const systemUserTotal = ref(0);
 const containerPage = ref(1);
 const systemUserPage = ref(1);
-const pageSize = ref(20);
+const containerPageSize = ref(20);
+const systemUserPageSize = ref(20);
 const pageSizeOptions = [10, 20, 50, 100];
 
 const containerTableRef = ref<InstanceType<typeof ElTableType>>();
@@ -126,7 +127,7 @@ async function loadContainers() {
   try {
     const res = await getAllocationNetworkPageApi({
       current: containerPage.value,
-      size: pageSize.value,
+      size: containerPageSize.value,
       condition: containerKeyword.value || undefined,
     });
     const mappedRows = (res.records ?? []).map((r) => mapProxyRecord(r as Record<string, any>));
@@ -142,7 +143,7 @@ async function loadSystemUsers() {
   try {
     const res = await postSystemAccountsUsersPageApi({
       current: systemUserPage.value,
-      size: pageSize.value,
+      size: systemUserPageSize.value,
       keyword: systemUserKeyword.value || undefined,
     });
     if (res && successCode(res.code)) {
@@ -443,6 +444,9 @@ onMounted(() => {
           <ElButton :icon="Search" circle type="primary" @click="searchContainers" />
           <ElButton :icon="Refresh" circle @click="resetContainers" />
         </div>
+        <div class="only-selected-wrap only-selected-wrap--placeholder">
+          <span> </span>
+        </div>
 
         <ElTable
           ref="containerTableRef"
@@ -521,11 +525,11 @@ onMounted(() => {
             layout="total, sizes, prev, pager, next"
             :total="containerTotal"
             :page-sizes="pageSizeOptions"
-            :page-size="pageSize"
+            :page-size="containerPageSize"
             :current-page="containerPage"
             @size-change="
               (size) => {
-                pageSize = size;
+                containerPageSize = size;
                 containerPage = 1;
                 loadContainers();
               }
@@ -599,11 +603,11 @@ onMounted(() => {
             layout="total, sizes, prev, pager, next"
             :total="systemUserTotal"
             :page-sizes="pageSizeOptions"
-            :page-size="pageSize"
+            :page-size="systemUserPageSize"
             :current-page="systemUserPage"
             @size-change="
               (size) => {
-                pageSize = size;
+                systemUserPageSize = size;
                 systemUserPage = 1;
                 loadSystemUsers();
               }
@@ -677,6 +681,10 @@ onMounted(() => {
   justify-content: flex-end;
   width: 100%;
   margin: 0 0 10px;
+  min-height: 24px;
+}
+.only-selected-wrap--placeholder {
+  visibility: hidden;
 }
 .link-icon {
   align-self: center;

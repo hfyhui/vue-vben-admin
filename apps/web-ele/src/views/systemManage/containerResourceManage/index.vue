@@ -25,7 +25,8 @@ const containerTotal = ref(0);
 const systemUserTotal = ref(0);
 const containerPage = ref(1);
 const systemUserPage = ref(1);
-const pageSize = ref(20);
+const containerPageSize = ref(20);
+const systemUserPageSize = ref(20);
 const pageSizeOptions = [10, 20, 50, 100];
 
 const containerTableRef = ref<InstanceType<typeof ElTableType>>();
@@ -102,7 +103,7 @@ async function loadContainers() {
   try {
     const res = await getAllocationContainerPageApi({
       current: containerPage.value,
-      size: pageSize.value,
+      size: containerPageSize.value,
       condition: containerKeyword.value || undefined,
     });
     const records = res.records ?? [];
@@ -118,7 +119,7 @@ async function loadSystemUsers() {
   try {
     const res = await postSystemAccountsUsersPageApi({
       current: systemUserPage.value,
-      size: pageSize.value,
+      size: systemUserPageSize.value,
       keyword: systemUserKeyword.value || undefined,
     });
     if (res && successCode(res.code)) {
@@ -315,7 +316,7 @@ function searchContainers() {
   });
 }
 function onContainerSizeChange(size: number) {
-  pageSize.value = size;
+  containerPageSize.value = size;
   containerPage.value = 1;
   void loadContainers();
 }
@@ -337,7 +338,7 @@ function searchSystemUsers() {
   });
 }
 function onSystemUserSizeChange(size: number) {
-  pageSize.value = size;
+  systemUserPageSize.value = size;
   systemUserPage.value = 1;
   void loadSystemUsers();
 }
@@ -418,6 +419,9 @@ onMounted(() => {
           <ElButton :icon="Search" circle type="primary" @click="searchContainers" />
           <ElButton :icon="Refresh" circle @click="resetContainers" />
         </div>
+        <div class="only-selected-wrap only-selected-wrap--placeholder">
+          <span> </span>
+        </div>
 
         <ElTable
           ref="containerTableRef"
@@ -494,7 +498,7 @@ onMounted(() => {
             layout="total, sizes, prev, pager, next"
             :total="containerTotal"
             :page-sizes="pageSizeOptions"
-            :page-size="pageSize"
+            :page-size="containerPageSize"
             :current-page="containerPage"
             @size-change="onContainerSizeChange"
             @current-change="onContainerCurrentChange"
@@ -561,7 +565,7 @@ onMounted(() => {
             layout="total, sizes, prev, pager, next"
             :total="systemUserTotal"
             :page-sizes="pageSizeOptions"
-            :page-size="pageSize"
+            :page-size="systemUserPageSize"
             :current-page="systemUserPage"
             @size-change="onSystemUserSizeChange"
             @current-change="onSystemUserCurrentChange"
@@ -628,6 +632,10 @@ onMounted(() => {
   justify-content: flex-end;
   width: 100%;
   margin: 0 0 10px;
+  min-height: 24px;
+}
+.only-selected-wrap--placeholder {
+  visibility: hidden;
 }
 .link-icon {
   align-self: center;
