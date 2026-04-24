@@ -265,6 +265,10 @@ function onSystemUserSelect(rows: any[]) {
 }
 
 function onTabChange() {
+  containerKeyword.value = '';
+  systemUserKeyword.value = '';
+  containerPage.value = 1;
+  systemUserPage.value = 1;
   containerTableRef.value?.clearSelection();
   systemUserTableRef.value?.clearSelection();
   selectedContainerRows.value = [];
