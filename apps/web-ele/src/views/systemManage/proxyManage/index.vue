@@ -91,16 +91,39 @@ function isRowDisabled(row: any) {
   return row?.status === '1' || row?.isLock === true;
 }
 
+function getSelectedSystemUserNameById(userId: string): string {
+  const targetId = String(userId ?? '').trim();
+  if (!targetId) return '';
+  const allRows = [...selectedSystemUserRows.value, ...systemUserRows.value];
+  for (const row of allRows) {
+    const id = String(row?.userId ?? row?.id ?? '').trim();
+    if (id === targetId) {
+      return String(row?.userName ?? '').trim();
+    }
+  }
+  return '';
+}
+
+function getSelectedContainerOwnerListById(networkId: string): string[] {
+  const targetId = String(networkId ?? '').trim();
+  if (!targetId) return [];
+  const allRows = [...selectedContainerRows.value, ...containerRows.value];
+  for (const row of allRows) {
+    const id = getIdFromRow(row, ['networkId', 'proxyId', 'id']);
+    if (id === targetId) {
+      return getOwnerLockList(row);
+    }
+  }
+  return [];
+}
+
 function isLockedContainerByOwner(row: any) {
   if (activeTab.value !== 'assignSystemUsers') return false;
-  const selectedUserNameSet = new Set(
-    selectedSystemUserRows.value
-      .map((item: any) => String(item?.userName ?? '').trim())
-      .filter((name): name is string => Boolean(name)),
-  );
-  if (!selectedUserNameSet.size) return false;
+  if (selectedSystemUserIds.value.length !== 1) return false;
+  const selectedUserName = getSelectedSystemUserNameById(selectedSystemUserIds.value[0] ?? '');
+  if (!selectedUserName) return false;
   const ownerList = getOwnerLockList(row);
-  return ownerList.some((owner) => selectedUserNameSet.has(owner));
+  return ownerList.includes(selectedUserName);
 }
 
 function containerRowSelectable(row: any) {
@@ -114,12 +137,11 @@ function containerRowClassName({ row }: { row: any }) {
 function isLockedSystemUser(row: any) {
   if (isRowDisabled(row)) return true;
   if (activeTab.value !== 'assignContainers') return false;
-  const ownerSet = new Set(
-    selectedContainerRows.value.flatMap((item) => getOwnerLockList(item)),
-  );
-  if (!ownerSet.size) return false;
+  if (selectedContainerIds.value.length !== 1) return false;
+  const ownerList = getSelectedContainerOwnerListById(selectedContainerIds.value[0] ?? '');
+  if (!ownerList.length) return false;
   const userName = String(row?.userName ?? '').trim();
-  return userName && ownerSet.has(userName);
+  return userName ? ownerList.includes(userName) : false;
 }
 
 function systemUserSelectable(row: any) {
@@ -260,8 +282,8 @@ async function syncContainersSelectionByUsers(userIds: string[]) {
       .filter((id): id is string => Boolean(id)),
   );
   const selectedUserNameSet = new Set(
-    selectedSystemUserRows.value
-      .map((row: any) => String(row?.userName ?? '').trim())
+    userIds
+      .map((id) => getSelectedSystemUserNameById(id))
       .filter((name): name is string => Boolean(name)),
   );
   // 如果右侧代理是“当前勾选用户本人创建”，也要加入选中
