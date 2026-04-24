@@ -91,12 +91,24 @@ function isRowDisabled(row: any) {
   return row?.status === '1' || row?.isLock === true;
 }
 
+function isLockedContainerByOwner(row: any) {
+  if (activeTab.value !== 'assignSystemUsers') return false;
+  const selectedUserNameSet = new Set(
+    selectedSystemUserRows.value
+      .map((item: any) => String(item?.userName ?? '').trim())
+      .filter((name): name is string => Boolean(name)),
+  );
+  if (!selectedUserNameSet.size) return false;
+  const ownerList = getOwnerLockList(row);
+  return ownerList.some((owner) => selectedUserNameSet.has(owner));
+}
+
 function containerRowSelectable(row: any) {
-  return !isRowDisabled(row);
+  return !isRowDisabled(row) && !isLockedContainerByOwner(row);
 }
 
 function containerRowClassName({ row }: { row: any }) {
-  return isRowDisabled(row) ? 'locked-row' : '';
+  return isRowDisabled(row) || isLockedContainerByOwner(row) ? 'locked-row' : '';
 }
 
 function isLockedSystemUser(row: any) {
@@ -247,6 +259,20 @@ async function syncContainersSelectionByUsers(userIds: string[]) {
       .map((row: any) => String(row?.networkId ?? row?.proxyId ?? row?.id ?? '').trim())
       .filter((id): id is string => Boolean(id)),
   );
+  const selectedUserNameSet = new Set(
+    selectedSystemUserRows.value
+      .map((row: any) => String(row?.userName ?? '').trim())
+      .filter((name): name is string => Boolean(name)),
+  );
+  // 如果右侧代理是“当前勾选用户本人创建”，也要加入选中
+  for (const row of containerRows.value) {
+    const id = getIdFromRow(row, ['networkId', 'proxyId', 'id']);
+    if (!id) continue;
+    const ownerList = getOwnerLockList(row);
+    if (ownerList.some((owner) => selectedUserNameSet.has(owner))) {
+      bindNetworkIds.add(id);
+    }
+  }
   const allSelectedIds: string[] = Array.from(bindNetworkIds);
   const currentContainerMap = new Map<string, any>();
   for (const row of containerRows.value) {
@@ -262,8 +288,8 @@ async function syncContainersSelectionByUsers(userIds: string[]) {
   table.clearSelection();
   for (const row of containerRows.value) {
     const id = String(row?.networkId ?? row?.proxyId ?? row?.id ?? '').trim();
-    if (id && bindNetworkIds.has(id) && containerRowSelectable(row)) {
-      table.toggleRowSelection(row, true);
+    if (id && bindNetworkIds.has(id)) {
+      table.toggleRowSelection(row, true, true);
     }
   }
   const mergedSelectedRows = allSelectedIds
