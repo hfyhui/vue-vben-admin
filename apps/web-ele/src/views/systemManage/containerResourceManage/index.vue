@@ -35,6 +35,7 @@ const selectedContainerRows = ref<any[]>([]);
 const selectedSystemUserRows = ref<any[]>([]);
 const selectedSystemUserIds = ref<string[]>([]);
 const selectedContainerIds = ref<string[]>([]);
+const containerShowSelectedOnly = ref(false);
 const systemUserShowSelectedOnly = ref(false);
 let syncingSystemUserSelection = false;
 let syncingContainerSelection = false;
@@ -82,6 +83,18 @@ const displaySystemUserRows = computed(() => {
     return [...selectedSystemUserRows.value];
   }
   return systemUserRows.value;
+});
+
+const displayContainerRows = computed(() => {
+  if (activeTab.value === 'assignSystemUsers' && containerShowSelectedOnly.value) {
+    const selectedIdSet = new Set(selectedContainerIds.value);
+    const currentPageSelected = containerRows.value.filter((row) =>
+      selectedIdSet.has(String(row?.deviceId ?? row?.id ?? '').trim()),
+    );
+    if (currentPageSelected.length) return currentPageSelected;
+    return [...selectedContainerRows.value];
+  }
+  return containerRows.value;
 });
 
 function toIdList(rows: any[], keys: string[]): string[] {
@@ -206,8 +219,22 @@ async function syncContainersSelectionByUsers(userIds: string[]) {
 
 function onContainerSelect(rows: any[]) {
   if (syncingContainerSelection) return;
-  selectedContainerRows.value = rows;
-  selectedContainerIds.value = toIdList(rows, ['deviceId', 'id']);
+  if (
+    activeTab.value === 'assignSystemUsers' &&
+    containerShowSelectedOnly.value &&
+    rows.length === 0 &&
+    selectedContainerIds.value.length > 0
+  ) {
+    return;
+  }
+  const currentPageRows = displayContainerRows.value;
+  const currentPageIds = new Set(toIdList(currentPageRows, ['deviceId', 'id']));
+  const remainRows = selectedContainerRows.value.filter((row) => {
+    const id = String(row?.deviceId ?? row?.id ?? '').trim();
+    return id && !currentPageIds.has(id);
+  });
+  selectedContainerRows.value = [...remainRows, ...rows];
+  selectedContainerIds.value = toIdList(selectedContainerRows.value, ['deviceId', 'id']);
   if (activeTab.value === 'assignContainers') {
     void syncUsersSelectionByDevices(selectedContainerIds.value);
   }
@@ -244,6 +271,7 @@ function onTabChange() {
   selectedSystemUserRows.value = [];
   selectedSystemUserIds.value = [];
   selectedContainerIds.value = [];
+  containerShowSelectedOnly.value = false;
   systemUserShowSelectedOnly.value = false;
   void loadContainers();
   void loadSystemUsers();
@@ -307,6 +335,7 @@ async function onSave() {
 }
 
 function searchContainers() {
+  containerShowSelectedOnly.value = false;
   containerPage.value = 1;
   void loadContainers().then(() => {
     if (activeTab.value === 'assignSystemUsers') {
@@ -383,6 +412,38 @@ function onSystemUserOnlySelectedChange() {
   });
 }
 
+function syncContainerSelection() {
+  const table = containerTableRef.value;
+  if (!table) return;
+  const selectedIds = new Set(toIdList(selectedContainerRows.value, ['deviceId', 'id']));
+  syncingContainerSelection = true;
+  table.clearSelection();
+  for (const row of displayContainerRows.value) {
+    const id = String(row?.deviceId ?? row?.id ?? '').trim();
+    if (id && selectedIds.has(id)) {
+      table.toggleRowSelection(row, true, true);
+    }
+  }
+  nextTick(() => {
+    syncingContainerSelection = false;
+  });
+}
+
+function onContainerOnlySelectedChange() {
+  const snapshotIds = [...selectedContainerIds.value];
+  const snapshotRows = [...selectedContainerRows.value];
+  syncingContainerSelection = true;
+  nextTick(() => {
+    if (!selectedContainerIds.value.length && snapshotIds.length) {
+      selectedContainerIds.value = snapshotIds;
+    }
+    if (!selectedContainerRows.value.length && snapshotRows.length) {
+      selectedContainerRows.value = snapshotRows;
+    }
+    syncContainerSelection();
+  });
+}
+
 onMounted(() => {
   void loadContainers();
   void loadSystemUsers();
@@ -419,21 +480,37 @@ onMounted(() => {
           <ElButton :icon="Search" circle type="primary" @click="searchContainers" />
           <ElButton :icon="Refresh" circle @click="resetContainers" />
         </div>
-        <div class="only-selected-wrap only-selected-wrap--placeholder">
+        <div v-show="activeTab === 'assignSystemUsers'" class="only-selected-wrap">
+          <ElCheckbox
+            v-model="containerShowSelectedOnly"
+            @change="onContainerOnlySelectedChange"
+          >
+            {{ $t('systemManage.socialMediaAccount.onlyShowSelected') }}
+          </ElCheckbox>
+        </div>
+        <div
+          v-show="activeTab !== 'assignSystemUsers'"
+          class="only-selected-wrap only-selected-wrap--placeholder"
+        >
           <span> </span>
         </div>
 
         <ElTable
           ref="containerTableRef"
           v-loading="containerLoading"
-          :data="containerRows"
+          :data="displayContainerRows"
           :row-key="containerRowKey"
           :row-class-name="rowClassName"
           class="no-lines-table"
           height="420"
           @selection-change="onContainerSelect"
         >
-          <ElTableColumn type="selection" width="48" :selectable="rowSelectable" />
+          <ElTableColumn
+            type="selection"
+            width="48"
+            :reserve-selection="true"
+            :selectable="rowSelectable"
+          />
           <ElTableColumn
             :label="$t('systemManage.containerResourceManage.colOwner')"
             min-width="140"
@@ -528,6 +605,12 @@ onMounted(() => {
           >
             {{ $t('systemManage.socialMediaAccount.onlyShowSelected') }}
           </ElCheckbox>
+        </div>
+        <div
+          v-show="activeTab !== 'assignContainers'"
+          class="only-selected-wrap only-selected-wrap--placeholder"
+        >
+          <span> </span>
         </div>
 
         <ElTable

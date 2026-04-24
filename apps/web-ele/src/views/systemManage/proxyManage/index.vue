@@ -35,6 +35,7 @@ const selectedContainerRows = ref<any[]>([]);
 const selectedSystemUserRows = ref<any[]>([]);
 const selectedSystemUserIds = ref<string[]>([]);
 const selectedContainerIds = ref<string[]>([]);
+const containerShowSelectedOnly = ref(false);
 const systemUserShowSelectedOnly = ref(false);
 let syncingSystemUserSelection = false;
 let syncingContainerSelection = false;
@@ -120,6 +121,20 @@ const displaySystemUserRows = computed(() => {
     return [...selectedSystemUserRows.value];
   }
   return systemUserRows.value;
+});
+
+const displayContainerRows = computed(() => {
+  if (activeTab.value === 'assignSystemUsers' && containerShowSelectedOnly.value) {
+    const selectedIdSet = new Set(selectedContainerIds.value);
+    const currentPageSelected = containerRows.value.filter((row) =>
+      selectedIdSet.has(String(row?.networkId ?? row?.proxyId ?? row?.id ?? '').trim()),
+    );
+    if (currentPageSelected.length) {
+      return currentPageSelected;
+    }
+    return [...selectedContainerRows.value];
+  }
+  return containerRows.value;
 });
 
 async function loadContainers() {
@@ -246,8 +261,26 @@ async function syncContainersSelectionByUsers(userIds: string[]) {
     }
   }
   selectedContainerRows.value = selectedRows;
+  selectedContainerIds.value = toIdList(selectedRows, ['networkId', 'proxyId', 'id']);
   await nextTick();
   syncingContainerSelection = false;
+}
+
+function syncContainerSelection() {
+  const table = containerTableRef.value;
+  if (!table) return;
+  const selectedIds = new Set(toIdList(selectedContainerRows.value, ['networkId', 'proxyId', 'id']));
+  syncingContainerSelection = true;
+  table.clearSelection();
+  for (const row of displayContainerRows.value) {
+    const id = String(row?.networkId ?? row?.proxyId ?? row?.id ?? '').trim();
+    if (id && selectedIds.has(id)) {
+      table.toggleRowSelection(row, true, true);
+    }
+  }
+  nextTick(() => {
+    syncingContainerSelection = false;
+  });
 }
 
 function onTabChange() {
@@ -257,14 +290,29 @@ function onTabChange() {
   selectedSystemUserRows.value = [];
   selectedSystemUserIds.value = [];
   selectedContainerIds.value = [];
+  containerShowSelectedOnly.value = false;
   systemUserShowSelectedOnly.value = false;
   void loadContainers();
   void loadSystemUsers();
 }
 function onContainerSelect(rows: any[]) {
   if (syncingContainerSelection) return;
-  selectedContainerRows.value = rows;
-  selectedContainerIds.value = toIdList(rows, ['networkId', 'proxyId', 'id']);
+  if (
+    activeTab.value === 'assignSystemUsers' &&
+    containerShowSelectedOnly.value &&
+    rows.length === 0 &&
+    selectedContainerIds.value.length > 0
+  ) {
+    return;
+  }
+  const currentPageRows = displayContainerRows.value;
+  const currentPageIds = new Set(toIdList(currentPageRows, ['networkId', 'proxyId', 'id']));
+  const remainRows = selectedContainerRows.value.filter((row) => {
+    const id = String(row?.networkId ?? row?.proxyId ?? row?.id ?? '').trim();
+    return id && !currentPageIds.has(id);
+  });
+  selectedContainerRows.value = [...remainRows, ...rows];
+  selectedContainerIds.value = toIdList(selectedContainerRows.value, ['networkId', 'proxyId', 'id']);
   if (activeTab.value === 'assignContainers') {
     void syncUsersSelectionByNetworks(selectedContainerIds.value);
   }
@@ -366,6 +414,7 @@ async function onSave() {
   }
 }
 function searchContainers() {
+  containerShowSelectedOnly.value = false;
   containerPage.value = 1;
   void loadContainers().then(() => {
     if (activeTab.value === 'assignSystemUsers') {
@@ -408,6 +457,21 @@ function onSystemUserOnlySelectedChange() {
   });
 }
 
+function onContainerOnlySelectedChange() {
+  const snapshotIds = [...selectedContainerIds.value];
+  const snapshotRows = [...selectedContainerRows.value];
+  syncingContainerSelection = true;
+  nextTick(() => {
+    if (!selectedContainerIds.value.length && snapshotIds.length) {
+      selectedContainerIds.value = snapshotIds;
+    }
+    if (!selectedContainerRows.value.length && snapshotRows.length) {
+      selectedContainerRows.value = snapshotRows;
+    }
+    syncContainerSelection();
+  });
+}
+
 onMounted(() => {
   void loadContainers();
   void loadSystemUsers();
@@ -444,21 +508,37 @@ onMounted(() => {
           <ElButton :icon="Search" circle type="primary" @click="searchContainers" />
           <ElButton :icon="Refresh" circle @click="resetContainers" />
         </div>
-        <div class="only-selected-wrap only-selected-wrap--placeholder">
+        <div v-show="activeTab === 'assignSystemUsers'" class="only-selected-wrap">
+          <ElCheckbox
+            v-model="containerShowSelectedOnly"
+            @change="onContainerOnlySelectedChange"
+          >
+            {{ $t('systemManage.socialMediaAccount.onlyShowSelected') }}
+          </ElCheckbox>
+        </div>
+        <div
+          v-show="activeTab !== 'assignSystemUsers'"
+          class="only-selected-wrap only-selected-wrap--placeholder"
+        >
           <span> </span>
         </div>
 
         <ElTable
           ref="containerTableRef"
           v-loading="containerLoading"
-          :data="containerRows"
+          :data="displayContainerRows"
           :row-key="(row) => String(row.networkId ?? row.proxyId ?? row.id ?? '')"
           :row-class-name="containerRowClassName"
           class="no-lines-table"
           height="420"
           @selection-change="onContainerSelect"
         >
-          <ElTableColumn type="selection" width="48" :selectable="containerRowSelectable" />
+          <ElTableColumn
+            type="selection"
+            width="48"
+            :reserve-selection="true"
+            :selectable="containerRowSelectable"
+          />
           <ElTableColumn
             :label="$t('systemManage.proxyManage.colOwner')"
             min-width="140"
@@ -566,6 +646,12 @@ onMounted(() => {
           >
             {{ $t('systemManage.socialMediaAccount.onlyShowSelected') }}
           </ElCheckbox>
+        </div>
+        <div
+          v-show="activeTab !== 'assignContainers'"
+          class="only-selected-wrap only-selected-wrap--placeholder"
+        >
+          <span> </span>
         </div>
 
         <ElTable
