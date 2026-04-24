@@ -126,5 +126,14 @@
   "unbindOnlyServerProxy": "Only API-bound proxies can be unbound; drag-drop bindings must be officially enabled first",
   "unbindProxyMissingIds": "Missing proxy or association id; cannot unbind",
   "deviceLocked": "This device is locked and cannot be operated",
-  "allSelectedDevicesLocked": "All selected devices are locked"
+  "allSelectedDevicesLocked": "All selected devices are locked",
+  "userAllocation": "User Allocation",
+  "userSearchPlaceholder": "Please enter username/nickname",
+  "userName": "Username",
+  "nickName": "Nickname",
+  "userListLoadFailed": "Failed to load user list",
+  "selectAccountProxyOrDeviceFirst": "Please select accounts, proxies, or devices first",
+  "selectAtLeastOneUser": "Please select at least one user",
+  "userAllocationSuccess": "User allocation succeeded",
+  "userAllocationFailed": "User allocation failed"
 }

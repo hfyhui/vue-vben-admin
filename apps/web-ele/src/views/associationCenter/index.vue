@@ -214,7 +214,7 @@ async function loadUsersPage() {
     }
   } catch (error) {
     console.error('[associationCenter] 获取用户分页失败:', error);
-    ElMessage.error('获取用户列表失败');
+    ElMessage.error($t('associationCenter.userListLoadFailed'));
   } finally {
     userAllocateLoading.value = false;
   }
@@ -228,7 +228,7 @@ async function onOpenUserAllocateDialog() {
   const networkIds = uniqueIds(toIdList(proxies, ['networkId', 'proxyId', 'id'])) as string[];
   const finalDeviceIds = uniqueIds(deviceIds) as string[];
   if (!accountIds.length && !networkIds.length && !finalDeviceIds.length) {
-    ElMessage.warning('请先选择账号、代理或设备');
+    ElMessage.warning($t('associationCenter.selectAccountProxyOrDeviceFirst'));
     return;
   }
   userSelection.value = [];
@@ -276,11 +276,11 @@ async function onSubmitUserAllocate() {
   const userIds = uniqueIds(toIdList(userSelection.value, ['userId', 'id'])) as string[];
 
   if (!accountIds.length && !networkIds.length && !finalDeviceIds.length) {
-    ElMessage.warning('请先选择账号、代理或设备');
+    ElMessage.warning($t('associationCenter.selectAccountProxyOrDeviceFirst'));
     return;
   }
   if (!userIds.length) {
-    ElMessage.warning('请至少选择一个用户');
+    ElMessage.warning($t('associationCenter.selectAtLeastOneUser'));
     return;
   }
 
@@ -298,7 +298,7 @@ async function onSubmitUserAllocate() {
   try {
     const response = await assetUserAllocationApi(payload);
     if (response?.code === 100000) {
-      ElMessage.success(response.msg || '用户分配成功');
+      ElMessage.success(response.msg || $t('associationCenter.userAllocationSuccess'));
       userAllocateDialogVisible.value = false;
       userSelection.value = [];
       accountBoardRef.value?.clearSelectedAccounts?.();
@@ -307,10 +307,10 @@ async function onSubmitUserAllocate() {
       await loadAssetSummary();
       return;
     }
-    ElMessage.error(response?.msg || '用户分配失败');
+    ElMessage.error(response?.msg || $t('associationCenter.userAllocationFailed'));
   } catch (error) {
     console.error('[associationCenter] 用户分配失败:', error);
-    ElMessage.error('用户分配失败');
+    ElMessage.error($t('associationCenter.userAllocationFailed'));
   } finally {
     userAllocateSaving.value = false;
   }
@@ -561,7 +561,7 @@ function onClearSelection(command: ClearSelectionType) {
           {{ $t('associationCenter.reverseQuery') }}
         </el-button>
         <el-button type="primary" @click="onOpenUserAllocateDialog">
-          用户分配
+          {{ $t('associationCenter.userAllocation') }}
         </el-button>
         <el-dropdown @command="onClearSelection">
           <el-button type="primary">
@@ -603,7 +603,7 @@ function onClearSelection(command: ClearSelectionType) {
 
     <el-dialog
       v-model="userAllocateDialogVisible"
-      title="用户分配"
+      :title="$t('associationCenter.userAllocation')"
       width="760px"
       destroy-on-close
     >
@@ -611,11 +611,11 @@ function onClearSelection(command: ClearSelectionType) {
         <el-input
           v-model="userQuery.keyword"
           clearable
-          placeholder="请输入用户名/昵称"
+          :placeholder="$t('associationCenter.userSearchPlaceholder')"
           @keyup.enter="onUsersSearch"
         />
         <el-button type="primary" @click="onUsersSearch">
-          查询
+          {{ $t('associationCenter.search') }}
         </el-button>
       </div>
       <el-table
@@ -633,8 +633,16 @@ function onClearSelection(command: ClearSelectionType) {
           :reserve-selection="true"
           :selectable="userRowSelectable"
         />
-        <el-table-column prop="userName" label="用户名" min-width="160" />
-        <el-table-column prop="nickName" label="昵称" min-width="160" />
+        <el-table-column
+          prop="userName"
+          :label="$t('associationCenter.userName')"
+          min-width="160"
+        />
+        <el-table-column
+          prop="nickName"
+          :label="$t('associationCenter.nickName')"
+          min-width="160"
+        />
       </el-table>
       <div class="user-allocate-pagination">
         <el-pagination
@@ -647,9 +655,11 @@ function onClearSelection(command: ClearSelectionType) {
         />
       </div>
       <template #footer>
-        <el-button @click="userAllocateDialogVisible = false">取消</el-button>
+        <el-button @click="userAllocateDialogVisible = false">
+          {{ $t('associationCenter.cancelButtonText') }}
+        </el-button>
         <el-button type="primary" :loading="userAllocateSaving" @click="onSubmitUserAllocate">
-          保存
+          {{ $t('common.save') }}
         </el-button>
       </template>
     </el-dialog>

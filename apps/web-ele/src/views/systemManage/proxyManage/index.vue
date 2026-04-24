@@ -39,6 +39,8 @@ const containerShowSelectedOnly = ref(false);
 const systemUserShowSelectedOnly = ref(false);
 let syncingSystemUserSelection = false;
 let syncingContainerSelection = false;
+let switchingSystemUserOnlySelected = false;
+let switchingContainerOnlySelected = false;
 
 const containerLoading = ref(false);
 const systemUserLoading = ref(false);
@@ -394,6 +396,7 @@ function onTabChange() {
 }
 function onContainerSelect(rows: any[]) {
   if (syncingContainerSelection) return;
+  if (switchingContainerOnlySelected && rows.length === 0) return;
   const currentPageRows = displayContainerRows.value;
   const currentPageIds = new Set(toIdList(currentPageRows, ['networkId', 'proxyId', 'id']));
   const remainRows = selectedContainerRows.value.filter((row) => {
@@ -409,6 +412,7 @@ function onContainerSelect(rows: any[]) {
 
 function onSystemUserSelect(rows: any[]) {
   if (syncingSystemUserSelection) return;
+  if (switchingSystemUserOnlySelected && rows.length === 0) return;
   const currentPageRows = displaySystemUserRows.value;
   const currentPageIds = new Set(toIdList(currentPageRows, ['userId', 'id']));
   const remainRows = selectedSystemUserRows.value.filter((row) => {
@@ -537,18 +541,22 @@ function resetSystemUsers() {
 }
 
 function onSystemUserOnlySelectedChange() {
+  switchingSystemUserOnlySelected = true;
   nextTick(() => {
     if (activeTab.value === 'assignContainers') {
       syncSystemUserSelection();
     }
+    switchingSystemUserOnlySelected = false;
   });
 }
 
 function onContainerOnlySelectedChange() {
+  switchingContainerOnlySelected = true;
   nextTick(() => {
     if (activeTab.value === 'assignSystemUsers') {
       syncContainerSelection();
     }
+    switchingContainerOnlySelected = false;
   });
 }
 
