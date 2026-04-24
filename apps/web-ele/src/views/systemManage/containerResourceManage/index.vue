@@ -107,11 +107,6 @@ function systemUserRowKey(row: any) {
 
 const displaySystemUserRows = computed(() => {
   if (activeTab.value === 'assignContainers' && systemUserShowSelectedOnly.value) {
-    const selectedIdSet = new Set(selectedSystemUserIds.value);
-    const currentPageSelected = systemUserRows.value.filter((row) =>
-      selectedIdSet.has(String(row?.userId ?? row?.id ?? '').trim()),
-    );
-    if (currentPageSelected.length) return currentPageSelected;
     return [...selectedSystemUserRows.value];
   }
   return systemUserRows.value;
@@ -119,11 +114,6 @@ const displaySystemUserRows = computed(() => {
 
 const displayContainerRows = computed(() => {
   if (activeTab.value === 'assignSystemUsers' && containerShowSelectedOnly.value) {
-    const selectedIdSet = new Set(selectedContainerIds.value);
-    const currentPageSelected = containerRows.value.filter((row) =>
-      selectedIdSet.has(String(row?.deviceId ?? row?.id ?? '').trim()),
-    );
-    if (currentPageSelected.length) return currentPageSelected;
     return [...selectedContainerRows.value];
   }
   return containerRows.value;
@@ -162,6 +152,10 @@ async function loadContainers() {
     const records = res.records ?? [];
     containerRows.value = records;
     containerTotal.value = res.total ?? 0;
+    await nextTick();
+    if (selectedContainerIds.value.length) {
+      syncContainerSelection();
+    }
   } finally {
     containerLoading.value = false;
   }
@@ -181,6 +175,10 @@ async function loadSystemUsers() {
     } else {
       systemUserRows.value = [];
       systemUserTotal.value = 0;
+    }
+    await nextTick();
+    if (selectedSystemUserIds.value.length) {
+      syncSystemUserSelection();
     }
   } finally {
     systemUserLoading.value = false;
@@ -242,18 +240,17 @@ async function syncContainersSelectionByUsers(userIds: string[]) {
       .map((row: any) => String(row?.deviceId ?? row?.id ?? '').trim())
       .filter((id): id is string => Boolean(id)),
   );
+  const allSelectedIds = Array.from(bindDeviceIds);
   syncingContainerSelection = true;
   table.clearSelection();
-  const selectedRows: any[] = [];
   for (const row of containerRows.value) {
     const id = String(row?.deviceId ?? row?.id ?? '').trim();
     if (id && bindDeviceIds.has(id) && rowSelectable(row)) {
-      selectedRows.push(row);
       table.toggleRowSelection(row, true);
     }
   }
-  selectedContainerRows.value = selectedRows;
-  selectedContainerIds.value = toDeviceIdList(selectedRows);
+  selectedContainerIds.value = allSelectedIds;
+  selectedContainerRows.value = Array.isArray(res.records) ? [...res.records] : [];
   syncingContainerSelection = false;
 }
 

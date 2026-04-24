@@ -103,13 +103,6 @@ function systemUserRowClassName({ row }: { row: any }) {
 
 const displaySystemUserRows = computed(() => {
   if (activeTab.value === 'assignContainers' && systemUserShowSelectedOnly.value) {
-    const selectedIdSet = new Set(selectedSystemUserIds.value);
-    const currentPageSelected = systemUserRows.value.filter((row) =>
-      selectedIdSet.has(String(row?.userId ?? row?.id ?? '').trim()),
-    );
-    if (currentPageSelected.length) {
-      return currentPageSelected;
-    }
     return [...selectedSystemUserRows.value];
   }
   return systemUserRows.value;
@@ -117,13 +110,6 @@ const displaySystemUserRows = computed(() => {
 
 const displayContainerRows = computed(() => {
   if (activeTab.value === 'assignSystemUsers' && containerShowSelectedOnly.value) {
-    const selectedIdSet = new Set(selectedContainerIds.value);
-    const currentPageSelected = containerRows.value.filter((row) =>
-      selectedIdSet.has(String(row?.networkId ?? row?.proxyId ?? row?.id ?? '').trim()),
-    );
-    if (currentPageSelected.length) {
-      return currentPageSelected;
-    }
     return [...selectedContainerRows.value];
   }
   return containerRows.value;
@@ -140,6 +126,10 @@ async function loadContainers() {
     const mappedRows = (res.records ?? []).map((r) => mapProxyRecord(r as Record<string, any>));
     containerRows.value = mappedRows;
     containerTotal.value = res.total ?? 0;
+    await nextTick();
+    if (selectedContainerIds.value.length) {
+      syncContainerSelection();
+    }
   } finally {
     containerLoading.value = false;
   }
@@ -240,18 +230,17 @@ async function syncContainersSelectionByUsers(userIds: string[]) {
       .map((row: any) => String(row?.networkId ?? row?.proxyId ?? row?.id ?? '').trim())
       .filter((id): id is string => Boolean(id)),
   );
+  const allSelectedIds = Array.from(bindNetworkIds);
   syncingContainerSelection = true;
   table.clearSelection();
-  const selectedRows: any[] = [];
   for (const row of containerRows.value) {
     const id = String(row?.networkId ?? row?.proxyId ?? row?.id ?? '').trim();
     if (id && bindNetworkIds.has(id) && containerRowSelectable(row)) {
-      selectedRows.push(row);
       table.toggleRowSelection(row, true);
     }
   }
-  selectedContainerRows.value = selectedRows;
-  selectedContainerIds.value = toIdList(selectedRows, ['networkId', 'proxyId', 'id']);
+  selectedContainerIds.value = allSelectedIds;
+  selectedContainerRows.value = Array.isArray(res.records) ? [...res.records] : [];
   await nextTick();
   syncingContainerSelection = false;
 }
