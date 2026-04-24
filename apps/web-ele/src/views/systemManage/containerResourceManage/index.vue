@@ -46,13 +46,22 @@ function successCode(code: number) {
   return code === 200 || code === 100000;
 }
 
-function getOwnerList(row: { userInfos?: any[] } | null | undefined): string[] {
-  const rawOwner = String((row as any)?.owner ?? '').trim();
+function getOwnerList(row: any): string[] {
+  return row.userInfos
+    .map((item: any) => item?.userName)
+}
+
+function getOwnerLockList(row: Record<string, any> | null | undefined): string[] {
+  const rawOwner = String(row?.owner ?? '').trim();
   if (!rawOwner) return [];
   return rawOwner
     .split(/[,\u3001\uff0c]/)
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function getOwnerText(row: { userInfos?: any[] } | null | undefined) {
+  return getOwnerList(row).join('、');
 }
 
 function isRowDisabled(row: any) {
@@ -72,7 +81,7 @@ function getSelectedContainerOwnerSet() {
   const selectedRowsInCurrentList = containerRows.value.filter((row) =>
     selectedIdSet.has(String(row?.deviceId ?? row?.id ?? '').trim()),
   );
-  return new Set(selectedRowsInCurrentList.flatMap((item) => getOwnerList(item)));
+  return new Set(selectedRowsInCurrentList.flatMap((item) => getOwnerLockList(item)));
 }
 
 function isOwnerLockedSystemUser(row: any) {
@@ -90,7 +99,7 @@ function isLockedSystemUser(row: any) {
 }
 
 function systemUserSelectable(row: any) {
-  return !isLockedSystemUser(row);
+  return !isOwnerLockedSystemUser(row);
 }
 
 function systemUserRowClassName({ row }: { row: any }) {
@@ -240,13 +249,13 @@ async function syncContainersSelectionByUsers(userIds: string[]) {
       .map((row: any) => String(row?.deviceId ?? row?.id ?? '').trim())
       .filter((id): id is string => Boolean(id)),
   );
-  const allSelectedIds = Array.from(bindDeviceIds);
+  const allSelectedIds: string[] = Array.from(bindDeviceIds);
   syncingContainerSelection = true;
   table.clearSelection();
   for (const row of containerRows.value) {
     const id = String(row?.deviceId ?? row?.id ?? '').trim();
-    if (id && bindDeviceIds.has(id) && rowSelectable(row)) {
-      table.toggleRowSelection(row, true);
+    if (id && bindDeviceIds.has(id)) {
+      table.toggleRowSelection(row, true, true);
     }
   }
   selectedContainerIds.value = allSelectedIds;
@@ -561,19 +570,14 @@ onMounted(() => {
             show-overflow-tooltip
           >
             <template #default="{ row }">
-              <template v-if="getOwnerList(row).length > 1">
-                <ElTooltip placement="top" effect="light" :show-after="200">
-                  <template #content>
-                    <div class="owner-tooltip-lines">
-                      <div v-for="(name, idx) in getOwnerList(row)" :key="idx">
-                        {{ name }}
-                      </div>
-                    </div>
-                  </template>
-                  <span class="owner-cell-text">{{ getOwnerList(row).join('、') }}</span>
-                </ElTooltip>
-              </template>
-              <span v-else class="owner-cell-text">{{ getOwnerList(row)[0] || '—' }}</span>
+              <ElTooltip
+                placement="top"
+                effect="dark"
+                :show-after="200"
+                :content="getOwnerText(row) || '—'"
+              >
+                <span class="owner-cell-text">{{ getOwnerText(row) || '—' }}</span>
+              </ElTooltip>
             </template>
           </ElTableColumn>
           <ElTableColumn

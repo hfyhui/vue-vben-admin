@@ -64,9 +64,13 @@ function mapProxyRecord(raw: Record<string, any>) {
   };
 }
 
-function getOwnerList(row: { owners?: string[] } | null | undefined): string[] {
-  if (!row?.owners?.length) return [];
-  return row.owners.map((x) => String(x).trim()).filter(Boolean);
+function getOwnerList(row: any): string[] {
+  return row.userInfos
+    .map((item: any) => item?.userName)
+}
+
+function getOwnerText(row: { owners?: string[] } | null | undefined) {
+  return getOwnerList(row).join('、');
 }
 
 function isRowDisabled(row: any) {
@@ -530,19 +534,14 @@ onMounted(() => {
             show-overflow-tooltip
           >
             <template #default="{ row }">
-              <template v-if="getOwnerList(row).length > 1">
-                <ElTooltip placement="top" effect="light" :show-after="200">
-                  <template #content>
-                    <div class="owner-tooltip-lines">
-                      <div v-for="(name, idx) in getOwnerList(row)" :key="idx">
-                        {{ name }}
-                      </div>
-                    </div>
-                  </template>
-                  <span class="owner-cell-text">{{ getOwnerList(row).join('、') }}</span>
-                </ElTooltip>
-              </template>
-              <span v-else class="owner-cell-text">{{ getOwnerList(row)[0] || '—' }}</span>
+              <ElTooltip
+                placement="top"
+                effect="dark"
+                :show-after="200"
+                :content="getOwnerText(row) || '—'"
+              >
+                <span class="owner-cell-text">{{ getOwnerText(row) || '—' }}</span>
+              </ElTooltip>
             </template>
           </ElTableColumn>
           <ElTableColumn
