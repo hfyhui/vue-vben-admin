@@ -248,6 +248,14 @@ function onUsersSelectionChange(rows: any[]) {
   userSelection.value = [...remain, ...rows];
 }
 
+function userRowSelectable(row: any) {
+  return row?.status !== '1';
+}
+
+function userRowClassName({ row }: { row: any }) {
+  return row?.status === '1' ? 'locked-row' : '';
+}
+
 function onUsersPageChange(page: number) {
   userPagination.current = page;
   void loadUsersPage();
@@ -615,13 +623,18 @@ function onClearSelection(command: ClearSelectionType) {
         v-loading="userAllocateLoading"
         :data="userList"
         row-key="userId"
+        :row-class-name="userRowClassName"
         max-height="420"
         @selection-change="onUsersSelectionChange"
       >
-        <el-table-column type="selection" width="48" :reserve-selection="true" />
+        <el-table-column
+          type="selection"
+          width="48"
+          :reserve-selection="true"
+          :selectable="userRowSelectable"
+        />
         <el-table-column prop="userName" label="用户名" min-width="160" />
         <el-table-column prop="nickName" label="昵称" min-width="160" />
-        <el-table-column prop="status" label="状态" width="100" />
       </el-table>
       <div class="user-allocate-pagination">
         <el-pagination
@@ -688,5 +701,10 @@ function onClearSelection(command: ClearSelectionType) {
   display: flex;
   justify-content: flex-end;
   margin-top: 12px;
+}
+
+:deep(tr.locked-row td) {
+  background: color-mix(in srgb, var(--el-fill-color-light) 45%, transparent);
+  color: color-mix(in srgb, var(--el-text-color-secondary) 78%, var(--el-text-color-primary));
 }
 </style>
