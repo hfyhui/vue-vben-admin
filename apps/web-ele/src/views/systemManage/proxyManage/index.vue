@@ -49,11 +49,11 @@ function successCode(code: number) {
 
 /** 网络分配列表 records 适配到表格字段 */
 function mapProxyRecord(raw: Record<string, any>) {
-  const users = Array.isArray(raw.userInfos) ? raw.userInfos : [];
-  const owners = users
-    .map((item: Record<string, any>) => item?.nickName ?? item?.userName ?? '')
-    .map((name: unknown) => String(name).trim())
+  const ownersFromField = String(raw.owner ?? '')
+    .split(/[,\u3001\uff0c]/)
+    .map((name) => name.trim())
     .filter(Boolean);
+  const owners = Array.from(new Set(ownersFromField));
   return {
     ...raw,
     owners,
@@ -83,7 +83,14 @@ function containerRowClassName({ row }: { row: any }) {
 
 function isLockedSystemUser(row: any) {
   if (isRowDisabled(row)) return true;
-  return false;
+  if (activeTab.value !== 'assignContainers') return false;
+  const ownerSet = new Set(
+    selectedContainerRows.value.flatMap((item) => getOwnerList(item)),
+  );
+  if (!ownerSet.size) return false;
+  const userName = String(row?.userName ?? '').trim();
+  const nickName = String(row?.nickName ?? '').trim();
+  return (userName && ownerSet.has(userName)) || (nickName && ownerSet.has(nickName));
 }
 
 function systemUserSelectable(row: any) {
@@ -184,7 +191,7 @@ async function syncUsersSelectionByNetworks(networkIds: string[]) {
   const selectedRows: any[] = [];
   for (const row of systemUserRows.value) {
     const id = String(row?.userId ?? row?.id ?? '').trim();
-    if (id && bindUserIds.has(id)) {
+    if (id && (bindUserIds.has(id) || isLockedSystemUser(row))) {
       selectedRows.push(row);
       table.toggleRowSelection(row, true, true);
     }

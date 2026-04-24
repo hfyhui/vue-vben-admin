@@ -47,9 +47,11 @@ function successCode(code: number) {
 }
 
 function getOwnerList(row: { userInfos?: any[] } | null | undefined): string[] {
-  if (!Array.isArray(row?.userInfos)) return [];
-  return row.userInfos
-    .map((item) => String(item?.nickName ?? item?.userName ?? '').trim())
+  const rawOwner = String((row as any)?.owner ?? '').trim();
+  if (!rawOwner) return [];
+  return rawOwner
+    .split(/[,\u3001\uff0c]/)
+    .map((item) => item.trim())
     .filter(Boolean);
 }
 
@@ -63,6 +65,36 @@ function rowSelectable(row: any) {
 
 function rowClassName({ row }: { row: any }) {
   return isRowDisabled(row) ? 'locked-row' : '';
+}
+
+function getSelectedContainerOwnerSet() {
+  const selectedIdSet = new Set(toDeviceIdList(selectedContainerRows.value));
+  const selectedRowsInCurrentList = containerRows.value.filter((row) =>
+    selectedIdSet.has(String(row?.deviceId ?? row?.id ?? '').trim()),
+  );
+  return new Set(selectedRowsInCurrentList.flatMap((item) => getOwnerList(item)));
+}
+
+function isOwnerLockedSystemUser(row: any) {
+  if (activeTab.value !== 'assignContainers') return false;
+  const ownerSet = getSelectedContainerOwnerSet();
+  if (!ownerSet.size) return false;
+  const userName = String(row?.userName ?? '').trim();
+  const nickName = String(row?.nickName ?? '').trim();
+  return (userName && ownerSet.has(userName)) || (nickName && ownerSet.has(nickName));
+}
+
+function isLockedSystemUser(row: any) {
+  if (isRowDisabled(row)) return true;
+  return isOwnerLockedSystemUser(row);
+}
+
+function systemUserSelectable(row: any) {
+  return !isLockedSystemUser(row);
+}
+
+function systemUserRowClassName({ row }: { row: any }) {
+  return isLockedSystemUser(row) ? 'locked-row' : '';
 }
 
 function containerRowKey(row: any) {
@@ -109,6 +141,14 @@ function toIdList(rows: any[], keys: string[]): string[] {
       return '';
     })
     .filter(Boolean);
+}
+
+function toDeviceIdList(rows: any[]) {
+  return toIdList(rows, ['deviceId', 'id']);
+}
+
+function toUserIdList(rows: any[]) {
+  return toIdList(rows, ['userId', 'id']);
 }
 
 async function loadContainers() {
@@ -172,13 +212,13 @@ async function syncUsersSelectionByDevices(deviceIds: string[]) {
   const selectedRows: any[] = [];
   for (const row of systemUserRows.value) {
     const id = String(row?.userId ?? row?.id ?? '').trim();
-    if (id && bindUserIds.has(id) && rowSelectable(row)) {
+    if (id && (bindUserIds.has(id) || isOwnerLockedSystemUser(row))) {
       selectedRows.push(row);
       table.toggleRowSelection(row, true, true);
     }
   }
   selectedSystemUserRows.value = selectedRows;
-  selectedSystemUserIds.value = toIdList(selectedRows, ['userId', 'id']);
+  selectedSystemUserIds.value = toUserIdList(selectedRows);
   syncingSystemUserSelection = false;
 }
 
@@ -213,7 +253,7 @@ async function syncContainersSelectionByUsers(userIds: string[]) {
     }
   }
   selectedContainerRows.value = selectedRows;
-  selectedContainerIds.value = toIdList(selectedRows, ['deviceId', 'id']);
+  selectedContainerIds.value = toDeviceIdList(selectedRows);
   syncingContainerSelection = false;
 }
 
@@ -251,15 +291,15 @@ function onSystemUserSelect(rows: any[]) {
     return;
   }
   const currentPageRows = displaySystemUserRows.value;
-  const currentPageIds = new Set(toIdList(currentPageRows, ['userId', 'id']));
+  const currentPageIds = new Set(toUserIdList(currentPageRows));
   const remainRows = selectedSystemUserRows.value.filter((row) => {
     const id = String(row?.userId ?? row?.id ?? '').trim();
     return id && !currentPageIds.has(id);
   });
   selectedSystemUserRows.value = [...remainRows, ...rows];
-  selectedSystemUserIds.value = toIdList(selectedSystemUserRows.value, ['userId', 'id']);
+  selectedSystemUserIds.value = toUserIdList(selectedSystemUserRows.value);
   if (activeTab.value === 'assignSystemUsers') {
-    const userIds = toIdList(selectedSystemUserRows.value, ['userId', 'id']);
+    const userIds = toUserIdList(selectedSystemUserRows.value);
     void syncContainersSelectionByUsers(userIds);
   }
 }
@@ -283,7 +323,7 @@ function onTabChange() {
 
 async function onSave() {
   const bindDirection = activeTab.value === 'assignContainers';
-  const userIds = toIdList(selectedSystemUserRows.value, ['userId', 'id']);
+  const userIds = toUserIdList(selectedSystemUserRows.value);
   const deviceIds = toIdList(selectedContainerRows.value, ['deviceId', 'id']);
 
   // 按当前 tab 校验左侧主列表
@@ -346,7 +386,7 @@ function searchContainers() {
   containerPage.value = 1;
   void loadContainers().then(() => {
     if (activeTab.value === 'assignSystemUsers') {
-      const userIds = toIdList(selectedSystemUserRows.value, ['userId', 'id']);
+      const userIds = toUserIdList(selectedSystemUserRows.value);
       void syncContainersSelectionByUsers(userIds);
     }
   });
@@ -390,7 +430,7 @@ function resetSystemUsers() {
 function syncSystemUserSelection() {
   const table = systemUserTableRef.value;
   if (!table) return;
-  const selectedIds = new Set(toIdList(selectedSystemUserRows.value, ['userId', 'id']));
+  const selectedIds = new Set(toUserIdList(selectedSystemUserRows.value));
   syncingSystemUserSelection = true;
   table.clearSelection();
   for (const row of displaySystemUserRows.value) {
@@ -625,7 +665,7 @@ onMounted(() => {
           v-loading="systemUserLoading"
           :data="displaySystemUserRows"
           :row-key="systemUserRowKey"
-          :row-class-name="rowClassName"
+          :row-class-name="systemUserRowClassName"
           class="no-lines-table"
           height="420"
           @selection-change="onSystemUserSelect"
@@ -634,7 +674,7 @@ onMounted(() => {
             type="selection"
             width="48"
             :reserve-selection="true"
-            :selectable="rowSelectable"
+            :selectable="systemUserSelectable"
           />
           <ElTableColumn
             prop="userName"

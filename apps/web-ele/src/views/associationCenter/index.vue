@@ -293,6 +293,9 @@ async function onSubmitUserAllocate() {
       ElMessage.success(response.msg || '用户分配成功');
       userAllocateDialogVisible.value = false;
       userSelection.value = [];
+      accountBoardRef.value?.clearSelectedAccounts?.();
+      proxyBoardRef.value?.clearSelectedProxies?.();
+      deviceBoardRef.value?.clearSelectedDevices?.();
       await loadAssetSummary();
       return;
     }
