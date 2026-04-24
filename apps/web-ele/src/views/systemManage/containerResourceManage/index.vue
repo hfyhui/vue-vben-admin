@@ -367,6 +367,9 @@ async function onSave() {
     selectedContainerRows.value = [];
     selectedSystemUserRows.value = [];
     selectedSystemUserIds.value = [];
+    selectedContainerIds.value = [];
+    containerShowSelectedOnly.value = false;
+    systemUserShowSelectedOnly.value = false;
     containerTableRef.value?.clearSelection();
     systemUserTableRef.value?.clearSelection();
     await loadContainers();
