@@ -282,17 +282,19 @@ async function onSave() {
   const userIds = toIdList(selectedSystemUserRows.value, ['userId', 'id']);
   const deviceIds = toIdList(selectedContainerRows.value, ['deviceId', 'id']);
 
-  if (!bindDirection && deviceIds.length === 0) {
+  // 按当前 tab 校验左侧主列表
+  if (activeTab.value === 'assignContainers' && deviceIds.length === 0) {
     ElMessage.warning($t('systemManage.socialMediaAccount.pleaseSelectLeftList'));
     return;
   }
-  if (bindDirection && userIds.length === 0) {
+  if (activeTab.value === 'assignSystemUsers' && userIds.length === 0) {
     ElMessage.warning($t('systemManage.socialMediaAccount.pleaseSelectLeftList'));
     return;
   }
 
   let delIds: string[] = [];
-  if (bindDirection) {
+  if (activeTab.value === 'assignSystemUsers') {
+    // 分配容器至系统用户：以 userIds 查询“已绑定容器”，delIds 传 deviceId
     const relationRes = await getAllocationContainerUserListApi({
       userIds,
       current: 1,
@@ -304,6 +306,7 @@ async function onSave() {
     const tempInfo = deviceIds;
     delIds = defaultIds.filter((id) => !tempInfo.includes(id));
   } else {
+    // 分配系统用户至容器：以 deviceIds 查询“已绑定用户”，delIds 传 userId
     const relationRes = await getAllocationContainerListApi({
       deviceIds,
       current: 1,

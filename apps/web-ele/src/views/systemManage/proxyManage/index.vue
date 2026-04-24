@@ -81,24 +81,9 @@ function containerRowClassName({ row }: { row: any }) {
   return isRowDisabled(row) ? 'locked-row' : '';
 }
 
-function getSelectedProxyOwnerUserIds() {
-  const ids = new Set<string>();
-  for (const row of selectedContainerRows.value) {
-    const userInfos = Array.isArray(row?.userInfos) ? row.userInfos : [];
-    for (const user of userInfos) {
-      const id = String(user?.userId ?? user?.id ?? '').trim();
-      if (id) ids.add(id);
-    }
-  }
-  return ids;
-}
-
 function isLockedSystemUser(row: any) {
   if (isRowDisabled(row)) return true;
-  const userId = String(row?.userId ?? row?.id ?? '').trim();
-  if (!userId) return false;
-  if (activeTab.value !== 'assignContainers') return false;
-  return getSelectedProxyOwnerUserIds().has(userId);
+  return false;
 }
 
 function systemUserSelectable(row: any) {
@@ -197,12 +182,10 @@ async function syncUsersSelectionByNetworks(networkIds: string[]) {
   syncingSystemUserSelection = true;
   table.clearSelection();
   const selectedRows: any[] = [];
-  const lockedOwnerIds = getSelectedProxyOwnerUserIds();
   for (const row of systemUserRows.value) {
     const id = String(row?.userId ?? row?.id ?? '').trim();
-    if (id && (bindUserIds.has(id) || lockedOwnerIds.has(id))) {
+    if (id && bindUserIds.has(id)) {
       selectedRows.push(row);
-      // 置灰用户需要保持已勾选
       table.toggleRowSelection(row, true, true);
     }
   }
@@ -362,17 +345,18 @@ async function onSave() {
   const networkIds = toIdList(selectedContainerRows.value, ['networkId', 'proxyId', 'id']);
 
   // 与社媒分配页一致：校验“当前左侧激活列表”必须有选择
-  if (!bindDirection && networkIds.length === 0) {
+  if (activeTab.value === 'assignContainers' && networkIds.length === 0) {
     ElMessage.warning($t('systemManage.socialMediaAccount.pleaseSelectLeftList'));
     return;
   }
-  if (bindDirection && userIds.length === 0) {
+  if (activeTab.value === 'assignSystemUsers' && userIds.length === 0) {
     ElMessage.warning($t('systemManage.socialMediaAccount.pleaseSelectLeftList'));
     return;
   }
 
   let delIds: string[] = [];
-  if (bindDirection) {
+  if (activeTab.value === 'assignSystemUsers') {
+    // 分配代理至系统用户：以 userIds 查询“已绑定代理”，delIds 传 networkId
     const relationRes = await getAllocationNetworkUserListApi({
       userIds,
       current: 1,
@@ -384,6 +368,7 @@ async function onSave() {
     const tempInfo = networkIds;
     delIds = defaultIds.filter((id) => !tempInfo.includes(id));
   } else {
+    // 分配系统用户至代理：以 networkIds 查询“已绑定用户”，delIds 传 userId
     const relationRes = await getAllocationNetworkListApi({
       networkIds,
       current: 1,
