@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { onMounted, ref } from 'vue';
+import { computed, nextTick, onMounted, ref } from 'vue';
 
 import { Page } from '@vben/common-ui';
 import { Connection, Refresh, Search } from '@element-plus/icons-vue';
@@ -32,7 +32,9 @@ const containerTableRef = ref<InstanceType<typeof ElTableType>>();
 const systemUserTableRef = ref<InstanceType<typeof ElTableType>>();
 const selectedContainerRows = ref<any[]>([]);
 const selectedSystemUserRows = ref<any[]>([]);
+const selectedSystemUserIds = ref<string[]>([]);
 const selectedContainerIds = ref<string[]>([]);
+const systemUserShowSelectedOnly = ref(false);
 let syncingSystemUserSelection = false;
 let syncingContainerSelection = false;
 const containerLoading = ref(false);
@@ -72,6 +74,18 @@ function containerRowKey(row: any) {
 function systemUserRowKey(row: any) {
   return String(row?.userId ?? row?.id ?? '');
 }
+
+const displaySystemUserRows = computed(() => {
+  if (activeTab.value === 'assignContainers' && systemUserShowSelectedOnly.value) {
+    const selectedIdSet = new Set(selectedSystemUserIds.value);
+    const currentPageSelected = systemUserRows.value.filter((row) =>
+      selectedIdSet.has(String(row?.userId ?? row?.id ?? '').trim()),
+    );
+    if (currentPageSelected.length) return currentPageSelected;
+    return [...selectedSystemUserRows.value];
+  }
+  return systemUserRows.value;
+});
 
 function filterContainerRowsByKeyword(rows: any[], keyword: string) {
   const kw = normalizeSearchValue(keyword);
@@ -169,10 +183,11 @@ async function syncUsersSelectionByDevices(deviceIds: string[]) {
     const id = String(row?.userId ?? row?.id ?? '').trim();
     if (id && bindUserIds.has(id) && rowSelectable(row)) {
       selectedRows.push(row);
-      table.toggleRowSelection(row, true);
+      table.toggleRowSelection(row, true, true);
     }
   }
   selectedSystemUserRows.value = selectedRows;
+  selectedSystemUserIds.value = toIdList(selectedRows, ['userId', 'id']);
   syncingSystemUserSelection = false;
 }
 
@@ -222,9 +237,24 @@ function onContainerSelect(rows: any[]) {
 
 function onSystemUserSelect(rows: any[]) {
   if (syncingSystemUserSelection) return;
-  selectedSystemUserRows.value = rows;
+  if (
+    activeTab.value === 'assignContainers' &&
+    systemUserShowSelectedOnly.value &&
+    rows.length === 0 &&
+    selectedSystemUserIds.value.length > 0
+  ) {
+    return;
+  }
+  const currentPageRows = displaySystemUserRows.value;
+  const currentPageIds = new Set(toIdList(currentPageRows, ['userId', 'id']));
+  const remainRows = selectedSystemUserRows.value.filter((row) => {
+    const id = String(row?.userId ?? row?.id ?? '').trim();
+    return id && !currentPageIds.has(id);
+  });
+  selectedSystemUserRows.value = [...remainRows, ...rows];
+  selectedSystemUserIds.value = toIdList(selectedSystemUserRows.value, ['userId', 'id']);
   if (activeTab.value === 'assignSystemUsers') {
-    const userIds = toIdList(rows, ['userId', 'id']);
+    const userIds = toIdList(selectedSystemUserRows.value, ['userId', 'id']);
     void syncContainersSelectionByUsers(userIds);
   }
 }
@@ -234,7 +264,9 @@ function onTabChange() {
   systemUserTableRef.value?.clearSelection();
   selectedContainerRows.value = [];
   selectedSystemUserRows.value = [];
+  selectedSystemUserIds.value = [];
   selectedContainerIds.value = [];
+  systemUserShowSelectedOnly.value = false;
   void loadContainers();
   void loadSystemUsers();
 }
@@ -288,6 +320,7 @@ async function onSave() {
     ElMessage.success($t('systemManage.opSuccess'));
     selectedContainerRows.value = [];
     selectedSystemUserRows.value = [];
+    selectedSystemUserIds.value = [];
     containerTableRef.value?.clearSelection();
     systemUserTableRef.value?.clearSelection();
     await loadContainers();
@@ -318,6 +351,7 @@ function resetContainers() {
   searchContainers();
 }
 function searchSystemUsers() {
+  systemUserShowSelectedOnly.value = false;
   systemUserPage.value = 1;
   void loadSystemUsers().then(() => {
     if (activeTab.value === 'assignContainers') {
@@ -337,6 +371,38 @@ function onSystemUserCurrentChange(page: number) {
 function resetSystemUsers() {
   systemUserKeyword.value = '';
   searchSystemUsers();
+}
+
+function syncSystemUserSelection() {
+  const table = systemUserTableRef.value;
+  if (!table) return;
+  const selectedIds = new Set(toIdList(selectedSystemUserRows.value, ['userId', 'id']));
+  syncingSystemUserSelection = true;
+  table.clearSelection();
+  for (const row of displaySystemUserRows.value) {
+    const id = String(row?.userId ?? row?.id ?? '').trim();
+    if (id && selectedIds.has(id)) {
+      table.toggleRowSelection(row, true, true);
+    }
+  }
+  nextTick(() => {
+    syncingSystemUserSelection = false;
+  });
+}
+
+function onSystemUserOnlySelectedChange() {
+  const snapshotIds = [...selectedSystemUserIds.value];
+  const snapshotRows = [...selectedSystemUserRows.value];
+  syncingSystemUserSelection = true;
+  nextTick(() => {
+    if (!selectedSystemUserIds.value.length && snapshotIds.length) {
+      selectedSystemUserIds.value = snapshotIds;
+    }
+    if (!selectedSystemUserRows.value.length && snapshotRows.length) {
+      selectedSystemUserRows.value = snapshotRows;
+    }
+    syncSystemUserSelection();
+  });
 }
 
 onMounted(() => {
@@ -474,18 +540,31 @@ onMounted(() => {
           <ElButton :icon="Search" circle type="primary" @click="searchSystemUsers" />
           <ElButton :icon="Refresh" circle @click="resetSystemUsers" />
         </div>
+        <div v-show="activeTab === 'assignContainers'" class="only-selected-wrap">
+          <ElCheckbox
+            v-model="systemUserShowSelectedOnly"
+            @change="onSystemUserOnlySelectedChange"
+          >
+            {{ $t('systemManage.socialMediaAccount.onlyShowSelected') }}
+          </ElCheckbox>
+        </div>
 
         <ElTable
           ref="systemUserTableRef"
           v-loading="systemUserLoading"
-          :data="systemUserRows"
+          :data="displaySystemUserRows"
           :row-key="systemUserRowKey"
           :row-class-name="rowClassName"
           class="no-lines-table"
           height="420"
           @selection-change="onSystemUserSelect"
         >
-          <ElTableColumn type="selection" width="48" :selectable="rowSelectable" />
+          <ElTableColumn
+            type="selection"
+            width="48"
+            :reserve-selection="true"
+            :selectable="rowSelectable"
+          />
           <ElTableColumn
             prop="userName"
             :label="$t('systemManage.socialMediaAccount.name')"
@@ -566,6 +645,12 @@ onMounted(() => {
 .table-toolbar-row .el-input {
   flex: 1;
   min-width: 160px;
+}
+.only-selected-wrap {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  margin: 0 0 10px;
 }
 .link-icon {
   align-self: center;

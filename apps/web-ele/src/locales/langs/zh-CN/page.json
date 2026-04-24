@@ -9,6 +9,7 @@
   "dashboard": {
     "applicationManage": "应用管理",
     "systemManage": "系统管理",
+    "userManage": "用户管理",
     "groupManage": "分组管理",
     "socialMediaAccount": "社媒账号管理",
     "customerManage": "客户管理",

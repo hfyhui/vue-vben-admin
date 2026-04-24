@@ -375,6 +375,20 @@ export async function allocationNetworkAllocateApi(
   return proxyClient.post<ApiResponse<null>>('/allocation/network/allocate', params);
 }
 
+export interface AssetUserAllocationParams {
+  deviceIds?: string[];
+  userIds?: string[];
+  networkIds?: string[];
+  accountIds?: string[];
+}
+
+/** 用户分配 POST /asset/user/allocation */
+export async function assetUserAllocationApi(
+  params: AssetUserAllocationParams,
+): Promise<ApiResponse<null>> {
+  return proxyClient.post<ApiResponse<null>>('/asset/user/allocation', params);
+}
+
 export interface AllocationContainerPageRecord {
   userInfos?: Array<{
     userId?: string;

@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { nextTick, onMounted, ref } from 'vue';
+import { computed, nextTick, onMounted, ref } from 'vue';
 
 import { Page } from '@vben/common-ui';
 import { Connection, Refresh, Search } from '@element-plus/icons-vue';
@@ -32,7 +32,9 @@ const containerTableRef = ref<InstanceType<typeof ElTableType>>();
 const systemUserTableRef = ref<InstanceType<typeof ElTableType>>();
 const selectedContainerRows = ref<any[]>([]);
 const selectedSystemUserRows = ref<any[]>([]);
+const selectedSystemUserIds = ref<string[]>([]);
 const selectedContainerIds = ref<string[]>([]);
+const systemUserShowSelectedOnly = ref(false);
 let syncingSystemUserSelection = false;
 let syncingContainerSelection = false;
 
@@ -73,13 +75,55 @@ function isRowDisabled(row: any) {
   return row?.status === '1' || row?.isLock === true;
 }
 
-function rowSelectable(row: any) {
+function containerRowSelectable(row: any) {
   return !isRowDisabled(row);
 }
 
-function rowClassName({ row }: { row: any }) {
+function containerRowClassName({ row }: { row: any }) {
   return isRowDisabled(row) ? 'locked-row' : '';
 }
+
+function getSelectedProxyOwnerUserIds() {
+  const ids = new Set<string>();
+  for (const row of selectedContainerRows.value) {
+    const userInfos = Array.isArray(row?.userInfos) ? row.userInfos : [];
+    for (const user of userInfos) {
+      const id = String(user?.userId ?? user?.id ?? '').trim();
+      if (id) ids.add(id);
+    }
+  }
+  return ids;
+}
+
+function isLockedSystemUser(row: any) {
+  if (isRowDisabled(row)) return true;
+  const userId = String(row?.userId ?? row?.id ?? '').trim();
+  if (!userId) return false;
+  if (activeTab.value !== 'assignContainers') return false;
+  return getSelectedProxyOwnerUserIds().has(userId);
+}
+
+function systemUserSelectable(row: any) {
+  return !isLockedSystemUser(row);
+}
+
+function systemUserRowClassName({ row }: { row: any }) {
+  return isLockedSystemUser(row) ? 'locked-row' : '';
+}
+
+const displaySystemUserRows = computed(() => {
+  if (activeTab.value === 'assignContainers' && systemUserShowSelectedOnly.value) {
+    const selectedIdSet = new Set(selectedSystemUserIds.value);
+    const currentPageSelected = systemUserRows.value.filter((row) =>
+      selectedIdSet.has(String(row?.userId ?? row?.id ?? '').trim()),
+    );
+    if (currentPageSelected.length) {
+      return currentPageSelected;
+    }
+    return [...selectedSystemUserRows.value];
+  }
+  return systemUserRows.value;
+});
 
 /** 当前页兜底：按表格所有展示字段匹配关键字 */
 function filterContainerRowsByKeyword(rows: Array<Record<string, any>>, keyword: string) {
@@ -159,16 +203,36 @@ async function syncUsersSelectionByNetworks(networkIds: string[]) {
   syncingSystemUserSelection = true;
   table.clearSelection();
   const selectedRows: any[] = [];
+  const lockedOwnerIds = getSelectedProxyOwnerUserIds();
   for (const row of systemUserRows.value) {
     const id = String(row?.userId ?? row?.id ?? '').trim();
-    if (id && bindUserIds.has(id) && rowSelectable(row)) {
+    if (id && (bindUserIds.has(id) || lockedOwnerIds.has(id))) {
       selectedRows.push(row);
-      table.toggleRowSelection(row, true);
+      // 置灰用户需要保持已勾选
+      table.toggleRowSelection(row, true, true);
     }
   }
   selectedSystemUserRows.value = selectedRows;
+  selectedSystemUserIds.value = toIdList(selectedRows, ['userId', 'id']);
   await nextTick();
   syncingSystemUserSelection = false;
+}
+
+function syncSystemUserSelection() {
+  const table = systemUserTableRef.value;
+  if (!table) return;
+  const selectedIds = new Set(toIdList(selectedSystemUserRows.value, ['userId', 'id']));
+  syncingSystemUserSelection = true;
+  table.clearSelection();
+  for (const row of displaySystemUserRows.value) {
+    const id = String(row?.userId ?? row?.id ?? '').trim();
+    if (id && selectedIds.has(id)) {
+      table.toggleRowSelection(row, true, true);
+    }
+  }
+  nextTick(() => {
+    syncingSystemUserSelection = false;
+  });
 }
 
 async function syncContainersSelectionByUsers(userIds: string[]) {
@@ -197,7 +261,7 @@ async function syncContainersSelectionByUsers(userIds: string[]) {
   const selectedRows: any[] = [];
   for (const row of containerRows.value) {
     const id = String(row?.networkId ?? row?.proxyId ?? row?.id ?? '').trim();
-    if (id && bindNetworkIds.has(id) && rowSelectable(row)) {
+    if (id && bindNetworkIds.has(id) && containerRowSelectable(row)) {
       selectedRows.push(row);
       table.toggleRowSelection(row, true);
     }
@@ -212,7 +276,9 @@ function onTabChange() {
   systemUserTableRef.value?.clearSelection();
   selectedContainerRows.value = [];
   selectedSystemUserRows.value = [];
+  selectedSystemUserIds.value = [];
   selectedContainerIds.value = [];
+  systemUserShowSelectedOnly.value = false;
   void loadContainers();
   void loadSystemUsers();
 }
@@ -227,9 +293,24 @@ function onContainerSelect(rows: any[]) {
 
 function onSystemUserSelect(rows: any[]) {
   if (syncingSystemUserSelection) return;
-  selectedSystemUserRows.value = rows;
+  if (
+    activeTab.value === 'assignContainers' &&
+    systemUserShowSelectedOnly.value &&
+    rows.length === 0 &&
+    selectedSystemUserIds.value.length > 0
+  ) {
+    return;
+  }
+  const currentPageRows = displaySystemUserRows.value;
+  const currentPageIds = new Set(toIdList(currentPageRows, ['userId', 'id']));
+  const remainRows = selectedSystemUserRows.value.filter((row) => {
+    const id = String(row?.userId ?? row?.id ?? '').trim();
+    return id && !currentPageIds.has(id);
+  });
+  selectedSystemUserRows.value = [...remainRows, ...rows];
+  selectedSystemUserIds.value = toIdList(selectedSystemUserRows.value, ['userId', 'id']);
   if (activeTab.value === 'assignSystemUsers') {
-    const userIds = toIdList(rows, ['userId', 'id']);
+    const userIds = toIdList(selectedSystemUserRows.value, ['userId', 'id']);
     void syncContainersSelectionByUsers(userIds);
   }
 }
@@ -297,6 +378,7 @@ async function onSave() {
     ElMessage.success($t('systemManage.opSuccess'));
     selectedContainerRows.value = [];
     selectedSystemUserRows.value = [];
+    selectedSystemUserIds.value = [];
     selectedContainerIds.value = [];
     containerTableRef.value?.clearSelection();
     systemUserTableRef.value?.clearSelection();
@@ -318,6 +400,7 @@ function resetContainers() {
   searchContainers();
 }
 function searchSystemUsers() {
+  systemUserShowSelectedOnly.value = false;
   systemUserPage.value = 1;
   void loadSystemUsers().then(() => {
     if (activeTab.value === 'assignContainers') {
@@ -328,6 +411,22 @@ function searchSystemUsers() {
 function resetSystemUsers() {
   systemUserKeyword.value = '';
   searchSystemUsers();
+}
+
+function onSystemUserOnlySelectedChange() {
+  const snapshotIds = [...selectedSystemUserIds.value];
+  const snapshotRows = [...selectedSystemUserRows.value];
+  // 切换数据源会触发表格一次空 selection-change，先加锁避免把已选缓存清空
+  syncingSystemUserSelection = true;
+  nextTick(() => {
+    if (!selectedSystemUserIds.value.length && snapshotIds.length) {
+      selectedSystemUserIds.value = snapshotIds;
+    }
+    if (!selectedSystemUserRows.value.length && snapshotRows.length) {
+      selectedSystemUserRows.value = snapshotRows;
+    }
+    syncSystemUserSelection();
+  });
 }
 
 onMounted(() => {
@@ -372,12 +471,12 @@ onMounted(() => {
           v-loading="containerLoading"
           :data="containerRows"
           :row-key="(row) => String(row.networkId ?? row.proxyId ?? row.id ?? '')"
-          :row-class-name="rowClassName"
+          :row-class-name="containerRowClassName"
           class="no-lines-table"
           height="420"
           @selection-change="onContainerSelect"
         >
-          <ElTableColumn type="selection" width="48" :selectable="rowSelectable" />
+          <ElTableColumn type="selection" width="48" :selectable="containerRowSelectable" />
           <ElTableColumn
             :label="$t('systemManage.proxyManage.colOwner')"
             min-width="140"
@@ -478,18 +577,31 @@ onMounted(() => {
           <ElButton :icon="Search" circle type="primary" @click="searchSystemUsers" />
           <ElButton :icon="Refresh" circle @click="resetSystemUsers" />
         </div>
+        <div v-show="activeTab === 'assignContainers'" class="only-selected-wrap">
+          <ElCheckbox
+            v-model="systemUserShowSelectedOnly"
+            @change="onSystemUserOnlySelectedChange"
+          >
+            {{ $t('systemManage.socialMediaAccount.onlyShowSelected') }}
+          </ElCheckbox>
+        </div>
 
         <ElTable
           ref="systemUserTableRef"
           v-loading="systemUserLoading"
-          :data="systemUserRows"
+          :data="displaySystemUserRows"
           :row-key="(row) => String(row.userId ?? row.id ?? '')"
-          :row-class-name="rowClassName"
+          :row-class-name="systemUserRowClassName"
           class="no-lines-table"
           height="420"
           @selection-change="onSystemUserSelect"
         >
-          <ElTableColumn type="selection" width="48" :selectable="rowSelectable" />
+          <ElTableColumn
+            type="selection"
+            width="48"
+            :reserve-selection="true"
+            :selectable="systemUserSelectable"
+          />
           <ElTableColumn
             prop="userName"
             :label="$t('systemManage.socialMediaAccount.name')"
@@ -581,6 +693,12 @@ onMounted(() => {
 .table-toolbar-row .el-input {
   flex: 1;
   min-width: 160px;
+}
+.only-selected-wrap {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  margin: 0 0 10px;
 }
 .link-icon {
   align-self: center;
