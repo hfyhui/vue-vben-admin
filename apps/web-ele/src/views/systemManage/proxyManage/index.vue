@@ -117,10 +117,31 @@ function getSelectedContainerOwnerListById(networkId: string): string[] {
   return [];
 }
 
+function getSelectedSystemUserNameSetByIds(userIds: string[]): Set<string> {
+  const userNameSet = new Set<string>();
+  for (const userId of userIds) {
+    const userName = getSelectedSystemUserNameById(userId);
+    if (userName) userNameSet.add(userName);
+  }
+  return userNameSet;
+}
+
+function getSelectedContainerOwnerSetByIds(networkIds: string[]): Set<string> {
+  const ownerSet = new Set<string>();
+  for (const networkId of networkIds) {
+    const owners = getSelectedContainerOwnerListById(networkId);
+    for (const owner of owners) {
+      if (owner) ownerSet.add(owner);
+    }
+  }
+  return ownerSet;
+}
+
 function isLockedContainerByOwner(row: any) {
   if (activeTab.value !== 'assignSystemUsers') return false;
-  if (selectedSystemUserIds.value.length !== 1) return false;
-  const selectedUserName = getSelectedSystemUserNameById(selectedSystemUserIds.value[0] ?? '');
+  const selectedUserNameSet = getSelectedSystemUserNameSetByIds(selectedSystemUserIds.value);
+  if (selectedUserNameSet.size !== 1) return false;
+  const selectedUserName = Array.from(selectedUserNameSet)[0] ?? '';
   if (!selectedUserName) return false;
   const ownerList = getOwnerLockList(row);
   return ownerList.includes(selectedUserName);
@@ -137,11 +158,12 @@ function containerRowClassName({ row }: { row: any }) {
 function isLockedSystemUser(row: any) {
   if (isRowDisabled(row)) return true;
   if (activeTab.value !== 'assignContainers') return false;
-  if (selectedContainerIds.value.length !== 1) return false;
-  const ownerList = getSelectedContainerOwnerListById(selectedContainerIds.value[0] ?? '');
-  if (!ownerList.length) return false;
+  const ownerSet = getSelectedContainerOwnerSetByIds(selectedContainerIds.value);
+  if (ownerSet.size !== 1) return false;
+  const ownerName = Array.from(ownerSet)[0] ?? '';
+  if (!ownerName) return false;
   const userName = String(row?.userName ?? '').trim();
-  return userName ? ownerList.includes(userName) : false;
+  return userName ? userName === ownerName : false;
 }
 
 function systemUserSelectable(row: any) {
