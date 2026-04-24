@@ -308,13 +308,15 @@ async function syncContainersSelectionByUsers(userIds: string[]) {
       .map((id) => getSelectedSystemUserNameById(id))
       .filter((name): name is string => Boolean(name)),
   );
-  // 如果右侧代理是“当前勾选用户本人创建”，也要加入选中
-  for (const row of containerRows.value) {
-    const id = getIdFromRow(row, ['networkId', 'proxyId', 'id']);
-    if (!id) continue;
-    const ownerList = getOwnerLockList(row);
-    if (ownerList.some((owner) => selectedUserNameSet.has(owner))) {
-      bindNetworkIds.add(id);
+  // 参考社媒逻辑：多选用户时仅按关系并集；仅唯一用户时才叠加“本人创建”命中
+  if (selectedUserNameSet.size === 1) {
+    for (const row of containerRows.value) {
+      const id = getIdFromRow(row, ['networkId', 'proxyId', 'id']);
+      if (!id) continue;
+      const ownerList = getOwnerLockList(row);
+      if (ownerList.some((owner) => selectedUserNameSet.has(owner))) {
+        bindNetworkIds.add(id);
+      }
     }
   }
   const allSelectedIds: string[] = Array.from(bindNetworkIds);
