@@ -83,7 +83,7 @@ const iconArrowStyle = computed(() => {
     <slot></slot>
 
     <VbenIcon
-      v-if="!isMenuMore"
+      v-if="!isMenuMore && !!icon"
       :class="nsMenu.e('icon')"
       :icon="icon"
       fallback
