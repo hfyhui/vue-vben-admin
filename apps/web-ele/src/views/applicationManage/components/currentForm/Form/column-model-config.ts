@@ -13,6 +13,7 @@ function buildControlTypeOptions(t: ColumnModelTranslate) {
     { label: cm(t, 'controlType.input'), value: 'input' },
     { label: cm(t, 'controlType.textarea'), value: 'textarea' },
     { label: cm(t, 'controlType.inputNumber'), value: 'inputNumber' },
+    { label: cm(t, 'controlType.variableNumber'), value: 'variableNumber' },
     { label: cm(t, 'controlType.date'), value: 'date' },
     { label: cm(t, 'controlType.select'), value: 'select' },
     { label: cm(t, 'controlType.uploadImg'), value: 'uploadImg' },
@@ -241,6 +242,38 @@ export function buildControlTypeObj(
       },
     ],
     inputNumber: [
+      { type: 'input', label: cm(t, 'field.placeholder'), prop: 'placeholder' },
+      { type: 'input', label: cm(t, 'field.defaultValue'), prop: 'defaultValue' },
+      {
+        type: 'inputNumber',
+        label: cm(t, 'field.max'),
+        prop: 'max',
+        defaultValue: 999999,
+        rules: [{ required: true, message: cm(t, 'rule.enterMax') }],
+      },
+      {
+        type: 'inputNumber',
+        label: cm(t, 'field.min'),
+        prop: 'min',
+        defaultValue: 0,
+        rules: [{ required: true, message: cm(t, 'rule.enterMin') }],
+      },
+      {
+        type: 'inputNumber',
+        label: cm(t, 'field.precision'),
+        prop: 'precision',
+        defaultValue: 0,
+        rules: [{ required: true, message: cm(t, 'rule.enterPrecision') }],
+      },
+      {
+        type: 'inputNumber',
+        label: cm(t, 'field.step'),
+        prop: 'step',
+        defaultValue: 1,
+        rules: [{ required: true, message: cm(t, 'rule.enterStep') }],
+      },
+    ],
+    variableNumber: [
       { type: 'input', label: cm(t, 'field.placeholder'), prop: 'placeholder' },
       { type: 'input', label: cm(t, 'field.defaultValue'), prop: 'defaultValue' },
       {
