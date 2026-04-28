@@ -631,6 +631,7 @@ export interface AssetOperatorItem {
   operatorZhName?: string;
   operatorEnName?: string;
   allName?: string;
+  areaCodeZone?: string;
 }
 
 /** 查询运营商列表 GET /asset/operator */
@@ -648,8 +649,11 @@ export interface UpdateAssetOperatorParams {
 
 export async function updateAssetOperatorApi(
   params: UpdateAssetOperatorParams,
-): Promise<ApiResponse<null>> {
-  return proxyClient.put<ApiResponse<null>>('/asset/operator/update', params);
+): Promise<ApiResponse<Record<string, any> | null>> {
+  return proxyClient.put<ApiResponse<Record<string, any> | null>>(
+    '/asset/operator/update',
+    params,
+  );
 }
 
 /** 更新设备信息 POST /asset/update-device-info */
@@ -668,6 +672,7 @@ export interface UpdateDeviceInfoParams {
     imsi?: string;
     sn?: string;
     iccid?: string;
+    areaCodeZone?: string;
     [key: string]: any;
   };
   [key: string]: any;
@@ -691,6 +696,7 @@ export interface NewDeviceParams {
   serialNumber?: string;
   battery?: string;
   netOperator?: string;
+  areaCodeZone?: string;
   imsi?: string;
   sn?: string;
   iccid?: string;

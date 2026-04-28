@@ -96,6 +96,7 @@ const form = reactive({
   sn: '',
   iccid: '',
   netOperator: '',
+  areaCodeZone: '',
   nodeId: '',
   armId: '',
 });
@@ -118,6 +119,7 @@ function resetState() {
     sn: '',
     iccid: '',
     netOperator: '',
+    areaCodeZone: '',
     nodeId: '',
     armId: '',
   });
@@ -161,11 +163,13 @@ function applyGeneratedInfo(data: Record<string, any>) {
   form.imsi = data?.imsi ?? form.imsi;
   form.sn = data?.sn ?? form.sn;
   form.iccid = data?.iccid ?? form.iccid;
+  form.areaCodeZone = data?.areaCodeZone ?? form.areaCodeZone;
 }
 
 async function onOperatorChange() {
   const selected = findOperatorByNetValue(form.netOperator);
   const operatorId = selected?.id ?? '';
+  form.areaCodeZone = selected?.areaCodeZone ?? '';
   if (!operatorId) return;
   try {
     const res = await updateAssetOperatorApi({ operatorId });
@@ -294,6 +298,7 @@ async function onQuickNew() {
       imei: form.imei,
       serialNumber: form.serialNumber,
       netOperator: form.netOperator,
+      areaCodeZone: form.areaCodeZone,
       imsi: form.imsi,
       sn: form.sn,
       iccid: form.iccid,
@@ -333,6 +338,7 @@ async function onSave() {
         imsi: form.imsi || '',
         sn: form.sn || '',
         iccid: form.iccid || '',
+        areaCodeZone: form.areaCodeZone || '',
       },
     });
     if (res?.code === 100000) {
