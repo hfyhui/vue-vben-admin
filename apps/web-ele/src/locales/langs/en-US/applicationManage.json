@@ -143,6 +143,7 @@
         "input": "Input",
         "textarea": "Text input",
         "inputNumber": "Number",
+        "variableNumber": "Variable Number",
         "date": "Date",
         "select": "Select",
         "uploadImg": "Image upload",

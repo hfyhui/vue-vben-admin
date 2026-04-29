@@ -159,31 +159,43 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
-        name: 'SocialMediaAccountManage',
-        path: 'socialMediaAccount',
-        component: () => import('#/views/systemManage/socialMediaAccount/index.vue'),
+        name: 'ApplicationSystemUserManage',
+        path: 'userManage',
+        redirect: '/applicationSystem/userManage/socialMediaAccount',
+        component: () => import('#/views/systemManage/layout.vue'),
         meta: {
-          title: $t('page.dashboard.socialMediaAccount'),
+          title: $t('page.dashboard.userManage'),
           order: 2,
         },
-      },
-      {
-        name: 'ApplicationSystemProxyManage',
-        path: 'proxyManage',
-        component: () => import('#/views/systemManage/proxyManage/index.vue'),
-        meta: {
-          title: $t('page.dashboard.proxyManage'),
-          order: 3,
-        },
-      },
-      {
-        name: 'ApplicationSystemContainerResourceManage',
-        path: 'containerResourceManage',
-        component: () => import('#/views/systemManage/containerResourceManage/index.vue'),
-        meta: {
-          title: $t('page.dashboard.containerResourceManage'),
-          order: 4,
-        },
+        children: [
+          {
+            name: 'SocialMediaAccountManage',
+            path: 'socialMediaAccount',
+            component: () => import('#/views/systemManage/socialMediaAccount/index.vue'),
+            meta: {
+              title: $t('page.dashboard.socialMediaAccount'),
+              order: 1,
+            },
+          },
+          {
+            name: 'ApplicationSystemProxyManage',
+            path: 'proxyManage',
+            component: () => import('#/views/systemManage/proxyManage/index.vue'),
+            meta: {
+              title: $t('page.dashboard.proxyManage'),
+              order: 2,
+            },
+          },
+          {
+            name: 'ApplicationSystemContainerResourceManage',
+            path: 'containerResourceManage',
+            component: () => import('#/views/systemManage/containerResourceManage/index.vue'),
+            meta: {
+              title: $t('page.dashboard.containerResourceManage'),
+              order: 3,
+            },
+          },
+        ],
       },
     ],
   },

@@ -10,6 +10,7 @@
     "title": "Dashboard",
     "applicationManage": "Application Management",
     "systemManage": "System management",
+    "userManage": "User management",
     "groupManage": "Group management",
     "socialMediaAccount": "Social media accounts",
     "customerManage": "CustomerManage",

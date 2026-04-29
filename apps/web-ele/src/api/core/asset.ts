@@ -341,6 +341,188 @@ export async function getProxyAssetPageApi<T = any>(
   });
 }
 
+/** 网络分配分页 POST /allocation/network/page */
+export async function getAllocationNetworkPageApi<T = any>(
+  params: PageQuery,
+): Promise<PageResult<T>> {
+  const reqParams = {
+    ...params,
+    current: params.current ?? 1,
+    size: params.size ?? 20,
+  };
+  const response = await proxyClient.post<PageResult<T>>(
+    '/allocation/network/page',
+    reqParams,
+  );
+  return resolvePageResult<T>(response, {
+    current: reqParams.current,
+    size: reqParams.size,
+  });
+}
+
+export interface AllocationNetworkAllocateParams {
+  userIds?: string[];
+  networkIds?: string[];
+  /** true: 网络分配给用户；false: 用户分配网络 */
+  bindDirection?: boolean;
+  delIds?: string[];
+}
+
+/** 分配网络 POST /allocation/network/allocate */
+export async function allocationNetworkAllocateApi(
+  params: AllocationNetworkAllocateParams,
+): Promise<ApiResponse<null>> {
+  return proxyClient.post<ApiResponse<null>>('/allocation/network/allocate', params);
+}
+
+export interface AssetUserAllocationParams {
+  deviceIds?: string[];
+  userIds?: string[];
+  networkIds?: string[];
+  accountIds?: string[];
+}
+
+/** 用户分配 POST /asset/user/allocation */
+export async function assetUserAllocationApi(
+  params: AssetUserAllocationParams,
+): Promise<ApiResponse<null>> {
+  return proxyClient.post<ApiResponse<null>>('/asset/user/allocation', params);
+}
+
+export interface AllocationContainerPageRecord {
+  userInfos?: Array<{
+    userId?: string;
+    userName?: string;
+    nickName?: string;
+  }>;
+  status?: string | number;
+  server?: string;
+  deviceId?: string;
+  deviceIp?: string;
+  deviceVersion?: string;
+  suiteNames?: string[];
+  remark?: string;
+  isLock?: boolean;
+  [key: string]: any;
+}
+
+/** 容器配置分页 POST /allocation/container/page */
+export async function getAllocationContainerPageApi<T = AllocationContainerPageRecord>(
+  params: PageQuery,
+): Promise<PageResult<T>> {
+  const reqParams = {
+    ...params,
+    current: params.current ?? 1,
+    size: params.size ?? 20,
+  };
+  const response = await proxyClient.post<PageResult<T>>('/allocation/container/page', reqParams);
+  return resolvePageResult<T>(response, {
+    current: reqParams.current,
+    size: reqParams.size,
+  });
+}
+
+export interface AllocationContainerAllocateParams {
+  userIds?: string[];
+  deviceIds?: string[];
+  /** true: 设备分配给用户；false: 用户分配设备 */
+  bindDirection?: boolean;
+  delIds?: string[];
+}
+
+/** 分配容器 POST /allocation/container/allocate */
+export async function allocationContainerAllocateApi(
+  params: AllocationContainerAllocateParams,
+): Promise<ApiResponse<null>> {
+  return proxyClient.post<ApiResponse<null>>('/allocation/container/allocate', params);
+}
+
+export interface AllocationContainerListParams extends PageQuery {
+  deviceIds?: string[];
+}
+
+export interface AllocationContainerUserListParams extends PageQuery {
+  userIds?: string[];
+}
+
+/** 根据设备ID查询用户列表 POST /allocation/container/list */
+export async function getAllocationContainerListApi<T = any>(
+  params: AllocationContainerListParams,
+): Promise<PageResult<T>> {
+  const reqParams = {
+    ...params,
+    current: params.current ?? 1,
+    size: params.size ?? 20,
+  };
+  const response = await proxyClient.post<PageResult<T>>('/allocation/container/list', reqParams);
+  return resolvePageResult<T>(response, {
+    current: reqParams.current,
+    size: reqParams.size,
+  });
+}
+
+/** 根据用户ID查询设备列表 POST /allocation/container/user/list */
+export async function getAllocationContainerUserListApi<T = any>(
+  params: AllocationContainerUserListParams,
+): Promise<PageResult<T>> {
+  const reqParams = {
+    ...params,
+    current: params.current ?? 1,
+    size: params.size ?? 20,
+  };
+  const response = await proxyClient.post<PageResult<T>>(
+    '/allocation/container/user/list',
+    reqParams,
+  );
+  return resolvePageResult<T>(response, {
+    current: reqParams.current,
+    size: reqParams.size,
+  });
+}
+
+export interface AllocationNetworkUserListParams extends PageQuery {
+  userIds?: string[];
+}
+
+export interface AllocationNetworkListParams extends PageQuery {
+  networkIds?: string[];
+}
+
+/** 根据代理ID查询用户列表 POST /allocation/network/list */
+export async function getAllocationNetworkListApi<T = any>(
+  params: AllocationNetworkListParams,
+): Promise<PageResult<T>> {
+  const reqParams = {
+    ...params,
+    current: params.current ?? 1,
+    size: params.size ?? 20,
+  };
+  const response = await proxyClient.post<PageResult<T>>('/allocation/network/list', reqParams);
+  return resolvePageResult<T>(response, {
+    current: reqParams.current,
+    size: reqParams.size,
+  });
+}
+
+/** 根据用户ID查询代理列表 POST /allocation/network/user/list */
+export async function getAllocationNetworkUserListApi<T = any>(
+  params: AllocationNetworkUserListParams,
+): Promise<PageResult<T>> {
+  const reqParams = {
+    ...params,
+    current: params.current ?? 1,
+    size: params.size ?? 20,
+  };
+  const response = await proxyClient.post<PageResult<T>>(
+    '/allocation/network/user/list',
+    reqParams,
+  );
+  return resolvePageResult<T>(response, {
+    current: reqParams.current,
+    size: reqParams.size,
+  });
+}
+
 /** 获取容器资产分页信息 POST /asset/container/page */
 export async function getContainerAssetPageApi<T = DeviceItem>(
   params: PageQuery,
@@ -449,6 +631,7 @@ export interface AssetOperatorItem {
   operatorZhName?: string;
   operatorEnName?: string;
   allName?: string;
+  areaCodeZone?: string;
 }
 
 /** 查询运营商列表 GET /asset/operator */
@@ -466,8 +649,11 @@ export interface UpdateAssetOperatorParams {
 
 export async function updateAssetOperatorApi(
   params: UpdateAssetOperatorParams,
-): Promise<ApiResponse<null>> {
-  return proxyClient.put<ApiResponse<null>>('/asset/operator/update', params);
+): Promise<ApiResponse<Record<string, any> | null>> {
+  return proxyClient.put<ApiResponse<Record<string, any> | null>>(
+    '/asset/operator/update',
+    params,
+  );
 }
 
 /** 更新设备信息 POST /asset/update-device-info */
@@ -486,6 +672,7 @@ export interface UpdateDeviceInfoParams {
     imsi?: string;
     sn?: string;
     iccid?: string;
+    areaCodeZone?: string;
     [key: string]: any;
   };
   [key: string]: any;
@@ -509,6 +696,7 @@ export interface NewDeviceParams {
   serialNumber?: string;
   battery?: string;
   netOperator?: string;
+  areaCodeZone?: string;
   imsi?: string;
   sn?: string;
   iccid?: string;

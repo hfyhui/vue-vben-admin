@@ -126,5 +126,14 @@
   "unbindOnlyServerProxy": "僅接口已綁定的代理可解綁；拖拽關聯需正式啟用後才可解綁",
   "unbindProxyMissingIds": "缺少代理或關聯 id，無法解綁",
   "deviceLocked": "設備已鎖定，不可操作",
-  "allSelectedDevicesLocked": "所選設備均已鎖定，無法操作"
+  "allSelectedDevicesLocked": "所選設備均已鎖定，無法操作",
+  "userAllocation": "用戶分配",
+  "userSearchPlaceholder": "請輸入用戶名/暱稱",
+  "userName": "用戶名",
+  "nickName": "暱稱",
+  "userListLoadFailed": "獲取用戶列表失敗",
+  "selectAccountProxyOrDeviceFirst": "請先選擇賬號、代理或設備",
+  "selectAtLeastOneUser": "請至少選擇一個用戶",
+  "userAllocationSuccess": "用戶分配成功",
+  "userAllocationFailed": "用戶分配失敗"
 }

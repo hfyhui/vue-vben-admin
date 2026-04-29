@@ -29,6 +29,7 @@ const hasChildren = computed(() => {
     Reflect.has(menu, 'children') && !!menu.children && menu.children.length > 0
   );
 });
+
 </script>
 
 <template>

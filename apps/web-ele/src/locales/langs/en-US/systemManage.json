@@ -62,13 +62,26 @@
   "proxyManage": {
     "assignSystemUserToContainer": "Assign system users to containers",
     "assignContainerToSystemUser": "Assign containers to system users",
-    "searchPlaceholderContainer": "Search owner / device IP / device group",
+    "searchPlaceholderContainer": "Search owner / region / IP / link / device group / remarks",
     "searchPlaceholderSystem": "Search username / nickname",
-    "owner": "Owner",
-    "server": "Server",
-    "deviceIp": "Device IP",
-    "deviceVersion": "Device version",
-    "deviceGroup": "Device group",
-    "remark": "Remark"
+    "colOwner": "Owner",
+    "colRegion": "Region",
+    "colIp": "IP",
+    "colLink": "Link",
+    "colExpireTime": "Expiration time",
+    "colDeviceGroup": "Device group",
+    "colRemark": "Remarks"
+  },
+  "containerResourceManage": {
+    "assignSystemUserToContainer": "Assign system users to containers",
+    "assignContainerToSystemUser": "Assign containers to system users",
+    "searchPlaceholderContainer": "Search owner / server / device IP / device version / device group / remarks",
+    "searchPlaceholderSystem": "Search username / nickname",
+    "colOwner": "Owner",
+    "colServer": "Server",
+    "colDeviceIp": "Device IP",
+    "colDeviceVersion": "Device version",
+    "colDeviceGroup": "Device group",
+    "colRemark": "Remarks"
   }
 }

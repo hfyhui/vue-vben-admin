@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { nextTick, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { ElMessage, ElMessageBox } from 'element-plus';
@@ -8,12 +8,14 @@ import { TopRight } from '@element-plus/icons-vue';
 import {
   checkAccountDeviceApi,
   enableAssetApi,
+  assetUserAllocationApi,
   getAssetGroupApi,
   getAssetSummaryApi,
   resetContainerApi,
   reverseQueryAssetApi,
   type DeviceEnableItem,
 } from '#/api/core/asset';
+import { postSystemAccountsUsersPageApi } from '#/api/core/social-system-accounts';
 import { $t } from '#/locales';
 import { useAssetEnumsStore } from '#/store';
 
@@ -43,6 +45,20 @@ const overviewStats = ref<OverviewStatRow[]>([
 const sharedGroupOptions = ref<Array<{ id: string; suiteName: string }>>([]);
 const sharedSortOptions = ref<Array<{ label: string; value: string }>>([]);
 const assetEnumsStore = useAssetEnumsStore();
+const userAllocateDialogVisible = ref(false);
+const userAllocateLoading = ref(false);
+const userAllocateSaving = ref(false);
+const userTableRef = ref<any>(null);
+const userList = ref<any[]>([]);
+const userSelection = ref<any[]>([]);
+const userPagination = reactive({
+  current: 1,
+  size: 20,
+  total: 0,
+});
+const userQuery = reactive({
+  keyword: '',
+});
 
 /** 与后端 POST /asset/check/account-device 约定：需二次确认后方可继续绑定 */
 const ACCOUNT_DEVICE_CHECK_NEED_CONFIRM_CODE = 500511;
@@ -161,6 +177,145 @@ function onAutoAssociate() {
   deviceBoardRef.value?.autoAssociateWithSelections?.(accounts, proxies);
 }
 
+function toIdList(rows: any[], keys: string[]): string[] {
+  return rows
+    .map((row) => {
+      for (const key of keys) {
+        const value = row?.[key];
+        if (value !== null && value !== undefined && String(value).trim()) {
+          return String(value).trim();
+        }
+      }
+      return '';
+    })
+    .filter(Boolean);
+}
+
+async function loadUsersPage() {
+  userAllocateLoading.value = true;
+  try {
+    const response = await postSystemAccountsUsersPageApi({
+      current: userPagination.current,
+      size: userPagination.size,
+      keyword: userQuery.keyword,
+    });
+    const page = response?.data ?? {};
+    userList.value = Array.isArray(page.records) ? page.records : [];
+    userPagination.total = Number(page.total ?? 0);
+    await nextTick();
+    const selectedIds = new Set(toIdList(userSelection.value, ['userId', 'id']));
+    if (selectedIds.size && userTableRef.value?.toggleRowSelection) {
+      for (const row of userList.value) {
+        const rowId = String(row?.userId ?? row?.id ?? '').trim();
+        if (rowId && selectedIds.has(rowId)) {
+          userTableRef.value.toggleRowSelection(row, true);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('[associationCenter] 获取用户分页失败:', error);
+    ElMessage.error($t('associationCenter.userListLoadFailed'));
+  } finally {
+    userAllocateLoading.value = false;
+  }
+}
+
+async function onOpenUserAllocateDialog() {
+  const accounts = accountBoardRef.value?.getSelectedAccounts?.() || [];
+  const proxies = proxyBoardRef.value?.getSelectedProxies?.() || [];
+  const deviceIds = deviceBoardRef.value?.getSelectedDeviceIds?.() || [];
+  const accountIds = uniqueIds(toIdList(accounts, ['accountId', 'id'])) as string[];
+  const networkIds = uniqueIds(toIdList(proxies, ['networkId', 'proxyId', 'id'])) as string[];
+  const finalDeviceIds = uniqueIds(deviceIds) as string[];
+  if (!accountIds.length && !networkIds.length && !finalDeviceIds.length) {
+    ElMessage.warning($t('associationCenter.selectAccountProxyOrDeviceFirst'));
+    return;
+  }
+  userSelection.value = [];
+  userQuery.keyword = '';
+  userPagination.current = 1;
+  userPagination.total = 0;
+  userAllocateDialogVisible.value = true;
+  await loadUsersPage();
+}
+
+function onUsersSelectionChange(rows: any[]) {
+  const currentPageIds = new Set(toIdList(userList.value, ['userId', 'id']));
+  const remain = userSelection.value.filter((row) => {
+    const id = String(row?.userId ?? row?.id ?? '').trim();
+    return id && !currentPageIds.has(id);
+  });
+  userSelection.value = [...remain, ...rows];
+}
+
+function userRowSelectable(row: any) {
+  return row?.status !== '1';
+}
+
+function userRowClassName({ row }: { row: any }) {
+  return row?.status === '1' ? 'locked-row' : '';
+}
+
+function onUsersPageChange(page: number) {
+  userPagination.current = page;
+  void loadUsersPage();
+}
+
+function onUsersSearch() {
+  userPagination.current = 1;
+  void loadUsersPage();
+}
+
+async function onSubmitUserAllocate() {
+  const accounts = accountBoardRef.value?.getSelectedAccounts?.() || [];
+  const proxies = proxyBoardRef.value?.getSelectedProxies?.() || [];
+  const deviceIds = deviceBoardRef.value?.getSelectedDeviceIds?.() || [];
+  const accountIds = uniqueIds(toIdList(accounts, ['accountId', 'id'])) as string[];
+  const networkIds = uniqueIds(toIdList(proxies, ['networkId', 'proxyId', 'id'])) as string[];
+  const finalDeviceIds = uniqueIds(deviceIds) as string[];
+  const userIds = uniqueIds(toIdList(userSelection.value, ['userId', 'id'])) as string[];
+
+  if (!accountIds.length && !networkIds.length && !finalDeviceIds.length) {
+    ElMessage.warning($t('associationCenter.selectAccountProxyOrDeviceFirst'));
+    return;
+  }
+  if (!userIds.length) {
+    ElMessage.warning($t('associationCenter.selectAtLeastOneUser'));
+    return;
+  }
+
+  const payload: {
+    accountIds?: string[];
+    networkIds?: string[];
+    deviceIds?: string[];
+    userIds: string[];
+  } = { userIds };
+  if (accountIds.length) payload.accountIds = accountIds;
+  if (networkIds.length) payload.networkIds = networkIds;
+  if (finalDeviceIds.length) payload.deviceIds = finalDeviceIds;
+
+  userAllocateSaving.value = true;
+  try {
+    const response = await assetUserAllocationApi(payload);
+    if (response?.code === 100000) {
+      ElMessage.success(response.msg || $t('associationCenter.userAllocationSuccess'));
+      userAllocateDialogVisible.value = false;
+      userSelection.value = [];
+      accountBoardRef.value?.clearSelectedAccounts?.();
+      proxyBoardRef.value?.clearSelectedProxies?.();
+      deviceBoardRef.value?.clearSelectedDevices?.();
+      await loadAssetSummary();
+      return;
+    }
+    ElMessage.error(response?.msg || $t('associationCenter.userAllocationFailed'));
+  } catch (error) {
+    console.error('[associationCenter] 用户分配失败:', error);
+    ElMessage.error($t('associationCenter.userAllocationFailed'));
+  } finally {
+    userAllocateSaving.value = false;
+  }
+}
+
 async function onContainerReset() {
   const rawIds = deviceBoardRef.value?.getSelectedDeviceIds?.() || [];
   const deviceIds = uniqueIds(rawIds) as string[];
@@ -247,9 +402,17 @@ async function onOfficialEnable() {
   }
 }
 
-function uniqueIds(values: unknown[]) {
+function uniqueIds<T>(values: T[]) {
   const idSet = new Set(values);
-  return [...idSet];
+  return [...idSet] as T[];
+}
+
+function normalizeStringIds(values: unknown[]) {
+  return uniqueIds(
+    values
+      .map((item) => String(item ?? '').trim())
+      .filter((item): item is string => Boolean(item)),
+  );
 }
 
 async function onReverseQuery() {
@@ -257,13 +420,13 @@ async function onReverseQuery() {
   const proxies = proxyBoardRef.value?.getSelectedProxies?.() || [];
   const deviceIds = deviceBoardRef.value?.getSelectedDeviceIds?.() || [];
 
-  const accountIds = uniqueIds(
+  const accountIds = normalizeStringIds(
     accounts.map((item: any) => item?.accountId),
   );
-  const proxyIds = uniqueIds(
+  const proxyIds = normalizeStringIds(
     proxies.map((item: any) => item?.proxyId),
   );
-  const finalDeviceIds = uniqueIds(deviceIds);
+  const finalDeviceIds = normalizeStringIds(deviceIds as any[]);
 
   const selectedTypeCount = [accountIds, proxyIds, finalDeviceIds].filter(
     (ids) => ids.length > 0,
@@ -397,6 +560,9 @@ function onClearSelection(command: ClearSelectionType) {
         <el-button type="primary" @click="onReverseQuery">
           {{ $t('associationCenter.reverseQuery') }}
         </el-button>
+        <el-button type="primary" @click="onOpenUserAllocateDialog">
+          {{ $t('associationCenter.userAllocation') }}
+        </el-button>
         <el-dropdown @command="onClearSelection">
           <el-button type="primary">
             {{ $t('associationCenter.clearSelection') }}
@@ -434,6 +600,69 @@ function onClearSelection(command: ClearSelectionType) {
         @refresh-proxy-list="onDeviceBoardRefreshProxyList"
       />
     </el-card>
+
+    <el-dialog
+      v-model="userAllocateDialogVisible"
+      :title="$t('associationCenter.userAllocation')"
+      width="760px"
+      destroy-on-close
+    >
+      <div class="user-allocate-toolbar">
+        <el-input
+          v-model="userQuery.keyword"
+          clearable
+          :placeholder="$t('associationCenter.userSearchPlaceholder')"
+          @keyup.enter="onUsersSearch"
+        />
+        <el-button type="primary" @click="onUsersSearch">
+          {{ $t('associationCenter.search') }}
+        </el-button>
+      </div>
+      <el-table
+        ref="userTableRef"
+        v-loading="userAllocateLoading"
+        :data="userList"
+        row-key="userId"
+        :row-class-name="userRowClassName"
+        max-height="420"
+        @selection-change="onUsersSelectionChange"
+      >
+        <el-table-column
+          type="selection"
+          width="48"
+          :reserve-selection="true"
+          :selectable="userRowSelectable"
+        />
+        <el-table-column
+          prop="userName"
+          :label="$t('associationCenter.userName')"
+          min-width="160"
+        />
+        <el-table-column
+          prop="nickName"
+          :label="$t('associationCenter.nickName')"
+          min-width="160"
+        />
+      </el-table>
+      <div class="user-allocate-pagination">
+        <el-pagination
+          background
+          layout="total, prev, pager, next"
+          :current-page="userPagination.current"
+          :page-size="userPagination.size"
+          :total="userPagination.total"
+          @current-change="onUsersPageChange"
+        />
+      </div>
+      <template #footer>
+        <el-button @click="userAllocateDialogVisible = false">
+          {{ $t('associationCenter.cancelButtonText') }}
+        </el-button>
+        <el-button type="primary" :loading="userAllocateSaving" @click="onSubmitUserAllocate">
+          {{ $t('common.save') }}
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -469,5 +698,23 @@ function onClearSelection(command: ClearSelectionType) {
   flex: 1;
   display: flex;
   flex-direction: column;
+}
+
+.user-allocate-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.user-allocate-pagination {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+:deep(tr.locked-row td) {
+  background: color-mix(in srgb, var(--el-fill-color-light) 45%, transparent);
+  color: color-mix(in srgb, var(--el-text-color-secondary) 78%, var(--el-text-color-primary));
 }
 </style>
