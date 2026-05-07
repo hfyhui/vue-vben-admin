@@ -66,57 +66,22 @@ function getUserKey(row: any) {
   return String(row?.userId ?? row?.id ?? '');
 }
 
-/** 「仅展示已勾选」时搜索在本地过滤，不再请求接口（避免 search* 里误关 only-selected） */
-function matchesAccountKeyword(row: any, raw: string) {
-  const kw = raw.trim();
-  if (!kw) return true;
-  const q = kw.toLowerCase();
-  const parts = [
-    row?.owner,
-    row?.account,
-    row?.nickName,
-    row?.email,
-    row?.group,
-    row?.accountId,
-    row?.id,
-  ].map((v) => String(v ?? '').toLowerCase());
-  return parts.some((p) => p.includes(q));
-}
-
-function filterAccountRowsLocal(rows: any[], keyword: string) {
-  if (!keyword.trim()) return [...rows];
-  return rows.filter((row) => matchesAccountKeyword(row, keyword));
-}
-
-function matchesUserKeyword(row: any, raw: string) {
-  const kw = raw.trim();
-  if (!kw) return true;
-  const q = kw.toLowerCase();
-  const parts = [row?.userName, row?.nickName, row?.userId, row?.id].map((v) =>
-    String(v ?? '').toLowerCase(),
-  );
-  return parts.some((p) => p.includes(q));
-}
-
-function filterUserRowsLocal(rows: any[], keyword: string) {
-  if (!keyword.trim()) return [...rows];
-  return rows.filter((row) => matchesUserKeyword(row, keyword));
-}
-
 const checkInfoList = computed<any[]>(() =>
   Array.isArray(smStore.checkInfo) ? smStore.checkInfo : [],
 );
 
 const displayUserRows = computed(() => {
   if (activeTab.value === 'assignUsers' && userShowSelectedOnly.value) {
-    return filterUserRowsLocal(checkInfoList.value, userKeyword.value);
+    /** 与 mixins：仅展示已勾选 = 整份 checkInfo */
+    return [...checkInfoList.value];
   }
   return userRows.value;
 });
 
 const displayAccountRows = computed(() => {
   if (activeTab.value === 'assignAccounts' && accountShowSelectedOnly.value) {
-    return filterAccountRowsLocal(checkInfoList.value, accountKeyword.value);
+    /** 与 mixins watch.checkValue / filterTableList 一致：整份 checkInfo，无前端再筛 */
+    return [...checkInfoList.value];
   }
   return accountRows.value;
 });
@@ -154,7 +119,11 @@ async function loadApps() {
   }
 }
 
-async function loadAccounts() {
+/**
+ * assignAccounts（对齐 proxyManage searchContainers(assignSystemUsers)）：
+ * 搜索社媒列表后应按「左侧已选用户」重新拉绑定，不保留右侧刚才手动全选的 checkInfo。
+ */
+async function loadAccounts(opts: { resyncBindingsFromSelectedUsers?: boolean } = {}) {
   if (!currentAppId.value) {
     accountRows.value = [];
     return;
@@ -173,6 +142,17 @@ async function loadAccounts() {
     }
     await nextTick();
     if (activeTab.value === 'assignAccounts') {
+      if (opts.resyncBindingsFromSelectedUsers) {
+        await smStore.fetchAccountsByUsers(selectedUserIds.value);
+        await nextTick();
+        const list = checkInfoList.value;
+        selectedAccountIds.value = list.map((r: any) => getAccountKey(r)).filter(Boolean);
+        selectedAccountUserIds.value = [
+          ...new Set(
+            list.map((r: any) => String(r?.userId ?? '')).filter(Boolean),
+          ),
+        ];
+      }
       syncAccountSelectionFromStore();
     } else {
       syncAccountSelection();
@@ -182,7 +162,11 @@ async function loadAccounts() {
   }
 }
 
-async function loadUsers() {
+/**
+ * assignUsers（对齐 proxyManage.searchSystemUsers(assignContainers)）：
+ * - 搜右侧用户：**不清空**左侧已选账号；selectedAccountIds 保留，仅用接口刷新右侧用户勾选
+ */
+async function loadUsers(opts: { resyncBindingsFromSelectedAccounts?: boolean } = {}) {
   userLoading.value = true;
   try {
     const res = await postSystemAccountsUsersPageApi({
@@ -196,9 +180,16 @@ async function loadUsers() {
     }
     await nextTick();
     if (activeTab.value === 'assignUsers') {
+      if (opts.resyncBindingsFromSelectedAccounts) {
+        await smStore.fetchUsersByAccounts(selectedAccountIds.value);
+        await nextTick();
+        selectedUserIds.value = checkInfoList.value
+          .map((r: any) => getUserKey(r))
+          .filter(Boolean);
+      }
       syncUserSelectionFromStore();
     } else {
-      syncUserSelection();
+      syncUserSelectionByIds();
     }
   } finally {
     userLoading.value = false;
@@ -229,17 +220,16 @@ function syncAccountSelection() {
   });
 }
 
-/** assignAccounts：左侧为用户表，选中仅存在 selectedUserIds；搜索/翻页后需按 ID 恢复勾选（与 syncAccountSelection 对称） */
-function syncUserSelection() {
+/**
+ * assignAccounts Tab 左侧用户表：勾选只在 selectedUserIds（老项目该侧 isCheck=false，search 会清空 store，不记另一侧勾选）
+ * 翻页后需按 ID 恢复当前页勾选
+ */
+function syncUserSelectionByIds() {
   const tb = userTableRef.value;
   if (!tb) return;
   syncingUser = true;
   tb.clearSelection();
-  const rows =
-    activeTab.value === 'assignUsers' && userShowSelectedOnly.value
-      ? filterUserRowsLocal(checkInfoList.value, userKeyword.value)
-      : userRows.value;
-  for (const row of rows) {
+  for (const row of userRows.value) {
     if (selectedUserIds.value.includes(getUserKey(row))) {
       tb.toggleRowSelection(row, true);
     }
@@ -258,7 +248,7 @@ function syncAccountSelectionFromStore() {
   const want = new Set(checkInfoList.value.map((a: any) => getAccountKey(a)));
   const rows =
     activeTab.value === 'assignAccounts' && accountShowSelectedOnly.value
-      ? filterAccountRowsLocal(checkInfoList.value, accountKeyword.value)
+      ? checkInfoList.value
       : accountRows.value;
   for (const row of rows) {
     if (want.has(getAccountKey(row))) {
@@ -278,7 +268,7 @@ function syncUserSelectionFromStore() {
   const want = new Set(checkInfoList.value.map((u: any) => getUserKey(u)));
   const rows =
     activeTab.value === 'assignUsers' && userShowSelectedOnly.value
-      ? filterUserRowsLocal(checkInfoList.value, userKeyword.value)
+      ? checkInfoList.value
       : userRows.value;
   for (const row of rows) {
     if (want.has(getUserKey(row))) {
@@ -362,19 +352,7 @@ watch(
   { deep: true },
 );
 
-watch(accountKeyword, () => {
-  if (activeTab.value === 'assignAccounts' && accountShowSelectedOnly.value) {
-    nextTick(() => syncAccountSelectionFromStore());
-  }
-});
-
-watch(userKeyword, () => {
-  if (activeTab.value === 'assignUsers' && userShowSelectedOnly.value) {
-    nextTick(() => syncUserSelectionFromStore());
-  }
-});
-
-function onTabChange() {
+async function onTabChange() {
   accountTableRef.value?.clearSelection?.();
   userTableRef.value?.clearSelection?.();
   smStore.resetBindings();
@@ -387,49 +365,66 @@ function onTabChange() {
   accountShowSelectedOnly.value = false;
   accountPage.current = 1;
   userPage.current = 1;
-  loadAccounts();
-  loadUsers();
+  /** 等 Tab 切换后带 :key 的表格重挂，再拉数（对齐 proxy 切 Tab 全清） */
+  await nextTick();
+  void loadAccounts();
+  void loadUsers();
 }
 
+/**
+ * 与 social_media_web mixins + proxyManage 一致：
+ * - Tab1 搜社媒：mixins isCheck=false 侧清空双侧关联 store
+ * - Tab2 搜社媒：同 proxy——**保留左侧已选用户**，仅按绑定重绘右侧勾选（resyncBindingsFromSelectedUsers）
+ */
 function searchAccounts() {
-  if (activeTab.value === 'assignAccounts' && accountShowSelectedOnly.value) {
-    nextTick(() => syncAccountSelectionFromStore());
-    return;
+  accountShowSelectedOnly.value = false;
+  if (activeTab.value === 'assignUsers') {
+    smStore.setCheckInfo([]);
+    smStore.setCheckUserIds([]);
+    selectedAccountIds.value = [];
+    selectedAccountUserIds.value = [];
+    selectedUserIds.value = [];
   }
   accountPage.current = 1;
-  loadAccounts();
+  void loadAccounts({
+    resyncBindingsFromSelectedUsers: activeTab.value === 'assignAccounts',
+  });
 }
 
+/**
+ * Tab1 搜用户：同 proxy——**保留左侧已选社媒**，按绑定重绘右侧用户勾选
+ * Tab2 搜用户：mixins isCheck=false 侧清空双侧关联 store
+ */
 function searchUsers() {
-  if (activeTab.value === 'assignUsers' && userShowSelectedOnly.value) {
-    nextTick(() => syncUserSelectionFromStore());
-    return;
+  userShowSelectedOnly.value = false;
+  if (activeTab.value === 'assignAccounts') {
+    smStore.setCheckInfo([]);
+    smStore.setCheckUserIds([]);
+    selectedUserIds.value = [];
+    selectedAccountIds.value = [];
+    selectedAccountUserIds.value = [];
   }
   userPage.current = 1;
-  loadUsers();
+  void loadUsers({
+    resyncBindingsFromSelectedAccounts: activeTab.value === 'assignUsers',
+  });
 }
 
 function redoAccounts() {
   accountKeyword.value = '';
-  if (activeTab.value === 'assignAccounts' && accountShowSelectedOnly.value) {
-    nextTick(() => syncAccountSelectionFromStore());
-    return;
-  }
-  accountPage.current = 1;
-  loadAccounts();
+  searchAccounts();
 }
 
 function redoUsers() {
   userKeyword.value = '';
-  if (activeTab.value === 'assignUsers' && userShowSelectedOnly.value) {
-    nextTick(() => syncUserSelectionFromStore());
-    return;
-  }
-  userPage.current = 1;
-  loadUsers();
+  searchUsers();
 }
 
+/** 与 social_media_web mixins.js watch.checkValue：勾选/取消「仅展示已勾选」时清空搜索关键字 */
 function onAccountOnlySelectedChange() {
+  if (activeTab.value === 'assignAccounts') {
+    accountKeyword.value = '';
+  }
   nextTick(() => {
     if (activeTab.value === 'assignAccounts') {
       syncAccountSelectionFromStore();
@@ -438,6 +433,9 @@ function onAccountOnlySelectedChange() {
 }
 
 function onUserOnlySelectedChange() {
+  if (activeTab.value === 'assignUsers') {
+    userKeyword.value = '';
+  }
   nextTick(() => {
     if (activeTab.value === 'assignUsers') {
       syncUserSelectionFromStore();
@@ -617,6 +615,7 @@ void loadApps().then(() => {
 
           <div class="table-scroll">
             <ElTable
+              :key="`sm-account-${activeTab}`"
               ref="accountTableRef"
               v-loading="accountLoading"
               :data="displayAccountRows"
@@ -720,6 +719,7 @@ void loadApps().then(() => {
 
           <div class="table-scroll">
             <ElTable
+              :key="`sm-user-${activeTab}`"
               ref="userTableRef"
               v-loading="userLoading"
               :data="displayUserRows"
