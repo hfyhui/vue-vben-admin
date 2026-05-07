@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Box, CircleClose, Iphone, Loading } from '@element-plus/icons-vue';
+import { Box, CircleClose, Loading } from '@element-plus/icons-vue';
 
 import { $t } from '#/locales';
 import { formatProcessUrl } from '#/utils/asset-url';
@@ -9,7 +9,8 @@ import type { DeviceItem } from '#/api/core/asset';
 import {
   canUnbindDeviceProxy,
   getDeviceVersion,
-  getProxyIp,
+  getProxyEnabledState,
+  getProxyStatus,
   isDeviceLocked,
 } from '../composables/useDeviceDisplay';
 
@@ -119,6 +120,24 @@ function getBoundAccounts(item: DeviceItem): BoundAccountRow[] {
       })) || [];
   return rows;
 }
+
+/** 悬停 IP：「IP + 空格 + proxyStatus」 */
+function getDeviceIpTooltipContent(item: DeviceItem): string {
+  const ip = item.deviceIp?.trim() || '';
+  const st = getProxyStatus(item);
+  if (!ip && !st) return '';
+  if (!st) return ip;
+  if (!ip) return st;
+  return `${ip} ${st}`;
+}
+
+/** 悬停网络代理行：代理展示文案 + 状态（与接口 proxyStatus 对齐） */
+function getProxyLineTooltip(item: DeviceItem): string {
+  const line = getProxyDisplay(item);
+  const st = getProxyStatus(item);
+  if (st) return line ? `${line} ${st}` : st;
+  return line;
+}
 </script>
 
 <template>
@@ -151,7 +170,18 @@ function getBoundAccounts(item: DeviceItem): BoundAccountRow[] {
             <div class="card-status" :class="item.color || 'gray'" />
           </el-tooltip>
           <div class="card-body">
-            <div class="card-ip">{{ item.deviceIp }}</div>
+            <el-tooltip
+              :content="getDeviceIpTooltipContent(item)"
+              placement="top"
+              :disabled="!getProxyStatus(item)"
+            >
+              <div
+                class="card-ip"
+                :class="{ 'card-ip--proxy-on': getProxyEnabledState(item) === 'on' }"
+              >
+                {{ item.deviceIp }}
+              </div>
+            </el-tooltip>
             <div class="card-row">
               <span class="card-label">{{ $t('associationCenter.groupInfo') }}:</span>
               <el-tooltip
@@ -167,7 +197,7 @@ function getBoundAccounts(item: DeviceItem): BoundAccountRow[] {
               <span class="card-label">{{ $t('associationCenter.networkProxy') }}:</span>
               <div class="card-proxy-line">
                 <el-tooltip
-                  :content="getProxyDisplay(item)"
+                  :content="getProxyLineTooltip(item)"
                   placement="top"
                 >
                   <span class="card-proxy-ellipsis">
@@ -385,6 +415,10 @@ function getBoundAccounts(item: DeviceItem): BoundAccountRow[] {
   margin-top: 4px;
 }
 
+.card-ip--proxy-on {
+  color: var(--el-color-success);
+}
+
 .card-row {
   font-size: 12px;
   color: var(--el-text-color-secondary);
@@ -423,7 +457,7 @@ function getBoundAccounts(item: DeviceItem): BoundAccountRow[] {
 
 .card-proxy-ellipsis {
   display: block;
-  flex: 1;
+  flex: 1 1 0;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;

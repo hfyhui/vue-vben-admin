@@ -90,6 +90,7 @@ const displayAccountRows = computed(() => {
  * - social/index 社媒表：仅当左侧选中用户唯一时，禁用 userId 与之匹配的账号行
  * 不可用整份 checkInfo 列表做锁定，否则会把接口返回的其它行也置灰。
  */
+/** 程序回填勾选时忽略 selection-change（对齐 containerResourceManage/index.vue） */
 let syncingAccount = false;
 let syncingUser = false;
 
@@ -166,6 +167,15 @@ async function loadUsers() {
   }
 }
 
+/** 双层 nextTick：晚到的 clearSelection 空选仍带 syncing 标志，避免误清 store（container 为单层） */
+function finishSelectionSync(done: () => void) {
+  nextTick(() => {
+    nextTick(() => {
+      done();
+    });
+  });
+}
+
 function syncAccountSelection() {
   const tb = accountTableRef.value;
   if (!tb) return;
@@ -176,7 +186,7 @@ function syncAccountSelection() {
       tb.toggleRowSelection(row, true);
     }
   }
-  nextTick(() => {
+  finishSelectionSync(() => {
     syncingAccount = false;
   });
 }
@@ -194,11 +204,10 @@ function syncAccountSelectionFromStore() {
       : accountRows.value;
   for (const row of rows) {
     if (want.has(getAccountKey(row))) {
-      // 对应社媒项目：联动回填时即使行已禁用，也要保持“已勾选 + 置灰”
       tb.toggleRowSelection(row, true, true);
     }
   }
-  nextTick(() => {
+  finishSelectionSync(() => {
     syncingAccount = false;
   });
 }
@@ -215,11 +224,10 @@ function syncUserSelectionFromStore() {
       : userRows.value;
   for (const row of rows) {
     if (want.has(getUserKey(row))) {
-      // 对应社媒项目：联动回填时即使行已禁用，也要保持“已勾选 + 置灰”
       tb.toggleRowSelection(row, true, true);
     }
   }
-  nextTick(() => {
+  finishSelectionSync(() => {
     syncingUser = false;
   });
 }
