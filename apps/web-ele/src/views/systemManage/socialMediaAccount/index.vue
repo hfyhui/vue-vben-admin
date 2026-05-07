@@ -70,10 +70,29 @@ const checkInfoList = computed<any[]>(() =>
   Array.isArray(smStore.checkInfo) ? smStore.checkInfo : [],
 );
 
+/** 绑定关系在 store.checkInfo（左侧选人/选账号后接口写入）；不能与 selected*Ids 混用否则会丢「左侧驱动右侧勾选」 */
+const boundAccountIds = computed(() => {
+  const s = new Set<string>();
+  for (const item of checkInfoList.value) {
+    const id = getAccountKey(item);
+    if (id) s.add(id);
+  }
+  return s;
+});
+
+const boundUserIds = computed(() => {
+  const s = new Set<string>();
+  for (const item of checkInfoList.value) {
+    const id = getUserKey(item);
+    if (id) s.add(id);
+  }
+  return s;
+});
+
 const displayUserRows = computed(() => {
   if (activeTab.value === 'assignUsers' && userShowSelectedOnly.value) {
-    /** 仅展示「当前搜索结果 userRows」里已勾选的行，不含其它关键字/分页下的选中 */
-    const want = new Set(selectedUserIds.value);
+    /** 仅展示：当前搜索结果 userRows ∩ store 绑定用户（仍为当前页的子集） */
+    const want = boundUserIds.value;
     return userRows.value.filter((row) => want.has(getUserKey(row)));
   }
   return userRows.value;
@@ -81,8 +100,8 @@ const displayUserRows = computed(() => {
 
 const displayAccountRows = computed(() => {
   if (activeTab.value === 'assignAccounts' && accountShowSelectedOnly.value) {
-    /** 仅展示「当前搜索结果 accountRows」里已勾选的行，不把历史/接口全量绑定都列出来 */
-    const want = new Set(selectedAccountIds.value);
+    /** 仅展示：当前搜索结果 accountRows ∩ store 绑定账号 */
+    const want = boundAccountIds.value;
     return accountRows.value.filter((row) => want.has(getAccountKey(row)));
   }
   return accountRows.value;
@@ -241,13 +260,13 @@ function syncUserSelectionByIds() {
   });
 }
 
-/** assignAccounts：右侧账号勾选以 selectedAccountIds 为准；仅展示已勾选时只对当前 accountRows 做同步 */
+/** assignAccounts：右侧勾选必须由 checkInfo（接口绑定）驱动；「仅展示已勾选」时再限制为当前 accountRows */
 function syncAccountSelectionFromStore() {
   const tb = accountTableRef.value;
   if (!tb) return;
   syncingAccount = true;
   tb.clearSelection();
-  const want = new Set(selectedAccountIds.value);
+  const want = boundAccountIds.value;
   const rows =
     activeTab.value === 'assignAccounts' && accountShowSelectedOnly.value
       ? accountRows.value.filter((row) => want.has(getAccountKey(row)))
@@ -267,7 +286,7 @@ function syncUserSelectionFromStore() {
   if (!tb) return;
   syncingUser = true;
   tb.clearSelection();
-  const want = new Set(selectedUserIds.value);
+  const want = boundUserIds.value;
   const rows =
     activeTab.value === 'assignUsers' && userShowSelectedOnly.value
       ? userRows.value.filter((row) => want.has(getUserKey(row)))
@@ -345,8 +364,15 @@ watch(
   () => {
     nextTick(() => {
       if (activeTab.value === 'assignUsers') {
+        const list = checkInfoList.value;
+        selectedUserIds.value = list.map((r: any) => getUserKey(r)).filter(Boolean);
         syncUserSelectionFromStore();
       } else {
+        const list = checkInfoList.value;
+        selectedAccountIds.value = list.map((r: any) => getAccountKey(r)).filter(Boolean);
+        selectedAccountUserIds.value = [
+          ...new Set(list.map((r: any) => String(r?.userId ?? '')).filter(Boolean)),
+        ];
         syncAccountSelectionFromStore();
       }
     });
