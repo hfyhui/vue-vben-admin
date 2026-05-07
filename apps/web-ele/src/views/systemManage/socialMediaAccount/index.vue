@@ -72,16 +72,18 @@ const checkInfoList = computed<any[]>(() =>
 
 const displayUserRows = computed(() => {
   if (activeTab.value === 'assignUsers' && userShowSelectedOnly.value) {
-    /** 与 mixins：仅展示已勾选 = 整份 checkInfo */
-    return [...checkInfoList.value];
+    /** 仅展示「当前搜索结果 userRows」里已勾选的行，不含其它关键字/分页下的选中 */
+    const want = new Set(selectedUserIds.value);
+    return userRows.value.filter((row) => want.has(getUserKey(row)));
   }
   return userRows.value;
 });
 
 const displayAccountRows = computed(() => {
   if (activeTab.value === 'assignAccounts' && accountShowSelectedOnly.value) {
-    /** 与 mixins watch.checkValue / filterTableList 一致：整份 checkInfo，无前端再筛 */
-    return [...checkInfoList.value];
+    /** 仅展示「当前搜索结果 accountRows」里已勾选的行，不把历史/接口全量绑定都列出来 */
+    const want = new Set(selectedAccountIds.value);
+    return accountRows.value.filter((row) => want.has(getAccountKey(row)));
   }
   return accountRows.value;
 });
@@ -239,16 +241,16 @@ function syncUserSelectionByIds() {
   });
 }
 
-/** assignAccounts：checkInfo 为账号列表，与右侧账号表对齐 */
+/** assignAccounts：右侧账号勾选以 selectedAccountIds 为准；仅展示已勾选时只对当前 accountRows 做同步 */
 function syncAccountSelectionFromStore() {
   const tb = accountTableRef.value;
   if (!tb) return;
   syncingAccount = true;
   tb.clearSelection();
-  const want = new Set(checkInfoList.value.map((a: any) => getAccountKey(a)));
+  const want = new Set(selectedAccountIds.value);
   const rows =
     activeTab.value === 'assignAccounts' && accountShowSelectedOnly.value
-      ? checkInfoList.value
+      ? accountRows.value.filter((row) => want.has(getAccountKey(row)))
       : accountRows.value;
   for (const row of rows) {
     if (want.has(getAccountKey(row))) {
@@ -265,10 +267,10 @@ function syncUserSelectionFromStore() {
   if (!tb) return;
   syncingUser = true;
   tb.clearSelection();
-  const want = new Set(checkInfoList.value.map((u: any) => getUserKey(u)));
+  const want = new Set(selectedUserIds.value);
   const rows =
     activeTab.value === 'assignUsers' && userShowSelectedOnly.value
-      ? checkInfoList.value
+      ? userRows.value.filter((row) => want.has(getUserKey(row)))
       : userRows.value;
   for (const row of rows) {
     if (want.has(getUserKey(row))) {
