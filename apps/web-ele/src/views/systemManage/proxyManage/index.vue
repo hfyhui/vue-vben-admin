@@ -263,7 +263,8 @@ async function syncUsersSelectionByNetworks(networkIds: string[]) {
     }
   }
   selectedSystemUserRows.value = selectedRows;
-  selectedSystemUserIds.value = toIdList(selectedRows, ['userId', 'id']);
+  /** 绑定关系来自全量接口；勿仅用当前表格页的行推导 ID，否则搜索/分页后漏 ID，Tab1 保存 delIds 会错 */
+  selectedSystemUserIds.value = Array.from(bindUserIds);
   await nextTick();
   syncingSystemUserSelection = false;
 }
@@ -271,7 +272,9 @@ async function syncUsersSelectionByNetworks(networkIds: string[]) {
 function syncSystemUserSelection() {
   const table = systemUserTableRef.value;
   if (!table) return;
-  const selectedIds = new Set(toIdList(selectedSystemUserRows.value, ['userId', 'id']));
+  const selectedIds = new Set(
+    selectedSystemUserIds.value.map((id) => String(id).trim()).filter(Boolean),
+  );
   syncingSystemUserSelection = true;
   table.clearSelection();
   for (const row of displaySystemUserRows.value) {

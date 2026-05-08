@@ -220,15 +220,18 @@ async function syncUsersSelectionByDevices(deviceIds: string[]) {
   syncingSystemUserSelection = true;
   table.clearSelection();
   const selectedRows: any[] = [];
+  const boundIdSet = new Set(bindUserIds);
   for (const row of systemUserRows.value) {
     const id = String(row?.userId ?? row?.id ?? '').trim();
     if (id && (bindUserIds.has(id) || isOwnerLockedSystemUser(row))) {
       selectedRows.push(row);
       table.toggleRowSelection(row, true, true);
+      if (id) boundIdSet.add(id);
     }
   }
   selectedSystemUserRows.value = selectedRows;
-  selectedSystemUserIds.value = toUserIdList(selectedRows);
+  /** 全量绑定 ID + 当前页“所有者锁定”勾选；勿仅用当前表格行，否则 Tab1 保存 delIds 错 */
+  selectedSystemUserIds.value = Array.from(boundIdSet);
   syncingSystemUserSelection = false;
 }
 
@@ -444,7 +447,9 @@ function resetSystemUsers() {
 function syncSystemUserSelection() {
   const table = systemUserTableRef.value;
   if (!table) return;
-  const selectedIds = new Set(toUserIdList(selectedSystemUserRows.value));
+  const selectedIds = new Set(
+    selectedSystemUserIds.value.map((id) => String(id).trim()).filter(Boolean),
+  );
   syncingSystemUserSelection = true;
   table.clearSelection();
   for (const row of displaySystemUserRows.value) {
