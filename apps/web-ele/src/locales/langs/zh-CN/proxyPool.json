@@ -120,6 +120,7 @@
     "importTaskCompleted": "导入任务完成，状态: {status}",
     "importTaskInProgress": "导入任务进行中，状态: {status}，重试次数: {count}",
     "importTaskNotFound": "未查询到导入任务信息",
-    "importTaskQueryError": "查询导入任务状态失败"
+    "importTaskQueryError": "查询导入任务状态失败",
+    "importTaskSubmitted": "导入任务已提交，请稍后查询"
   }
 }

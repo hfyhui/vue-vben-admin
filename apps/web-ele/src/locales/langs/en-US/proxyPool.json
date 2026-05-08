@@ -120,6 +120,7 @@
     "importTaskCompleted": "Import task completed, status: {status}",
     "importTaskInProgress": "Import task in progress, status: {status}, retry times: {count}",
     "importTaskNotFound": "Import task not found",
-    "importTaskQueryError": "Failed to query import task status"
+    "importTaskQueryError": "Failed to query import task status",
+    "importTaskSubmitted": "Import task submitted, please query later"
   }
 }

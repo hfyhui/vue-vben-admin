@@ -141,13 +141,16 @@ function downloadReport(row: RowType) {
             effect="dark"
             :content="`${$t('proxyPool.importLog.failedReason')}:<br> ${row.failedReason}`"
           >
-            <el-tag type="danger">
+            <el-tag type="danger" disable-transitions>
               {{ row.statusName }}
             </el-tag>
           </el-tooltip>
         </template>
         <template v-else>
-          <el-tag :type="row.status === 'SUCCESS' ? 'success' : 'info'">
+          <el-tag
+            :type="row.status === 'SUCCESS' ? 'success' : 'info'"
+            disable-transitions
+          >
             {{ row.statusName }}
           </el-tag>
         </template>

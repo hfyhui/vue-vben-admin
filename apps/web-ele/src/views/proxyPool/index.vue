@@ -254,6 +254,7 @@ async function onImportFileChange(event: Event) {
       ElMessage.error($t('proxyPool.importLog.importTaskIdInvalid'));
       return false;
     }
+    ElMessage.success($t('proxyPool.importLog.importTaskSubmitted'));
     getImportTaskInfo(res.data, 0);
   } catch (error) {
     console.error('[proxyPool] 导入代理失败:', error);

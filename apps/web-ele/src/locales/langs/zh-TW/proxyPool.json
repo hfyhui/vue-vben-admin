@@ -120,6 +120,7 @@
     "importTaskCompleted": "導入任務完成，狀態: {status}",
     "importTaskInProgress": "導入任務進行中，狀態: {status}，重試次數: {count}",
     "importTaskNotFound": "未查詢到導入任務信息",
-    "importTaskQueryError": "查詢導入任務狀態失敗"
+    "importTaskQueryError": "查詢導入任務狀態失敗",
+    "importTaskSubmitted": "導入任務已提交，請稍後查詢"
   }
 }
