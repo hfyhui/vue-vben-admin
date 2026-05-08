@@ -188,11 +188,48 @@ async function loadSystemUsers() {
     }
     await nextTick();
     if (selectedSystemUserIds.value.length) {
+      if (activeTab.value === 'assignContainers') {
+        selectedSystemUserRows.value = mergeSystemUserRowsForAllocatedDevices(
+          selectedSystemUserIds.value,
+          [],
+          selectedSystemUserRows.value,
+        );
+      }
       syncSystemUserSelection();
     }
   } finally {
     systemUserLoading.value = false;
   }
+}
+
+/** Tab1「仅展示已勾选」：保留全量选中行，与 proxyManage Tab2 合并代理行语义一致 */
+function mergeSystemUserRowsForAllocatedDevices(
+  orderedUserIds: string[],
+  resRecords: any[],
+  previousRows: any[],
+) {
+  const currentRows = systemUserRows.value;
+  const currentMap = new Map<string, any>();
+  for (const row of currentRows) {
+    const id = String(row?.userId ?? row?.id ?? '').trim();
+    if (id) currentMap.set(id, row);
+  }
+  const previousMap = new Map<string, any>();
+  for (const row of previousRows) {
+    const id = String(row?.userId ?? row?.id ?? '').trim();
+    if (id) previousMap.set(id, row);
+  }
+  return orderedUserIds
+    .map((id) => {
+      if (currentMap.has(id)) return currentMap.get(id);
+      if (previousMap.has(id)) return previousMap.get(id);
+      const fallback = resRecords.find((item: any) => {
+        const itemId = String(item?.userId ?? item?.id ?? '').trim();
+        return itemId === id;
+      });
+      return fallback ?? { userId: id, userName: '', nickName: '' };
+    })
+    .filter(Boolean);
 }
 
 async function syncUsersSelectionByDevices(deviceIds: string[]) {
@@ -212,26 +249,43 @@ async function syncUsersSelectionByDevices(deviceIds: string[]) {
     current: 1,
     size: 100000,
   });
-  const bindUserIds = new Set(
-    (res.records ?? [])
+  const records = res.records ?? [];
+  const bindUserIds = new Set<string>(
+    records
       .map((row: any) => String(row?.userId ?? row?.id ?? '').trim())
       .filter((id): id is string => Boolean(id)),
   );
+  const boundIdSet = new Set<string>(bindUserIds);
   syncingSystemUserSelection = true;
   table.clearSelection();
-  const selectedRows: any[] = [];
-  const boundIdSet = new Set(bindUserIds);
   for (const row of systemUserRows.value) {
     const id = String(row?.userId ?? row?.id ?? '').trim();
     if (id && (bindUserIds.has(id) || isOwnerLockedSystemUser(row))) {
-      selectedRows.push(row);
       table.toggleRowSelection(row, true, true);
       if (id) boundIdSet.add(id);
     }
   }
-  selectedSystemUserRows.value = selectedRows;
-  /** 全量绑定 ID + 当前页“所有者锁定”勾选；勿仅用当前表格行，否则 Tab1 保存 delIds 错 */
-  selectedSystemUserIds.value = Array.from(boundIdSet);
+  const orderedUserIds: string[] = [];
+  const seen = new Set<string>();
+  for (const item of records) {
+    const id = String(item?.userId ?? item?.id ?? '').trim();
+    if (id && !seen.has(id)) {
+      seen.add(id);
+      orderedUserIds.push(id);
+    }
+  }
+  for (const id of boundIdSet) {
+    if (!seen.has(id)) {
+      seen.add(id);
+      orderedUserIds.push(id);
+    }
+  }
+  selectedSystemUserRows.value = mergeSystemUserRowsForAllocatedDevices(
+    orderedUserIds,
+    records,
+    selectedSystemUserRows.value,
+  );
+  selectedSystemUserIds.value = [...orderedUserIds];
   syncingSystemUserSelection = false;
 }
 
@@ -464,6 +518,9 @@ function syncSystemUserSelection() {
 }
 
 function onSystemUserOnlySelectedChange() {
+  if (activeTab.value === 'assignContainers') {
+    systemUserKeyword.value = '';
+  }
   switchingSystemUserOnlySelected = true;
   nextTick(() => {
     if (activeTab.value === 'assignContainers') {
@@ -491,6 +548,9 @@ function syncContainerSelection() {
 }
 
 function onContainerOnlySelectedChange() {
+  if (activeTab.value === 'assignSystemUsers') {
+    containerKeyword.value = '';
+  }
   switchingContainerOnlySelected = true;
   nextTick(() => {
     if (activeTab.value === 'assignSystemUsers') {

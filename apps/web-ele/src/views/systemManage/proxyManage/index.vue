@@ -225,9 +225,52 @@ async function loadSystemUsers() {
       systemUserRows.value = [];
       systemUserTotal.value = 0;
     }
+    await nextTick();
+    /** 翻页/刷新用户列表后用当前表格行补强 merged 快照，并保持勾选同步 */
+    if (activeTab.value === 'assignContainers' && selectedSystemUserIds.value.length) {
+      selectedSystemUserRows.value = mergeSystemUserRowsForAllocatedUsers(
+        selectedSystemUserIds.value,
+        [],
+        selectedSystemUserRows.value,
+      );
+      syncSystemUserSelection();
+    }
   } finally {
     systemUserLoading.value = false;
   }
+}
+
+/**
+ * Tab1「仅展示已勾选」依赖完整行列表（对齐 Tab2 merge 代理行）：
+ * 绑定来自全表接口记录，不因当前搜索页只有子集而让 selectedRows 为空。
+ */
+function mergeSystemUserRowsForAllocatedUsers(
+  orderedUserIds: string[],
+  resRecords: any[],
+  previousRows: any[],
+) {
+  const currentRows = systemUserRows.value;
+  const currentMap = new Map<string, any>();
+  for (const row of currentRows) {
+    const id = String(row?.userId ?? row?.id ?? '').trim();
+    if (id) currentMap.set(id, row);
+  }
+  const previousMap = new Map<string, any>();
+  for (const row of previousRows) {
+    const id = String(row?.userId ?? row?.id ?? '').trim();
+    if (id) previousMap.set(id, row);
+  }
+  return orderedUserIds
+    .map((id) => {
+      if (currentMap.has(id)) return currentMap.get(id);
+      if (previousMap.has(id)) return previousMap.get(id);
+      const fallback = resRecords.find((item: any) => {
+        const itemId = String(item?.userId ?? item?.id ?? '').trim();
+        return itemId === id;
+      });
+      return fallback ?? { userId: id, userName: '', nickName: '' };
+    })
+    .filter(Boolean);
 }
 
 async function syncUsersSelectionByNetworks(networkIds: string[]) {
@@ -247,24 +290,42 @@ async function syncUsersSelectionByNetworks(networkIds: string[]) {
     current: 1,
     size: 100000,
   });
-  const bindUserIds = new Set(
-    (res.records ?? [])
+  const records = res.records ?? [];
+  const bindUserIds = new Set<string>(
+    records
       .map((row: any) => String(row?.userId ?? row?.id ?? '').trim())
       .filter((id): id is string => Boolean(id)),
   );
+  const orderedUserIds: string[] = [];
+  const seen = new Set<string>();
+  for (const item of records) {
+    const id = String(item?.userId ?? item?.id ?? '').trim();
+    if (id && !seen.has(id)) {
+      seen.add(id);
+      orderedUserIds.push(id);
+    }
+  }
+  for (const id of bindUserIds) {
+    if (!seen.has(id)) {
+      seen.add(id);
+      orderedUserIds.push(id);
+    }
+  }
+  const mergedSelectedRows = mergeSystemUserRowsForAllocatedUsers(
+    orderedUserIds,
+    records,
+    selectedSystemUserRows.value,
+  );
   syncingSystemUserSelection = true;
   table.clearSelection();
-  const selectedRows: any[] = [];
   for (const row of systemUserRows.value) {
     const id = String(row?.userId ?? row?.id ?? '').trim();
     if (id && bindUserIds.has(id)) {
-      selectedRows.push(row);
       table.toggleRowSelection(row, true, true);
     }
   }
-  selectedSystemUserRows.value = selectedRows;
-  /** 绑定关系来自全量接口；勿仅用当前表格页的行推导 ID，否则搜索/分页后漏 ID，Tab1 保存 delIds 会错 */
-  selectedSystemUserIds.value = Array.from(bindUserIds);
+  selectedSystemUserRows.value = mergedSelectedRows;
+  selectedSystemUserIds.value = [...orderedUserIds];
   await nextTick();
   syncingSystemUserSelection = false;
 }
@@ -559,6 +620,9 @@ function resetSystemUsers() {
 }
 
 function onSystemUserOnlySelectedChange() {
+  if (activeTab.value === 'assignContainers') {
+    systemUserKeyword.value = '';
+  }
   switchingSystemUserOnlySelected = true;
   nextTick(() => {
     if (activeTab.value === 'assignContainers') {
@@ -569,6 +633,9 @@ function onSystemUserOnlySelectedChange() {
 }
 
 function onContainerOnlySelectedChange() {
+  if (activeTab.value === 'assignSystemUsers') {
+    containerKeyword.value = '';
+  }
   switchingContainerOnlySelected = true;
   nextTick(() => {
     if (activeTab.value === 'assignSystemUsers') {
