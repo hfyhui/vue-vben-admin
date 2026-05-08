@@ -53,6 +53,9 @@ const userTableRef = ref();
 const selectedAccountIds = ref<string[]>([]);
 const selectedUserIds = ref<string[]>([]);
 const selectedAccountUserIds = ref<string[]>([]);
+/** 跨搜索/分页保留完整勾选；勿仅用表格 selection（过滤后不可见行不在 selection 内） */
+const selectedAccountRows = ref<any[]>([]);
+const selectedUserRows = ref<any[]>([]);
 
 /** 与参考项目一致：Tab1 在系统用户表、Tab2 在社媒账号表展示「仅展示已勾选」 */
 const userShowSelectedOnly = ref(false);
@@ -307,6 +310,8 @@ async function onPickApp(id: string) {
   accountPage.current = 1;
   selectedAccountIds.value = [];
   selectedAccountUserIds.value = [];
+  selectedAccountRows.value = [];
+  selectedUserRows.value = [];
   userShowSelectedOnly.value = false;
   accountShowSelectedOnly.value = false;
   smStore.resetBindings();
@@ -329,15 +334,28 @@ function onAccountSelect(rows: any[]) {
   ) {
     return;
   }
-  selectedAccountIds.value = rows.map((r) => getAccountKey(r)).filter(Boolean);
+  const currentPageRows = displayAccountRows.value;
+  const currentPageIds = new Set(
+    currentPageRows.map((r) => getAccountKey(r)).filter(Boolean),
+  );
+  const remainRows = selectedAccountRows.value.filter((row) => {
+    const id = getAccountKey(row);
+    return id && !currentPageIds.has(id);
+  });
+  selectedAccountRows.value = [...remainRows, ...rows];
+  selectedAccountIds.value = selectedAccountRows.value
+    .map((r) => getAccountKey(r))
+    .filter(Boolean);
   selectedAccountUserIds.value = [
-    ...new Set(rows.map((r) => String(r?.userId ?? '')).filter(Boolean)),
+    ...new Set(
+      selectedAccountRows.value.map((r) => String(r?.userId ?? '')).filter(Boolean),
+    ),
   ];
   if (activeTab.value === 'assignUsers') {
     /** 空选时由 store 直接清空，不请求 /accounts/users（保存后 clearSelection 会触发） */
     void smStore.fetchUsersByAccounts(selectedAccountIds.value);
   } else {
-    smStore.setCheckInfo(rows);
+    smStore.setCheckInfo(selectedAccountRows.value);
   }
 }
 
@@ -351,11 +369,22 @@ function onUserSelect(rows: any[]) {
   ) {
     return;
   }
-  selectedUserIds.value = rows.map((r) => getUserKey(r)).filter(Boolean);
+  const currentPageRows = displayUserRows.value;
+  const currentPageIds = new Set(
+    currentPageRows.map((r) => getUserKey(r)).filter(Boolean),
+  );
+  const remainRows = selectedUserRows.value.filter((row) => {
+    const id = getUserKey(row);
+    return id && !currentPageIds.has(id);
+  });
+  selectedUserRows.value = [...remainRows, ...rows];
+  selectedUserIds.value = selectedUserRows.value
+    .map((r) => getUserKey(r))
+    .filter(Boolean);
   if (activeTab.value === 'assignAccounts') {
     void smStore.fetchAccountsByUsers(selectedUserIds.value);
   } else {
-    smStore.setCheckInfo(rows);
+    smStore.setCheckInfo(selectedUserRows.value);
   }
 }
 
@@ -364,26 +393,21 @@ watch(
   () => {
     nextTick(() => {
       if (activeTab.value === 'assignUsers') {
-        const boundSet = new Set(
-          checkInfoList.value.map((r: any) => getUserKey(r)).filter(Boolean),
-        );
-        selectedUserIds.value = userRows.value
-          .map((row: any) => getUserKey(row))
-          .filter((id: string) => boundSet.has(id));
+        selectedUserRows.value = [...checkInfoList.value];
+        selectedUserIds.value = selectedUserRows.value
+          .map((r: any) => getUserKey(r))
+          .filter(Boolean);
         syncUserSelectionFromStore();
       } else {
-        const boundSet = new Set(
-          checkInfoList.value.map((r: any) => getAccountKey(r)).filter(Boolean),
-        );
-        const currentBoundRows = accountRows.value.filter((row: any) =>
-          boundSet.has(getAccountKey(row)),
-        );
-        selectedAccountIds.value = currentBoundRows
+        selectedAccountRows.value = [...checkInfoList.value];
+        selectedAccountIds.value = selectedAccountRows.value
           .map((r: any) => getAccountKey(r))
           .filter(Boolean);
         selectedAccountUserIds.value = [
           ...new Set(
-            currentBoundRows.map((r: any) => String(r?.userId ?? '')).filter(Boolean),
+            selectedAccountRows.value
+              .map((r: any) => String(r?.userId ?? ''))
+              .filter(Boolean),
           ),
         ];
         syncAccountSelectionFromStore();
@@ -400,6 +424,8 @@ async function onTabChange() {
   selectedAccountIds.value = [];
   selectedAccountUserIds.value = [];
   selectedUserIds.value = [];
+  selectedAccountRows.value = [];
+  selectedUserRows.value = [];
   accountKeyword.value = '';
   userKeyword.value = '';
   userShowSelectedOnly.value = false;
@@ -425,6 +451,8 @@ function searchAccounts() {
     selectedAccountIds.value = [];
     selectedAccountUserIds.value = [];
     selectedUserIds.value = [];
+    selectedAccountRows.value = [];
+    selectedUserRows.value = [];
   }
   accountPage.current = 1;
   void loadAccounts({
@@ -444,6 +472,8 @@ function searchUsers() {
     selectedUserIds.value = [];
     selectedAccountIds.value = [];
     selectedAccountUserIds.value = [];
+    selectedAccountRows.value = [];
+    selectedUserRows.value = [];
   }
   userPage.current = 1;
   void loadUsers({
@@ -534,10 +564,12 @@ function userRowClassName({ row }: { row: any }) {
 }
 
 async function saveBind() {
-  const accountRowsSel = accountTableRef.value?.getSelectionRows?.() ?? [];
-  const userRowsSel = userTableRef.value?.getSelectionRows?.() ?? [];
-  const accountIds = accountRowsSel.map((r: any) => r.accountId).filter(Boolean);
-  const userIds = userRowsSel.map((r: any) => r.userId).filter(Boolean);
+  const accountIds = selectedAccountRows.value
+    .map((r: any) => getAccountKey(r))
+    .filter(Boolean);
+  const userIds = selectedUserRows.value
+    .map((r: any) => getUserKey(r))
+    .filter(Boolean);
 
   if (activeTab.value === 'assignUsers') {
     if (!accountIds.length) {
@@ -570,6 +602,8 @@ async function saveBind() {
       selectedAccountIds.value = [];
       selectedAccountUserIds.value = [];
       selectedUserIds.value = [];
+      selectedAccountRows.value = [];
+      selectedUserRows.value = [];
       accountTableRef.value?.clearSelection?.();
       userTableRef.value?.clearSelection?.();
       userShowSelectedOnly.value = false;

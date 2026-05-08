@@ -271,14 +271,22 @@ async function syncContainersSelectionByUsers(userIds: string[]) {
 function onContainerSelect(rows: any[]) {
   if (syncingContainerSelection) return;
   if (switchingContainerOnlySelected && rows.length === 0) return;
+  const idKeys = ['deviceId', 'id'] as const;
   const currentPageRows = displayContainerRows.value;
-  const currentPageIds = new Set(toIdList(currentPageRows, ['deviceId', 'id']));
+  const currentPageIds = new Set(toIdList(currentPageRows, [...idKeys]));
+  const visibleIds = toIdList(rows, [...idKeys]);
+  const nextIdSet = new Set<string>();
+  for (const id of selectedContainerIds.value) {
+    if (!currentPageIds.has(id)) nextIdSet.add(id);
+  }
+  for (const id of visibleIds) nextIdSet.add(id);
+  selectedContainerIds.value = [...nextIdSet];
+
   const remainRows = selectedContainerRows.value.filter((row) => {
     const id = String(row?.deviceId ?? row?.id ?? '').trim();
     return id && !currentPageIds.has(id);
   });
   selectedContainerRows.value = [...remainRows, ...rows];
-  selectedContainerIds.value = toIdList(selectedContainerRows.value, ['deviceId', 'id']);
   if (activeTab.value === 'assignContainers') {
     void syncUsersSelectionByDevices(selectedContainerIds.value);
   }
@@ -289,15 +297,21 @@ function onSystemUserSelect(rows: any[]) {
   if (switchingSystemUserOnlySelected && rows.length === 0) return;
   const currentPageRows = displaySystemUserRows.value;
   const currentPageIds = new Set(toUserIdList(currentPageRows));
+  const visibleIds = toUserIdList(rows);
+  const nextIdSet = new Set<string>();
+  for (const id of selectedSystemUserIds.value) {
+    if (!currentPageIds.has(id)) nextIdSet.add(id);
+  }
+  for (const id of visibleIds) nextIdSet.add(id);
+  selectedSystemUserIds.value = [...nextIdSet];
+
   const remainRows = selectedSystemUserRows.value.filter((row) => {
     const id = String(row?.userId ?? row?.id ?? '').trim();
     return id && !currentPageIds.has(id);
   });
   selectedSystemUserRows.value = [...remainRows, ...rows];
-  selectedSystemUserIds.value = toUserIdList(selectedSystemUserRows.value);
   if (activeTab.value === 'assignSystemUsers') {
-    const userIds = toUserIdList(selectedSystemUserRows.value);
-    void syncContainersSelectionByUsers(userIds);
+    void syncContainersSelectionByUsers(selectedSystemUserIds.value);
   }
 }
 
