@@ -30,5 +30,6 @@
   "selectAll": "Select All",
   "selectNone": "Select None",
   "enable": "Enable",
-  "disable": "Disable"
+  "disable": "Disable",
+  "OperationSuccess": "Operation success"
 }

@@ -25,13 +25,10 @@ const platformBaseURL = import.meta.env.VITE_GLOB_OTHER_API_URL || '/platform';
 const socialBaseURL = import.meta.env.VITE_GLOB_SOCIAL_API_URL || '/social';
 const authApiBaseURL = import.meta.env.VITE_GLOB_AUTH_API_URL || '/auth';
 const customAuthorization = import.meta.env.VITE_GLOB_AUTHORIZATION;
-const backendSuccessCodes = new Set([200, 100000]);
+const backendSuccessCodes = new Set([200, 100_000]);
 
 function isUnauthorizedByMessage(msg: unknown) {
-  return (
-    typeof msg === 'string' &&
-    msg === 'UNAUTHORIZED'
-  );
+  return typeof msg === 'string' && msg === 'UNAUTHORIZED';
 }
 
 /**
@@ -178,7 +175,7 @@ function createBackendClient(baseURL: string) {
     headers: {
       'Content-Type': 'application/json;charset=utf-8',
     },
-    timeout: 100000,
+    timeout: 100_000,
   });
 
   client.addRequestInterceptor({
@@ -233,27 +230,28 @@ function createBackendClient(baseURL: string) {
       const { data: responseData, status } = response;
       if (status >= 200 && status < 400) {
         // 检查响应数据中的code字段
-        if (responseData && typeof responseData === 'object' && 'code' in responseData) {
+        if (
+          responseData &&
+          typeof responseData === 'object' &&
+          'code' in responseData
+        ) {
           const { code, msg } = responseData;
           if (backendSuccessCodes.has(code)) {
             return responseData;
           }
           // 业务码 401，或 msg=UNAUTHORIZED：登录状态过期（HTTP 可能仍为 200/500）
           if (code === 401 || isUnauthorizedByMessage(msg)) {
-            const tip =
-              typeof msg === 'string' && msg ? msg : undefined;
+            const tip = typeof msg === 'string' && msg ? msg : undefined;
             await handleBackendUnauthorized(tip);
-            return Promise.reject(
-              Object.assign(new Error(tip || 'Unauthorized'), {
-                response,
-                isBusiness401: true,
-              }),
-            );
+            throw Object.assign(new Error(tip || 'Unauthorized'), {
+              response,
+              isBusiness401: true,
+            });
           }
           // POST /platform/asset/check/account-device：500511 由关联中心二次确认，不在此自动 toast
           const reqUrl = response.config?.url ?? '';
           const isAccountDeviceCheck = reqUrl.includes('check/account-device');
-          const needConfirmCode = code === 500511;
+          const needConfirmCode = code === 500_511;
           if (msg && !(isAccountDeviceCheck && needConfirmCode)) {
             ElMessage.error(msg);
           }
@@ -273,12 +271,12 @@ function createBackendClient(baseURL: string) {
           (typeof data?.message === 'string' && data.message) ||
           undefined;
         await handleBackendUnauthorized(tip);
-        return Promise.reject(error);
+        throw error;
       }
       const errorMessage =
         data?.msg || data?.message || error?.message || '网络请求失败';
       ElMessage.error(errorMessage);
-      return Promise.reject(error);
+      throw error;
     },
   });
 

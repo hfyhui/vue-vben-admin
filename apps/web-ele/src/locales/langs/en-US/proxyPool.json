@@ -40,7 +40,8 @@
     "import": "Import",
     "downloadTemplate": "Download Template",
     "batchDelete": "Batch Delete",
-    "setGrouping": "Set Grouping"
+    "setGrouping": "Set Grouping",
+    "importLog": "Import Log"
   },
   "groupForm": {
     "title": "Proxy Grouping",
@@ -103,6 +104,22 @@
     "editRemarkPlaceholder": "Enter remark",
     "editRemarkSuccess": "Remark updated successfully",
     "editRemarkFailed": "Failed to update remark"
+  },
+  "importLog": {
+    "createTime": "Create Time",
+    "title": "Import Log",
+    "down": "Download",
+    "userName": "User Name",
+    "result": "result",
+    "status": "Status",
+    "confirmExport": "Are you sure you want to download the import log?",
+    "failedReason": "Failed Reason",
+    "importTaskIdInvalid": "Import task ID is invalid",
+    "importTaskQueryTimeout": "Import task query timeout",
+    "importTaskQueryFailed": "Failed to query import task status, reached maximum retry times",
+    "importTaskCompleted": "Import task completed, status: {status}",
+    "importTaskInProgress": "Import task in progress, status: {status}, retry times: {count}",
+    "importTaskNotFound": "Import task not found",
+    "importTaskQueryError": "Failed to query import task status"
   }
 }
-

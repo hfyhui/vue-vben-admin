@@ -30,5 +30,6 @@
   "selectAll": "全选",
   "selectNone": "全不选",
   "enable": "启用",
-  "disable": "禁用"
+  "disable": "禁用",
+  "OperationSuccess": "操作成功"
 }
