@@ -1,4 +1,4 @@
-import { socialClient } from '../request';
+import { proxyClient } from '../request';
 
 export type SocialPageBody = {
   businessType?: string;
@@ -9,7 +9,7 @@ export type SocialPageBody = {
 
 /** POST .../import-task/page */
 export async function postImportTaskPageApi(data: SocialPageBody) {
-  return socialClient.post<{
+  return proxyClient.post<{
     code: number;
     data: { records: any[]; total: number };
     msg?: string;
@@ -21,7 +21,7 @@ export async function getImportTaskLogApi(
   taskId: string,
   fileName: string = 'import_log.xlsx',
 ): Promise<void> {
-  const blob = await socialClient.download(`/import-task/download/${taskId}`, {
+  const blob = await proxyClient.download(`/import-task/download/${taskId}`, {
     responseReturn: 'raw',
   });
   const url = URL.createObjectURL(blob);
