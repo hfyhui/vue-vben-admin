@@ -114,11 +114,15 @@ const gridEvents: VxeGridListeners<RowType> = {
 const [Grid, gridApi] = useVbenVxeGrid({ gridEvents, gridOptions });
 
 function downloadReport(row: RowType) {
-  ElMessageBox.confirm($t('proxyPool.importLog.confirmExport'), 'Warning', {
-    confirmButtonText: $t('common.confirm'),
-    cancelButtonText: $t('common.cancel'),
-    type: 'warning',
-  })
+  ElMessageBox.confirm(
+    $t('proxyPool.importLog.confirmExport'),
+    $t('common.prompt'),
+    {
+      confirmButtonText: $t('common.confirm'),
+      cancelButtonText: $t('common.cancel'),
+      type: 'warning',
+    },
+  )
     .then(async () => {
       await getImportTaskLogApi(row.id, row.reportFileName);
       ElMessage.success($t('common.OperationSuccess'));
