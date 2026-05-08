@@ -364,14 +364,27 @@ watch(
   () => {
     nextTick(() => {
       if (activeTab.value === 'assignUsers') {
-        const list = checkInfoList.value;
-        selectedUserIds.value = list.map((r: any) => getUserKey(r)).filter(Boolean);
+        const boundSet = new Set(
+          checkInfoList.value.map((r: any) => getUserKey(r)).filter(Boolean),
+        );
+        selectedUserIds.value = userRows.value
+          .map((row: any) => getUserKey(row))
+          .filter((id: string) => boundSet.has(id));
         syncUserSelectionFromStore();
       } else {
-        const list = checkInfoList.value;
-        selectedAccountIds.value = list.map((r: any) => getAccountKey(r)).filter(Boolean);
+        const boundSet = new Set(
+          checkInfoList.value.map((r: any) => getAccountKey(r)).filter(Boolean),
+        );
+        const currentBoundRows = accountRows.value.filter((row: any) =>
+          boundSet.has(getAccountKey(row)),
+        );
+        selectedAccountIds.value = currentBoundRows
+          .map((r: any) => getAccountKey(r))
+          .filter(Boolean);
         selectedAccountUserIds.value = [
-          ...new Set(list.map((r: any) => String(r?.userId ?? '')).filter(Boolean)),
+          ...new Set(
+            currentBoundRows.map((r: any) => String(r?.userId ?? '')).filter(Boolean),
+          ),
         ];
         syncAccountSelectionFromStore();
       }
@@ -523,15 +536,9 @@ function userRowClassName({ row }: { row: any }) {
 async function saveBind() {
   const accountRowsSel = accountTableRef.value?.getSelectionRows?.() ?? [];
   const userRowsSel = userTableRef.value?.getSelectionRows?.() ?? [];
-  const accountIds = accountRowsSel.map((r: any) => r.accountId);
-  const userIds = userRowsSel.map((r: any) => r.userId);
+  const accountIds = accountRowsSel.map((r: any) => r.accountId).filter(Boolean);
+  const userIds = userRowsSel.map((r: any) => r.userId).filter(Boolean);
 
-  /**
-   * 与 social_media_web SocialMediaAccount/index.vue saveEvent 一致：
-   * - assignUsers（socialRef）：左侧为社媒账号表，须先选账号
-   * - assignAccounts（systemRef）：row-reverse 后左侧为系统用户表，须先选用户
-   * 仅选另一侧时提示「当前激活列表」
-   */
   if (activeTab.value === 'assignUsers') {
     if (!accountIds.length) {
       ElMessage.warning($t('systemManage.socialMediaAccount.pleaseSelectLeftList'));
@@ -542,13 +549,11 @@ async function saveBind() {
     return;
   }
 
+  const isAssignUsers = activeTab.value === 'assignUsers';
   const defaultIds = smStore.defaultCheckInfo
-    .map((el: any) => String(el.accountId ?? el.userId ?? ''))
+    .map((el: any) => (isAssignUsers ? el.userId : el.accountId))
     .filter(Boolean);
-
-  /** delIds：对照另一侧当前勾选（参考 tempInfo = data[activeValue == systemRef ? socialRef : systemRef]） */
-  const tempInfo =
-    activeTab.value === 'assignUsers' ? userIds : accountIds;
+  const tempInfo = isAssignUsers ? userIds : accountIds;
   const delIds = defaultIds.filter((id) => !tempInfo.includes(id));
 
   try {
@@ -557,7 +562,7 @@ async function saveBind() {
       accountIds,
       userIds,
       delIds,
-      bindDirection: activeTab.value === 'assignUsers' ? 0 : 1,
+      bindDirection: isAssignUsers ? 0 : 1,
     });
     if (res && successCode(res.code)) {
       ElMessage.success($t('systemManage.opSuccess'));
