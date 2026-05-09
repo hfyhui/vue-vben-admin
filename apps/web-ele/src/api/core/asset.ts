@@ -24,6 +24,8 @@ export interface DeviceItem {
   proxy?: string;
   deviceStatus?: string;
   color?: string;
+  riskColor?: string;
+  riskTip?: string;
   [key: string]: any;
 }
 
