@@ -1,5 +1,13 @@
 <script lang="ts" setup>
+import type {
+  ProxyPoolGroupOption,
+  ProxyPoolRegionOption,
+  ProxyPoolRow,
+  ProxyPoolSortOption,
+} from './proxy-pool-table-config';
+
 import type { VxeTableGridOptions } from '#/adapter/vxe-table';
+import type { ProxyPoolNumData } from '#/api/core/asset';
 
 import { onMounted, ref } from 'vue';
 
@@ -7,35 +15,32 @@ import { Page, useVbenModal } from '@vben/common-ui';
 
 import { ElMessage, ElMessageBox } from 'element-plus';
 
+import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import {
-  batchDeleteProxyApi,
   addProxyRemarkApi,
+  batchDeleteProxyApi,
   downloadProxyTemplateApi,
   getAssetGroupApi,
   getProxyPoolNumApi,
-  importProxyApi,
   getProxyRegionTreeApi,
-  type ProxyPoolNumData,
+  importProxyApi,
 } from '#/api/core/asset';
-import { useVbenVxeGrid } from '#/adapter/vxe-table';
+import { postImportTaskPageApi } from '#/api/core/proxy-pool-import-log';
 import { $t } from '#/locales';
 import { useAssetEnumsStore } from '#/store';
 
-import {
-  type ProxyPoolSortOption,
-  type ProxyPoolGroupOption,
-  type ProxyPoolRow,
-  type ProxyPoolRegionOption,
-  getProxyPoolListApi,
-  getFormOptions,
-  useColumns,
-} from './proxy-pool-table-config';
+import ProxyImportLogModal from './ImportLogModal/index.vue';
 import ProxyPoolFormModal from './proxy-form-modal.vue';
 import ProxyGroupModal from './proxy-group-modal.vue';
+import {
+  getFormOptions,
+  getProxyPoolListApi,
+  useColumns,
+} from './proxy-pool-table-config';
 
 interface RegionTreeNode {
   name?: string;
-  children?: RegionTreeNode[] | null;
+  children?: null | RegionTreeNode[];
 }
 
 const sortOptions = ref<ProxyPoolSortOption[]>([]);
@@ -64,7 +69,7 @@ const statsData = ref<ProxyStatRow[]>(
   proxyNumStatKeys.map((key) => ({ key, value: 0 })),
 );
 
-const editingRemarkProxyId = ref<string | null>(null);
+const editingRemarkProxyId = ref<null | string>(null);
 const editingRemarkValue = ref('');
 const savingRemark = ref(false);
 
@@ -82,7 +87,7 @@ async function loadProxyPoolNum() {
 }
 
 function mapRegionTree(
-  nodes: RegionTreeNode[] | null | undefined,
+  nodes: null | RegionTreeNode[] | undefined,
 ): ProxyPoolRegionOption[] {
   if (!Array.isArray(nodes)) return [];
   return nodes
@@ -118,13 +123,14 @@ const [Grid, gridApi] = useVbenVxeGrid({
         const proxyId = editingRemarkProxyId.value;
         const trimmed = editingRemarkValue?.value.trim();
         // 备注为空时不传 remark 字段，避免后端把空串当作非法值
-        const remark = trimmed ? trimmed : undefined;
+        const remark = trimmed || undefined;
         try {
           const res = await addProxyRemarkApi({ proxyId, remark });
-          if (res?.code === 100000) {
+          if (res?.code === 100_000) {
             ElMessage.success($t('proxyPool.message.editRemarkSuccess'));
             // 只刷新当前页，避免重置到第一页
-            gridApi.query?.()          }
+            gridApi.query?.();
+          }
         } catch (error) {
           console.error('[proxyPool] 更新代理备注失败:', error);
           ElMessage.error($t('proxyPool.message.editRemarkFailed'));
@@ -199,9 +205,8 @@ async function loadRegionOptions() {
 
 async function loadSortOptions() {
   try {
-    sortOptions.value = await assetEnumsStore.getEnumOptionsAsync(
-      'ACCOUNT_ORDER',
-    );
+    sortOptions.value =
+      await assetEnumsStore.getEnumOptionsAsync('ACCOUNT_ORDER');
   } catch (error) {
     console.error('[proxyPool] 获取排序枚举失败:', error);
     sortOptions.value = [];
@@ -245,11 +250,12 @@ async function onImportFileChange(event: Event) {
   importing.value = true;
   try {
     const res = await importProxyApi({ file });
-    if (res?.code === 100000) {
-      ElMessage.success($t('proxyPool.message.importSuccess'));
-      gridApi.reload();
-      loadProxyPoolNum();
+    if (!(res?.code === 100_000 && res?.data)) {
+      ElMessage.error($t('proxyPool.importLog.importTaskIdInvalid'));
+      return false;
     }
+    ElMessage.success($t('proxyPool.importLog.importTaskSubmitted'));
+    getImportTaskInfo(res.data, 0);
   } catch (error) {
     console.error('[proxyPool] 导入代理失败:', error);
     ElMessage.error($t('proxyPool.message.importFailed'));
@@ -267,10 +273,72 @@ async function onDownloadTemplate() {
   }
 }
 
+async function getImportTaskInfo(taskId: string, retryCount: number) {
+  const MAX_RETRY = 20;
+  const RETRY_DELAY = 5000;
+
+  try {
+    const resInfo = await postImportTaskPageApi({
+      current: 1,
+      size: 10,
+      taskId,
+    });
+
+    if (
+      !resInfo ||
+      !resInfo.data ||
+      !resInfo.data.records ||
+      resInfo.data.records.length === 0
+    ) {
+      console.warn($t('proxyPool.importLog.importTaskNotFound'));
+      if (retryCount < MAX_RETRY) {
+        setTimeout(() => {
+          getImportTaskInfo(taskId, retryCount + 1);
+        }, RETRY_DELAY);
+      } else {
+        ElMessage.error($t('proxyPool.importLog.importTaskQueryTimeout'));
+      }
+      return;
+    }
+
+    const taskStatus = resInfo.data.records[0].status;
+    if (['FAILED', 'SUCCESS'].includes(taskStatus)) {
+      console.log(
+        $t('proxyPool.importLog.importTaskCompleted', { status: taskStatus }),
+      );
+      gridApi.reload();
+      loadProxyPoolNum();
+    } else {
+      console.log(
+        $t('proxyPool.importLog.importTaskInProgress', {
+          status: taskStatus,
+          count: retryCount + 1,
+        }),
+      );
+      if (retryCount < MAX_RETRY) {
+        setTimeout(() => {
+          getImportTaskInfo(taskId, retryCount + 1);
+        }, RETRY_DELAY);
+      } else {
+        ElMessage.error($t('proxyPool.importLog.importTaskQueryTimeout'));
+      }
+    }
+  } catch (error) {
+    console.error($t('proxyPool.importLog.importTaskQueryError'), error);
+    if (retryCount < MAX_RETRY) {
+      setTimeout(() => {
+        getImportTaskInfo(taskId, retryCount + 1);
+      }, RETRY_DELAY);
+    } else {
+      ElMessage.error($t('proxyPool.importLog.importTaskQueryFailed'));
+    }
+  }
+}
+
 function onBatchDelete() {
   const proxyIds = getSelectedProxyIds();
 
-  if (!proxyIds.length) {
+  if (proxyIds.length === 0) {
     ElMessage.warning($t('proxyPool.message.selectBeforeDelete'));
     return;
   }
@@ -285,7 +353,7 @@ function onBatchDelete() {
     .then(async () => {
       try {
         const res = await batchDeleteProxyApi(proxyIds);
-        if (res?.code === 100000) {
+        if (res?.code === 100_000) {
           ElMessage.success($t('proxyPool.message.batchDeleteSuccess'));
           (gridApi as any).grid.clearCheckboxReserve?.();
           gridApi.reload();
@@ -317,7 +385,7 @@ function getSelectedProxyIds() {
 
 function onSetGrouping() {
   const proxyIds = getSelectedProxyIds();
-  if (!proxyIds.length) {
+  if (proxyIds.length === 0) {
     ElMessage.warning($t('proxyPool.message.selectBeforeGrouping'));
     return;
   }
@@ -354,6 +422,14 @@ function onGroupSuccess() {
 const [GroupModal, groupModalApi] = useVbenModal({
   connectedComponent: ProxyGroupModal,
 });
+
+function onImportLog() {
+  importLogModalApi.open();
+}
+
+const [ImportLogModal, importLogModalApi] = useVbenModal({
+  connectedComponent: ProxyImportLogModal,
+});
 </script>
 
 <template>
@@ -384,12 +460,16 @@ const [GroupModal, groupModalApi] = useVbenModal({
             <ElButton type="primary" @click="onCreate">
               {{ $t('proxyPool.action.add') }}
             </ElButton>
+            <ElButton type="primary" :loading="importing" @click="onImport">
+              {{ $t('proxyPool.action.import') }}
+            </ElButton>
             <ElButton
               type="primary"
+              plain
               :loading="importing"
-              @click="onImport"
+              @click="onImportLog"
             >
-              {{ $t('proxyPool.action.import') }}
+              {{ $t('proxyPool.action.importLog') }}
             </ElButton>
             <input
               ref="importFileInputRef"
@@ -412,6 +492,7 @@ const [GroupModal, groupModalApi] = useVbenModal({
       </Grid>
       <FormModal @success-after="onCreateSuccess" />
       <GroupModal @success-after="onGroupSuccess" />
+      <ImportLogModal />
     </div>
   </Page>
 </template>
@@ -430,9 +511,9 @@ const [GroupModal, groupModalApi] = useVbenModal({
 }
 
 .stat-title {
+  margin-bottom: 12px;
   font-size: 14px;
   color: var(--el-text-color-regular);
-  margin-bottom: 12px;
 }
 
 .stat-value {
@@ -444,8 +525,12 @@ const [GroupModal, groupModalApi] = useVbenModal({
 .toolbar-actions {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
   gap: 10px;
+  align-items: center;
+
+  .el-button + .el-button {
+    margin-left: 0;
+  }
 }
 
 :deep(.el-form-item) {
@@ -456,4 +541,3 @@ const [GroupModal, groupModalApi] = useVbenModal({
   padding: 40px 0 !important;
 }
 </style>
-

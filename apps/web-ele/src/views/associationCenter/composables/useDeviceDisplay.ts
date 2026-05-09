@@ -21,6 +21,69 @@ export function isDeviceLocked(item: DeviceItem): boolean {
   return (item as Record<string, unknown>).isLock === true;
 }
 
+function pickNonEmptyStr(v: unknown): string {
+  if (v === undefined || v === null) return '';
+  if (typeof v === 'number' && !Number.isNaN(v)) {
+    if (v === 1) return '已启用';
+    if (v === 0) return '未启用';
+    return String(v);
+  }
+  const s = String(v).trim();
+  return s;
+}
+
+/** 代理连通/检测状态：设备字段或 boundProxies[0]（兼容 camelCase / snake_case / 数字枚举） */
+export function getProxyStatus(item: DeviceItem): string {
+  const r = item as Record<string, unknown>;
+
+  const fromDevice =
+    pickNonEmptyStr(r.proxyStatus) ||
+    pickNonEmptyStr(r.proxy_status) ||
+    pickNonEmptyStr((r as Record<string, unknown>).ProxyStatus);
+  if (fromDevice) return fromDevice;
+
+  const bound = (item.boundProxies as Array<Record<string, unknown>> | undefined)?.[0];
+  if (bound) {
+    const fromBound =
+      pickNonEmptyStr(bound.proxyStatus) ||
+      pickNonEmptyStr(bound.proxy_status) ||
+      pickNonEmptyStr((bound as Record<string, unknown>).ProxyStatus) ||
+      pickNonEmptyStr(bound.status);
+    if (fromBound) return fromBound;
+  }
+  return '';
+}
+
+/** 根据 `proxyStatus` 文案解析是否已启用代理（用于看板对勾/叉） */
+export function getProxyEnabledState(
+  item: DeviceItem,
+): 'on' | 'off' | null {
+  const raw = getProxyStatus(item);
+  if (!raw) return null;
+  if (/未启用|未开启|禁用|停用/.test(raw)) return 'off';
+  if (/已启用|已开启/.test(raw)) return 'on';
+  const s = raw.trim().toLowerCase();
+  if (
+    s === '0' ||
+    s === 'false' ||
+    s === 'off' ||
+    s === 'disabled' ||
+    s === 'no'
+  ) {
+    return 'off';
+  }
+  if (
+    s === '1' ||
+    s === 'true' ||
+    s === 'on' ||
+    s === 'enabled' ||
+    s === 'yes'
+  ) {
+    return 'on';
+  }
+  return null;
+}
+
 export function canUnbindDeviceProxy(item: DeviceItem): boolean {
   const r = item as Record<string, unknown>;
   const boundProxy = (

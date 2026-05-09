@@ -40,7 +40,8 @@
     "import": "導入",
     "downloadTemplate": "下載模板",
     "batchDelete": "批量刪除",
-    "setGrouping": "代理分組"
+    "setGrouping": "代理分組",
+    "importLog": "導入日誌"
   },
   "groupForm": {
     "title": "代理分組",
@@ -103,5 +104,23 @@
     "editRemarkPlaceholder": "請輸入備註",
     "editRemarkSuccess": "備註更新成功",
     "editRemarkFailed": "備註更新失敗"
+  },
+  "importLog": {
+    "createTime": "創建時間",
+    "title": "導入記錄",
+    "down": "下載",
+    "userName": "創建人",
+    "result": "結果",
+    "status": "狀態",
+    "confirmExport": "確認是否要下载導入記錄？",
+    "failedReason": "失敗原因",
+    "importTaskIdInvalid": "導入任務ID無效",
+    "importTaskQueryTimeout": "導入任務查詢超時",
+    "importTaskQueryFailed": "查詢導入任務狀態失敗，已達到最大重試次數",
+    "importTaskCompleted": "導入任務完成，狀態: {status}",
+    "importTaskInProgress": "導入任務進行中，狀態: {status}，重試次數: {count}",
+    "importTaskNotFound": "未查詢到導入任務信息",
+    "importTaskQueryError": "查詢導入任務狀態失敗",
+    "importTaskSubmitted": "導入任務已提交，請稍後查詢"
   }
 }

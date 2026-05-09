@@ -9,6 +9,9 @@ import {
 
 const success = (code: number) => code === 200 || code === 100000;
 
+/** 作废晚到的绑定接口结果（切 Tab / reset 后与 proxyManage 一致，避免 Tab2 账号列表写穿到 Tab1 用户表右侧） */
+let bindingsMutateGeneration = 0;
+
 export const useSocialMediaAccountStore = defineStore('social-media-account', () => {
   const appList = ref<any[]>([]);
   const checkAppId = ref('');
@@ -33,11 +36,14 @@ export const useSocialMediaAccountStore = defineStore('social-media-account', ()
   }
 
   async function fetchAccountsByUsers(selectedRowKeys: string[] = []) {
+    bindingsMutateGeneration++;
+    const ticket = bindingsMutateGeneration;
     try {
       const res = await postSystemAccountsByUsersApi({
         userIds: selectedRowKeys,
         appId: checkAppId.value,
       });
+      if (ticket !== bindingsMutateGeneration) return;
       if (res && success(res.code)) {
         const list = Array.isArray(res.data) ? res.data : [];
         setCheckInfo(list);
@@ -46,11 +52,14 @@ export const useSocialMediaAccountStore = defineStore('social-media-account', ()
         setCheckInfo([]);
       }
     } catch {
+      if (ticket !== bindingsMutateGeneration) return;
       setCheckInfo([]);
     }
   }
 
   async function fetchUsersByAccounts(selectedRowKeys: string[] = []) {
+    bindingsMutateGeneration++;
+    const ticket = bindingsMutateGeneration;
     if (!selectedRowKeys.length) {
       setCheckInfo([]);
       setDefaultCheckInfo([]);
@@ -61,6 +70,7 @@ export const useSocialMediaAccountStore = defineStore('social-media-account', ()
       const res = await postSystemAccountsUsersApi({
         accountIds: selectedRowKeys,
       });
+      if (ticket !== bindingsMutateGeneration) return;
       if (res && success(res.code)) {
         const list = Array.isArray(res.data) ? res.data : [];
         setCheckInfo(list);
@@ -69,11 +79,13 @@ export const useSocialMediaAccountStore = defineStore('social-media-account', ()
         setCheckInfo([]);
       }
     } catch {
+      if (ticket !== bindingsMutateGeneration) return;
       setCheckInfo([]);
     }
   }
 
   function resetBindings() {
+    bindingsMutateGeneration++;
     setDefaultCheckInfo([]);
     setCheckUserIds([]);
     setCheckInfo([]);
@@ -81,6 +93,7 @@ export const useSocialMediaAccountStore = defineStore('social-media-account', ()
 
   /** 供 Pinia resetAllStores / 登出时清空；setup store 需自行实现 */
   function $reset() {
+    bindingsMutateGeneration++;
     appList.value = [];
     checkAppId.value = '';
     checkInfo.value = [];

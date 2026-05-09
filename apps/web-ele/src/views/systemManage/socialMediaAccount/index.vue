@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, nextTick, reactive, ref, watch } from 'vue';
+import { computed, nextTick, onActivated, reactive, ref, watch } from 'vue';
 
 import { Page } from '@vben/common-ui';
 
@@ -53,6 +53,9 @@ const userTableRef = ref();
 const selectedAccountIds = ref<string[]>([]);
 const selectedUserIds = ref<string[]>([]);
 const selectedAccountUserIds = ref<string[]>([]);
+/** 跨搜索/分页保留完整勾选；勿仅用表格 selection（过滤后不可见行不在 selection 内） */
+const selectedAccountRows = ref<any[]>([]);
+const selectedUserRows = ref<any[]>([]);
 
 /** 与参考项目一致：Tab1 在系统用户表、Tab2 在社媒账号表展示「仅展示已勾选」 */
 const userShowSelectedOnly = ref(false);
@@ -66,20 +69,126 @@ function getUserKey(row: any) {
   return String(row?.userId ?? row?.id ?? '');
 }
 
+/** 与 proxyManage 一致：绑定顺序 + 本地多选补全，用于「仅展示已勾选」全量行 */
+function orderedUserIdsFromBindAndExtra(
+  boundItems: any[],
+  getKey: (row: any) => string,
+  extraIds: string[],
+) {
+  const ordered: string[] = [];
+  const seen = new Set<string>();
+  for (const item of boundItems) {
+    const id = getKey(item).trim();
+    if (id && !seen.has(id)) {
+      seen.add(id);
+      ordered.push(id);
+    }
+  }
+  for (const raw of extraIds) {
+    const id = String(raw ?? '').trim();
+    if (id && !seen.has(id)) {
+      seen.add(id);
+      ordered.push(id);
+    }
+  }
+  return ordered;
+}
+
+function mergeSocialUserRowsByOrder(
+  orderedIds: string[],
+  fallbackRecords: any[],
+  previousRows: any[],
+) {
+  const curMap = new Map<string, any>();
+  for (const row of userRows.value) {
+    const id = getUserKey(row).trim();
+    if (id) curMap.set(id, row);
+  }
+  const prevMap = new Map<string, any>();
+  for (const row of previousRows) {
+    const id = getUserKey(row).trim();
+    if (id) prevMap.set(id, row);
+  }
+  return orderedIds
+    .map((id) => {
+      if (curMap.has(id)) return curMap.get(id);
+      if (prevMap.has(id)) return prevMap.get(id);
+      const fb = fallbackRecords.find((it: any) => getUserKey(it).trim() === id);
+      return fb ?? { userId: id, userName: '', nickName: '' };
+    })
+    .filter(Boolean);
+}
+
+function mergeSocialAccountRowsByOrder(
+  orderedIds: string[],
+  fallbackRecords: any[],
+  previousRows: any[],
+) {
+  const curMap = new Map<string, any>();
+  for (const row of accountRows.value) {
+    const id = getAccountKey(row).trim();
+    if (id) curMap.set(id, row);
+  }
+  const prevMap = new Map<string, any>();
+  for (const row of previousRows) {
+    const id = getAccountKey(row).trim();
+    if (id) prevMap.set(id, row);
+  }
+  return orderedIds
+    .map((rawId) => {
+      const id = String(rawId ?? '').trim();
+      if (!id) return null;
+      const fb =
+        fallbackRecords.find((it: any) => getAccountKey(it).trim() === id) ?? {};
+      const prev = prevMap.get(id) ?? {};
+      /**
+       * checkInfo（/accounts by users）常为瘦对象缺少 userId，直接当唯一数据源会丢「所有者行置灰」。
+       * 合并顺序：fb → prev → cur，让列表页完整行盖住绑定记录。
+       */
+      if (curMap.has(id)) {
+        return Object.assign({}, fb, prev, curMap.get(id));
+      }
+      if (prevMap.has(id)) return Object.assign({}, fb, prev);
+      if (Object.keys(fb).length) return { ...fb };
+      return { accountId: id };
+    })
+    .filter((row): row is any => Boolean(row && getAccountKey(row)));
+}
+
 const checkInfoList = computed<any[]>(() =>
   Array.isArray(smStore.checkInfo) ? smStore.checkInfo : [],
 );
 
+/** 绑定关系在 store.checkInfo（左侧选人/选账号后接口写入）；不能与 selected*Ids 混用否则会丢「左侧驱动右侧勾选」 */
+const boundAccountIds = computed(() => {
+  const s = new Set<string>();
+  for (const item of checkInfoList.value) {
+    const id = getAccountKey(item);
+    if (id) s.add(id);
+  }
+  return s;
+});
+
+const boundUserIds = computed(() => {
+  const s = new Set<string>();
+  for (const item of checkInfoList.value) {
+    const id = getUserKey(item);
+    if (id) s.add(id);
+  }
+  return s;
+});
+
 const displayUserRows = computed(() => {
+  /** 对齐 proxyManage：仅展示时用完整 selected 快照，不截成「当前搜索结果 ∩ 绑定」 */
   if (activeTab.value === 'assignUsers' && userShowSelectedOnly.value) {
-    return [...checkInfoList.value];
+    return [...selectedUserRows.value];
   }
   return userRows.value;
 });
 
 const displayAccountRows = computed(() => {
   if (activeTab.value === 'assignAccounts' && accountShowSelectedOnly.value) {
-    return [...checkInfoList.value];
+    return [...selectedAccountRows.value];
   }
   return accountRows.value;
 });
@@ -117,7 +226,11 @@ async function loadApps() {
   }
 }
 
-async function loadAccounts() {
+/**
+ * assignAccounts（对齐 proxyManage searchContainers(assignSystemUsers)）：
+ * 搜索社媒列表后应按「左侧已选用户」重新拉绑定，不保留右侧刚才手动全选的 checkInfo。
+ */
+async function loadAccounts(opts: { resyncBindingsFromSelectedUsers?: boolean } = {}) {
   if (!currentAppId.value) {
     accountRows.value = [];
     return;
@@ -136,6 +249,29 @@ async function loadAccounts() {
     }
     await nextTick();
     if (activeTab.value === 'assignAccounts') {
+      if (opts.resyncBindingsFromSelectedUsers) {
+        await smStore.fetchAccountsByUsers(selectedUserIds.value);
+        await nextTick();
+        const list = checkInfoList.value;
+        selectedAccountIds.value = list.map((r: any) => getAccountKey(r)).filter(Boolean);
+        selectedAccountUserIds.value = [
+          ...new Set(
+            list.map((r: any) => String(r?.userId ?? '')).filter(Boolean),
+          ),
+        ];
+      }
+      if (selectedAccountIds.value.length) {
+        const ordered = orderedUserIdsFromBindAndExtra(
+          checkInfoList.value,
+          getAccountKey,
+          selectedAccountIds.value,
+        );
+        selectedAccountRows.value = mergeSocialAccountRowsByOrder(
+          ordered,
+          checkInfoList.value,
+          selectedAccountRows.value,
+        );
+      }
       syncAccountSelectionFromStore();
     } else {
       syncAccountSelection();
@@ -145,7 +281,11 @@ async function loadAccounts() {
   }
 }
 
-async function loadUsers() {
+/**
+ * assignUsers（对齐 proxyManage.searchSystemUsers(assignContainers)）：
+ * - 搜右侧用户：**不清空**左侧已选账号；selectedAccountIds 保留，仅用接口刷新右侧用户勾选
+ */
+async function loadUsers(opts: { resyncBindingsFromSelectedAccounts?: boolean } = {}) {
   userLoading.value = true;
   try {
     const res = await postSystemAccountsUsersPageApi({
@@ -159,11 +299,41 @@ async function loadUsers() {
     }
     await nextTick();
     if (activeTab.value === 'assignUsers') {
+      if (opts.resyncBindingsFromSelectedAccounts) {
+        await smStore.fetchUsersByAccounts(selectedAccountIds.value);
+        await nextTick();
+        selectedUserIds.value = checkInfoList.value
+          .map((r: any) => getUserKey(r))
+          .filter(Boolean);
+      }
+      if (selectedUserIds.value.length) {
+        const ordered = orderedUserIdsFromBindAndExtra(
+          checkInfoList.value,
+          getUserKey,
+          selectedUserIds.value,
+        );
+        selectedUserRows.value = mergeSocialUserRowsByOrder(
+          ordered,
+          checkInfoList.value,
+          selectedUserRows.value,
+        );
+      }
       syncUserSelectionFromStore();
+    } else {
+      syncUserSelectionByIds();
     }
   } finally {
     userLoading.value = false;
   }
+}
+
+/** 双层 nextTick：晚到的 clearSelection 空选仍带 syncing 标志，避免误清 store（container 为单层） */
+function finishSelectionSync(done: () => void) {
+  nextTick(() => {
+    nextTick(() => {
+      done();
+    });
+  });
 }
 
 function syncAccountSelection() {
@@ -176,29 +346,47 @@ function syncAccountSelection() {
       tb.toggleRowSelection(row, true);
     }
   }
-  nextTick(() => {
+  finishSelectionSync(() => {
     syncingAccount = false;
   });
 }
 
-/** assignAccounts：checkInfo 为账号列表，与右侧账号表对齐 */
+/**
+ * assignAccounts Tab 左侧用户表：勾选只在 selectedUserIds（老项目该侧 isCheck=false，search 会清空 store，不记另一侧勾选）
+ * 翻页后需按 ID 恢复当前页勾选
+ */
+function syncUserSelectionByIds() {
+  const tb = userTableRef.value;
+  if (!tb) return;
+  syncingUser = true;
+  tb.clearSelection();
+  for (const row of userRows.value) {
+    if (selectedUserIds.value.includes(getUserKey(row))) {
+      tb.toggleRowSelection(row, true);
+    }
+  }
+  finishSelectionSync(() => {
+    syncingUser = false;
+  });
+}
+
+/** assignAccounts：右侧勾选必须由 checkInfo（接口绑定）驱动；「仅展示已勾选」时用全量选中行列表 */
 function syncAccountSelectionFromStore() {
   const tb = accountTableRef.value;
   if (!tb) return;
   syncingAccount = true;
   tb.clearSelection();
-  const want = new Set(checkInfoList.value.map((a: any) => getAccountKey(a)));
+  const want = boundAccountIds.value;
   const rows =
     activeTab.value === 'assignAccounts' && accountShowSelectedOnly.value
-      ? checkInfoList.value
+      ? selectedAccountRows.value
       : accountRows.value;
   for (const row of rows) {
     if (want.has(getAccountKey(row))) {
-      // 对应社媒项目：联动回填时即使行已禁用，也要保持“已勾选 + 置灰”
       tb.toggleRowSelection(row, true, true);
     }
   }
-  nextTick(() => {
+  finishSelectionSync(() => {
     syncingAccount = false;
   });
 }
@@ -208,18 +396,17 @@ function syncUserSelectionFromStore() {
   if (!tb) return;
   syncingUser = true;
   tb.clearSelection();
-  const want = new Set(checkInfoList.value.map((u: any) => getUserKey(u)));
+  const want = boundUserIds.value;
   const rows =
     activeTab.value === 'assignUsers' && userShowSelectedOnly.value
-      ? checkInfoList.value
+      ? selectedUserRows.value
       : userRows.value;
   for (const row of rows) {
     if (want.has(getUserKey(row))) {
-      // 对应社媒项目：联动回填时即使行已禁用，也要保持“已勾选 + 置灰”
       tb.toggleRowSelection(row, true, true);
     }
   }
-  nextTick(() => {
+  finishSelectionSync(() => {
     syncingUser = false;
   });
 }
@@ -230,6 +417,8 @@ async function onPickApp(id: string) {
   accountPage.current = 1;
   selectedAccountIds.value = [];
   selectedAccountUserIds.value = [];
+  selectedAccountRows.value = [];
+  selectedUserRows.value = [];
   userShowSelectedOnly.value = false;
   accountShowSelectedOnly.value = false;
   smStore.resetBindings();
@@ -252,15 +441,28 @@ function onAccountSelect(rows: any[]) {
   ) {
     return;
   }
-  selectedAccountIds.value = rows.map((r) => getAccountKey(r)).filter(Boolean);
+  const currentPageRows = displayAccountRows.value;
+  const currentPageIds = new Set(
+    currentPageRows.map((r) => getAccountKey(r)).filter(Boolean),
+  );
+  const remainRows = selectedAccountRows.value.filter((row) => {
+    const id = getAccountKey(row);
+    return id && !currentPageIds.has(id);
+  });
+  selectedAccountRows.value = [...remainRows, ...rows];
+  selectedAccountIds.value = selectedAccountRows.value
+    .map((r) => getAccountKey(r))
+    .filter(Boolean);
   selectedAccountUserIds.value = [
-    ...new Set(rows.map((r) => String(r?.userId ?? '')).filter(Boolean)),
+    ...new Set(
+      selectedAccountRows.value.map((r) => String(r?.userId ?? '')).filter(Boolean),
+    ),
   ];
   if (activeTab.value === 'assignUsers') {
     /** 空选时由 store 直接清空，不请求 /accounts/users（保存后 clearSelection 会触发） */
     void smStore.fetchUsersByAccounts(selectedAccountIds.value);
   } else {
-    smStore.setCheckInfo(rows);
+    smStore.setCheckInfo(selectedAccountRows.value);
   }
 }
 
@@ -274,11 +476,22 @@ function onUserSelect(rows: any[]) {
   ) {
     return;
   }
-  selectedUserIds.value = rows.map((r) => getUserKey(r)).filter(Boolean);
+  const currentPageRows = displayUserRows.value;
+  const currentPageIds = new Set(
+    currentPageRows.map((r) => getUserKey(r)).filter(Boolean),
+  );
+  const remainRows = selectedUserRows.value.filter((row) => {
+    const id = getUserKey(row);
+    return id && !currentPageIds.has(id);
+  });
+  selectedUserRows.value = [...remainRows, ...rows];
+  selectedUserIds.value = selectedUserRows.value
+    .map((r) => getUserKey(r))
+    .filter(Boolean);
   if (activeTab.value === 'assignAccounts') {
     void smStore.fetchAccountsByUsers(selectedUserIds.value);
   } else {
-    smStore.setCheckInfo(rows);
+    smStore.setCheckInfo(selectedUserRows.value);
   }
 }
 
@@ -287,8 +500,37 @@ watch(
   () => {
     nextTick(() => {
       if (activeTab.value === 'assignUsers') {
+        const snapshot = [...checkInfoList.value];
+        selectedUserIds.value = snapshot.map((r: any) => getUserKey(r)).filter(Boolean);
+        const ordered = orderedUserIdsFromBindAndExtra(
+          checkInfoList.value,
+          getUserKey,
+          selectedUserIds.value,
+        );
+        selectedUserRows.value = mergeSocialUserRowsByOrder(
+          ordered,
+          checkInfoList.value,
+          snapshot,
+        );
         syncUserSelectionFromStore();
       } else {
+        const snapshot = [...checkInfoList.value];
+        selectedAccountIds.value = snapshot.map((r: any) => getAccountKey(r)).filter(Boolean);
+        selectedAccountUserIds.value = [
+          ...new Set(
+            snapshot.map((r: any) => String(r?.userId ?? '')).filter(Boolean),
+          ),
+        ];
+        const ordered = orderedUserIdsFromBindAndExtra(
+          checkInfoList.value,
+          getAccountKey,
+          selectedAccountIds.value,
+        );
+        selectedAccountRows.value = mergeSocialAccountRowsByOrder(
+          ordered,
+          checkInfoList.value,
+          snapshot,
+        );
         syncAccountSelectionFromStore();
       }
     });
@@ -296,33 +538,73 @@ watch(
   { deep: true },
 );
 
-function onTabChange() {
-  accountTableRef.value?.clearSelection?.();
-  userTableRef.value?.clearSelection?.();
+/** store 绑定为全局常驻；不进页时清空，否则左侧未选仍会按旧 checkInfo 驱动右侧勾选 */
+function resetSocialMediaPageState() {
   smStore.resetBindings();
   selectedAccountIds.value = [];
   selectedAccountUserIds.value = [];
   selectedUserIds.value = [];
+  selectedAccountRows.value = [];
+  selectedUserRows.value = [];
   accountKeyword.value = '';
   userKeyword.value = '';
   userShowSelectedOnly.value = false;
   accountShowSelectedOnly.value = false;
   accountPage.current = 1;
   userPage.current = 1;
-  loadAccounts();
-  loadUsers();
 }
 
+async function onTabChange() {
+  accountTableRef.value?.clearSelection?.();
+  userTableRef.value?.clearSelection?.();
+  resetSocialMediaPageState();
+  /** 等 Tab 切换后带 :key 的表格重挂，再拉数（对齐 proxy 切 Tab 全清） */
+  await nextTick();
+  void loadAccounts();
+  void loadUsers();
+}
+
+/**
+ * 与 social_media_web mixins + proxyManage 一致：
+ * - Tab1 搜社媒：mixins isCheck=false 侧清空双侧关联 store
+ * - Tab2 搜社媒：同 proxy——**保留左侧已选用户**，仅按绑定重绘右侧勾选（resyncBindingsFromSelectedUsers）
+ */
 function searchAccounts() {
   accountShowSelectedOnly.value = false;
+  if (activeTab.value === 'assignUsers') {
+    smStore.setCheckInfo([]);
+    smStore.setCheckUserIds([]);
+    selectedAccountIds.value = [];
+    selectedAccountUserIds.value = [];
+    selectedUserIds.value = [];
+    selectedAccountRows.value = [];
+    selectedUserRows.value = [];
+  }
   accountPage.current = 1;
-  loadAccounts();
+  void loadAccounts({
+    resyncBindingsFromSelectedUsers: activeTab.value === 'assignAccounts',
+  });
 }
 
+/**
+ * Tab1 搜用户：同 proxy——**保留左侧已选社媒**，按绑定重绘右侧用户勾选
+ * Tab2 搜用户：mixins isCheck=false 侧清空双侧关联 store
+ */
 function searchUsers() {
   userShowSelectedOnly.value = false;
+  if (activeTab.value === 'assignAccounts') {
+    smStore.setCheckInfo([]);
+    smStore.setCheckUserIds([]);
+    selectedUserIds.value = [];
+    selectedAccountIds.value = [];
+    selectedAccountUserIds.value = [];
+    selectedAccountRows.value = [];
+    selectedUserRows.value = [];
+  }
   userPage.current = 1;
-  loadUsers();
+  void loadUsers({
+    resyncBindingsFromSelectedAccounts: activeTab.value === 'assignUsers',
+  });
 }
 
 function redoAccounts() {
@@ -335,7 +617,11 @@ function redoUsers() {
   searchUsers();
 }
 
+/** 与 social_media_web mixins.js watch.checkValue：勾选/取消「仅展示已勾选」时清空搜索关键字 */
 function onAccountOnlySelectedChange() {
+  if (activeTab.value === 'assignAccounts') {
+    accountKeyword.value = '';
+  }
   nextTick(() => {
     if (activeTab.value === 'assignAccounts') {
       syncAccountSelectionFromStore();
@@ -344,6 +630,9 @@ function onAccountOnlySelectedChange() {
 }
 
 function onUserOnlySelectedChange() {
+  if (activeTab.value === 'assignUsers') {
+    userKeyword.value = '';
+  }
   nextTick(() => {
     if (activeTab.value === 'assignUsers') {
       syncUserSelectionFromStore();
@@ -363,6 +652,28 @@ function isLeftUserTable() {
   return activeTab.value === 'assignAccounts';
 }
 
+/** Tab2 左侧唯一选中用户在列表中的登录名/昵称，用于与账号「所有者」文本对齐（合并瘦行无 userId 时） */
+function selectedSingleAssignAccountsUserAliases(): Set<string> {
+  const aliases = new Set<string>();
+  if (
+    activeTab.value !== 'assignAccounts' ||
+    selectedUserIds.value.length !== 1
+  ) {
+    return aliases;
+  }
+  const selId = String(selectedUserIds.value[0] ?? '').trim();
+  for (const r of [...selectedUserRows.value, ...userRows.value]) {
+    if (String(r?.userId ?? r?.id ?? '').trim() !== selId) continue;
+    const un = String(r?.userName ?? '').trim();
+    const nn = String(r?.nickName ?? '').trim();
+    if (un) aliases.add(un);
+    if (nn) aliases.add(nn);
+    break;
+  }
+  return aliases;
+}
+
+/** Tab2：瘦合并行可能没有 userId，用 owner 与左侧唯一选中用户登录名/昵称对齐 */
 function isLockedAccount(row: any) {
   if (isLockFlagTrue(row)) {
     return true;
@@ -370,8 +681,23 @@ function isLockedAccount(row: any) {
   if (activeTab.value !== 'assignAccounts' || selectedUserIds.value.length !== 1) {
     return false;
   }
-  const sel = selectedUserIds.value[0];
-  return row?.userId == sel;
+  const selId = String(selectedUserIds.value[0] ?? '').trim();
+  const uidCandidates = [
+    row?.userId,
+    row?.belongUserId,
+    row?.ownerUserId,
+  ]
+    .map((v) => String(v ?? '').trim())
+    .filter(Boolean);
+  if (uidCandidates.some((u) => u === selId)) {
+    return true;
+  }
+  const aliases = selectedSingleAssignAccountsUserAliases();
+  const ownerTxt = String(row?.owner ?? '').trim();
+  if (ownerTxt && aliases.has(ownerTxt)) {
+    return true;
+  }
+  return false;
 }
 
 function isLockedUser(row: any) {
@@ -401,17 +727,13 @@ function userRowClassName({ row }: { row: any }) {
 }
 
 async function saveBind() {
-  const accountRowsSel = accountTableRef.value?.getSelectionRows?.() ?? [];
-  const userRowsSel = userTableRef.value?.getSelectionRows?.() ?? [];
-  const accountIds = accountRowsSel.map((r: any) => r.accountId);
-  const userIds = userRowsSel.map((r: any) => r.userId);
+  const accountIds = selectedAccountRows.value
+    .map((r: any) => getAccountKey(r))
+    .filter(Boolean);
+  const userIds = selectedUserRows.value
+    .map((r: any) => getUserKey(r))
+    .filter(Boolean);
 
-  /**
-   * 与 social_media_web SocialMediaAccount/index.vue saveEvent 一致：
-   * - assignUsers（socialRef）：左侧为社媒账号表，须先选账号
-   * - assignAccounts（systemRef）：row-reverse 后左侧为系统用户表，须先选用户
-   * 仅选另一侧时提示「当前激活列表」
-   */
   if (activeTab.value === 'assignUsers') {
     if (!accountIds.length) {
       ElMessage.warning($t('systemManage.socialMediaAccount.pleaseSelectLeftList'));
@@ -422,13 +744,11 @@ async function saveBind() {
     return;
   }
 
+  const isAssignUsers = activeTab.value === 'assignUsers';
   const defaultIds = smStore.defaultCheckInfo
-    .map((el: any) => String(el.accountId ?? el.userId ?? ''))
+    .map((el: any) => (isAssignUsers ? el.userId : el.accountId))
     .filter(Boolean);
-
-  /** delIds：对照另一侧当前勾选（参考 tempInfo = data[activeValue == systemRef ? socialRef : systemRef]） */
-  const tempInfo =
-    activeTab.value === 'assignUsers' ? userIds : accountIds;
+  const tempInfo = isAssignUsers ? userIds : accountIds;
   const delIds = defaultIds.filter((id) => !tempInfo.includes(id));
 
   try {
@@ -437,7 +757,7 @@ async function saveBind() {
       accountIds,
       userIds,
       delIds,
-      bindDirection: activeTab.value === 'assignUsers' ? 0 : 1,
+      bindDirection: isAssignUsers ? 0 : 1,
     });
     if (res && successCode(res.code)) {
       ElMessage.success($t('systemManage.opSuccess'));
@@ -445,6 +765,8 @@ async function saveBind() {
       selectedAccountIds.value = [];
       selectedAccountUserIds.value = [];
       selectedUserIds.value = [];
+      selectedAccountRows.value = [];
+      selectedUserRows.value = [];
       accountTableRef.value?.clearSelection?.();
       userTableRef.value?.clearSelection?.();
       userShowSelectedOnly.value = false;
@@ -457,9 +779,28 @@ async function saveBind() {
   }
 }
 
+let socialMediaPageActivateTimes = 0;
+onActivated(() => {
+  socialMediaPageActivateTimes++;
+  /** KeepAlive：首次已由 loadApps().then 初始化；再次进入路由须清 store，否则会沿用上次勾选 */
+  if (socialMediaPageActivateTimes === 1) return;
+  resetSocialMediaPageState();
+  void nextTick(() => {
+    accountTableRef.value?.clearSelection?.();
+    userTableRef.value?.clearSelection?.();
+    void loadAccounts();
+    void loadUsers();
+  });
+});
+
 void loadApps().then(() => {
-  void loadAccounts();
-  void loadUsers();
+  resetSocialMediaPageState();
+  void nextTick(() => {
+    accountTableRef.value?.clearSelection?.();
+    userTableRef.value?.clearSelection?.();
+    void loadAccounts();
+    void loadUsers();
+  });
 });
 </script>
 
@@ -523,6 +864,7 @@ void loadApps().then(() => {
 
           <div class="table-scroll">
             <ElTable
+              :key="`sm-account-${activeTab}`"
               ref="accountTableRef"
               v-loading="accountLoading"
               :data="displayAccountRows"
@@ -626,6 +968,7 @@ void loadApps().then(() => {
 
           <div class="table-scroll">
             <ElTable
+              :key="`sm-user-${activeTab}`"
               ref="userTableRef"
               v-loading="userLoading"
               :data="displayUserRows"

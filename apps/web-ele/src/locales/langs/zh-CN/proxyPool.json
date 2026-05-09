@@ -40,7 +40,8 @@
     "import": "导入",
     "downloadTemplate": "下载模板",
     "batchDelete": "批量删除",
-    "setGrouping": "代理分组"
+    "setGrouping": "代理分组",
+    "importLog": "导入日志"
   },
   "groupForm": {
     "title": "代理分组",
@@ -103,6 +104,23 @@
     "editRemarkPlaceholder": "请输入备注",
     "editRemarkSuccess": "备注更新成功",
     "editRemarkFailed": "备注更新失败"
+  },
+  "importLog": {
+    "createTime": "创建时间",
+    "title": "导入记录",
+    "down": "下载",
+    "userName": "创建人",
+    "result": "结果",
+    "status": "状态",
+    "confirmExport": "确认下载导入记录吗？",
+    "failedReason": "失败原因",
+    "importTaskIdInvalid": "导入任务ID无效",
+    "importTaskQueryTimeout": "导入任务查询超时",
+    "importTaskQueryFailed": "查询导入任务状态失败，已达到最大重试次数",
+    "importTaskCompleted": "导入任务完成，状态: {status}",
+    "importTaskInProgress": "导入任务进行中，状态: {status}，重试次数: {count}",
+    "importTaskNotFound": "未查询到导入任务信息",
+    "importTaskQueryError": "查询导入任务状态失败",
+    "importTaskSubmitted": "导入任务已提交，请稍后查询"
   }
 }
-

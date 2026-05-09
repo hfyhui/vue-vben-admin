@@ -188,11 +188,48 @@ async function loadSystemUsers() {
     }
     await nextTick();
     if (selectedSystemUserIds.value.length) {
+      if (activeTab.value === 'assignContainers') {
+        selectedSystemUserRows.value = mergeSystemUserRowsForAllocatedDevices(
+          selectedSystemUserIds.value,
+          [],
+          selectedSystemUserRows.value,
+        );
+      }
       syncSystemUserSelection();
     }
   } finally {
     systemUserLoading.value = false;
   }
+}
+
+/** Tab1「仅展示已勾选」：保留全量选中行，与 proxyManage Tab2 合并代理行语义一致 */
+function mergeSystemUserRowsForAllocatedDevices(
+  orderedUserIds: string[],
+  resRecords: any[],
+  previousRows: any[],
+) {
+  const currentRows = systemUserRows.value;
+  const currentMap = new Map<string, any>();
+  for (const row of currentRows) {
+    const id = String(row?.userId ?? row?.id ?? '').trim();
+    if (id) currentMap.set(id, row);
+  }
+  const previousMap = new Map<string, any>();
+  for (const row of previousRows) {
+    const id = String(row?.userId ?? row?.id ?? '').trim();
+    if (id) previousMap.set(id, row);
+  }
+  return orderedUserIds
+    .map((id) => {
+      if (currentMap.has(id)) return currentMap.get(id);
+      if (previousMap.has(id)) return previousMap.get(id);
+      const fallback = resRecords.find((item: any) => {
+        const itemId = String(item?.userId ?? item?.id ?? '').trim();
+        return itemId === id;
+      });
+      return fallback ?? { userId: id, userName: '', nickName: '' };
+    })
+    .filter(Boolean);
 }
 
 async function syncUsersSelectionByDevices(deviceIds: string[]) {
@@ -212,23 +249,43 @@ async function syncUsersSelectionByDevices(deviceIds: string[]) {
     current: 1,
     size: 100000,
   });
-  const bindUserIds = new Set(
-    (res.records ?? [])
+  const records = res.records ?? [];
+  const bindUserIds = new Set<string>(
+    records
       .map((row: any) => String(row?.userId ?? row?.id ?? '').trim())
       .filter((id): id is string => Boolean(id)),
   );
+  const boundIdSet = new Set<string>(bindUserIds);
   syncingSystemUserSelection = true;
   table.clearSelection();
-  const selectedRows: any[] = [];
   for (const row of systemUserRows.value) {
     const id = String(row?.userId ?? row?.id ?? '').trim();
     if (id && (bindUserIds.has(id) || isOwnerLockedSystemUser(row))) {
-      selectedRows.push(row);
       table.toggleRowSelection(row, true, true);
+      if (id) boundIdSet.add(id);
     }
   }
-  selectedSystemUserRows.value = selectedRows;
-  selectedSystemUserIds.value = toUserIdList(selectedRows);
+  const orderedUserIds: string[] = [];
+  const seen = new Set<string>();
+  for (const item of records) {
+    const id = String(item?.userId ?? item?.id ?? '').trim();
+    if (id && !seen.has(id)) {
+      seen.add(id);
+      orderedUserIds.push(id);
+    }
+  }
+  for (const id of boundIdSet) {
+    if (!seen.has(id)) {
+      seen.add(id);
+      orderedUserIds.push(id);
+    }
+  }
+  selectedSystemUserRows.value = mergeSystemUserRowsForAllocatedDevices(
+    orderedUserIds,
+    records,
+    selectedSystemUserRows.value,
+  );
+  selectedSystemUserIds.value = [...orderedUserIds];
   syncingSystemUserSelection = false;
 }
 
@@ -271,14 +328,22 @@ async function syncContainersSelectionByUsers(userIds: string[]) {
 function onContainerSelect(rows: any[]) {
   if (syncingContainerSelection) return;
   if (switchingContainerOnlySelected && rows.length === 0) return;
+  const idKeys = ['deviceId', 'id'] as const;
   const currentPageRows = displayContainerRows.value;
-  const currentPageIds = new Set(toIdList(currentPageRows, ['deviceId', 'id']));
+  const currentPageIds = new Set(toIdList(currentPageRows, [...idKeys]));
+  const visibleIds = toIdList(rows, [...idKeys]);
+  const nextIdSet = new Set<string>();
+  for (const id of selectedContainerIds.value) {
+    if (!currentPageIds.has(id)) nextIdSet.add(id);
+  }
+  for (const id of visibleIds) nextIdSet.add(id);
+  selectedContainerIds.value = [...nextIdSet];
+
   const remainRows = selectedContainerRows.value.filter((row) => {
     const id = String(row?.deviceId ?? row?.id ?? '').trim();
     return id && !currentPageIds.has(id);
   });
   selectedContainerRows.value = [...remainRows, ...rows];
-  selectedContainerIds.value = toIdList(selectedContainerRows.value, ['deviceId', 'id']);
   if (activeTab.value === 'assignContainers') {
     void syncUsersSelectionByDevices(selectedContainerIds.value);
   }
@@ -289,15 +354,21 @@ function onSystemUserSelect(rows: any[]) {
   if (switchingSystemUserOnlySelected && rows.length === 0) return;
   const currentPageRows = displaySystemUserRows.value;
   const currentPageIds = new Set(toUserIdList(currentPageRows));
+  const visibleIds = toUserIdList(rows);
+  const nextIdSet = new Set<string>();
+  for (const id of selectedSystemUserIds.value) {
+    if (!currentPageIds.has(id)) nextIdSet.add(id);
+  }
+  for (const id of visibleIds) nextIdSet.add(id);
+  selectedSystemUserIds.value = [...nextIdSet];
+
   const remainRows = selectedSystemUserRows.value.filter((row) => {
     const id = String(row?.userId ?? row?.id ?? '').trim();
     return id && !currentPageIds.has(id);
   });
   selectedSystemUserRows.value = [...remainRows, ...rows];
-  selectedSystemUserIds.value = toUserIdList(selectedSystemUserRows.value);
   if (activeTab.value === 'assignSystemUsers') {
-    const userIds = toUserIdList(selectedSystemUserRows.value);
-    void syncContainersSelectionByUsers(userIds);
+    void syncContainersSelectionByUsers(selectedSystemUserIds.value);
   }
 }
 
@@ -430,7 +501,9 @@ function resetSystemUsers() {
 function syncSystemUserSelection() {
   const table = systemUserTableRef.value;
   if (!table) return;
-  const selectedIds = new Set(toUserIdList(selectedSystemUserRows.value));
+  const selectedIds = new Set(
+    selectedSystemUserIds.value.map((id) => String(id).trim()).filter(Boolean),
+  );
   syncingSystemUserSelection = true;
   table.clearSelection();
   for (const row of displaySystemUserRows.value) {
@@ -445,6 +518,9 @@ function syncSystemUserSelection() {
 }
 
 function onSystemUserOnlySelectedChange() {
+  if (activeTab.value === 'assignContainers') {
+    systemUserKeyword.value = '';
+  }
   switchingSystemUserOnlySelected = true;
   nextTick(() => {
     if (activeTab.value === 'assignContainers') {
@@ -472,6 +548,9 @@ function syncContainerSelection() {
 }
 
 function onContainerOnlySelectedChange() {
+  if (activeTab.value === 'assignSystemUsers') {
+    containerKeyword.value = '';
+  }
   switchingContainerOnlySelected = true;
   nextTick(() => {
     if (activeTab.value === 'assignSystemUsers') {
