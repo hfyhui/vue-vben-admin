@@ -215,6 +215,15 @@ function handleSearch() {
   fetchData();
 }
 
+/** 重新拉取账号列表（关联变更后由父组件调用） */
+async function refreshAccountList() {
+  list.value = [];
+  pagination.current = 1;
+  finished.value = false;
+  selectedIds.value = [];
+  await fetchData();
+}
+
 /** 无限滚动加载更多 */
 function handleLoadMore() {
   if (loading.value || finished.value) return;
@@ -337,6 +346,7 @@ defineExpose({
   getSelectedAccounts,
   clearSelectedAccounts,
   applyReverseQueryAccounts,
+  refreshAccountList,
 });
 </script>
 

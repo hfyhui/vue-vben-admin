@@ -365,6 +365,7 @@ async function submitBatchUnbind() {
       deviceBoardRef.value?.clearSelectedDevices?.();
       await deviceBoardRef.value?.refreshDeviceList?.();
       await proxyBoardRef.value?.refreshProxyList?.();
+      await accountBoardRef.value?.refreshAccountList?.();
       await loadAssetSummary();
       return;
     }
