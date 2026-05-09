@@ -60,8 +60,9 @@ export function getProxyEnabledState(
 ): 'on' | 'off' | null {
   const raw = getProxyStatus(item);
   if (!raw) return null;
-  if (/未启用|未开启|禁用|停用/.test(raw)) return 'off';
-  if (/已启用|已开启/.test(raw)) return 'on';
+  /* 简体中文 + 繁体（启用/开启 等异形字）；后端按语言返回时简体正则不匹配会变 null，IP 将显示为正文色 */
+  if (/未启用|未啟用|未开启/.test(raw)) return 'off';
+  if (/已启用|已啟用|已开启/.test(raw)) return 'on';
   const s = raw.trim().toLowerCase();
   if (
     s === '0' ||
