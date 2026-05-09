@@ -46,6 +46,7 @@
     "lock": "鎖定",
     "unlock": "解鎖",
     "batchDelete": "批量刪除",
+    "batchUnbind": "批量解綁",
     "setGrouping": "賬號分組"
   },
   "groupForm": {
@@ -87,6 +88,7 @@
     "accountGroupPlaceholder": "請選擇賬號分組"
   },
   "message": {
+    "selectBeforeUnbind": "請先選擇要解綁的賬號",
     "selectBeforeDelete": "請先選擇要刪除的賬號",
     "selectBeforeGrouping": "請先選擇要分組的賬號",
     "selectBeforeLock": "請先選擇要操作的賬號",
@@ -107,6 +109,10 @@
     "batchDeleteConfirmTitle": "批量刪除確認",
     "batchDeleteSuccess": "成功刪除 {count} 個賬號",
     "batchDeleteFailed": "批量刪除失敗",
+    "batchUnbindConfirm": "確定要對選中的 {count} 個賬號執行批量解綁嗎？",
+    "batchUnbindConfirmTitle": "批量解綁確認",
+    "batchUnbindSuccess": "成功解綁 {count} 個賬號",
+    "batchUnbindFailed": "批量解綁失敗",
     "groupSetSuccess": "賬號分組成功",
     "groupSetFailed": "賬號分組失敗",
     "importSuccess": "導入賬號成功",

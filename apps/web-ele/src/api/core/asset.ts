@@ -147,6 +147,13 @@ export interface BatchDelProxyParams {
   proxyIds?: string[];
 }
 
+/** 关联中心批量解绑 POST /asset/batch/unbind — type 取值 ACCOUNT | PROXY | ALL */
+export interface BatchUnbindAssetParams {
+  deviceIds?: string[];
+  type?: string;
+  isDel?: boolean;
+}
+
 export interface LockAccountParams {
   accountIds?: string[];
   lock?: boolean;
@@ -779,6 +786,17 @@ export async function batchDeleteAccountApi(
   });
 }
 
+/** 批量解绑账号 POST /asset/batch/unbind-account */
+export async function batchUnbindAccountApi(
+  accountIds: string[],
+): Promise<ApiResponse<null>> {
+  const payload: BatchDelAccountParams = { accountIds };
+  return proxyClient.post<ApiResponse<null>>(
+    '/asset/batch/unbind-account',
+    payload,
+  );
+}
+
 /** 锁定/解锁账号 POST /asset/lock-account */
 export async function lockAccountApi(
   params: LockAccountParams,
@@ -801,6 +819,24 @@ export async function batchDeleteProxyApi(
   return proxyClient.delete<ApiResponse<null>>('/asset/batch/del-proxy', {
     data: payload,
   });
+}
+
+/** 批量解绑代理 POST /asset/batch/unbind-proxy */
+export async function batchUnbindProxyApi(
+  proxyIds: string[],
+): Promise<ApiResponse<null>> {
+  const payload: BatchDelProxyParams = { proxyIds };
+  return proxyClient.post<ApiResponse<null>>(
+    '/asset/batch/unbind-proxy',
+    payload,
+  );
+}
+
+/** 关联中心批量解绑 POST /asset/batch/unbind */
+export async function batchUnbindAssetApi(
+  params: BatchUnbindAssetParams,
+): Promise<ApiResponse<null>> {
+  return proxyClient.post<ApiResponse<null>>('/asset/batch/unbind', params);
 }
 
 /** 解绑账号 POST /asset/account/unbind */

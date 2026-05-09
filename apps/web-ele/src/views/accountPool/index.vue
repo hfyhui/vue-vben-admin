@@ -13,6 +13,7 @@ import { useAssetEnumsStore } from '#/store';
 import {
   addAccountRemarkApi,
   batchDeleteAccountApi,
+  batchUnbindAccountApi,
   downloadAccountTemplateApi,
   getAssetAppListApi,
   getAccountPoolNumApi,
@@ -38,6 +39,7 @@ const selectedPlatformIds = ref<string[]>([]);
 const importAppId = ref('');
 const importing = ref(false);
 const locking = ref(false);
+const unbinding = ref(false);
 const savingRemark = ref(false);
 const editingRemarkAccountId = ref<string | null>(null);
 const editingRemarkValue = ref('');
@@ -236,6 +238,44 @@ function onBatchDelete() {
         await loadAccountPoolNum();
       }
       // 非 100000：proxyClient 已弹出业务 msg，不再重复提示、不刷新
+    })
+    .catch(() => {
+      // 用户取消
+    });
+}
+
+function onBatchUnbind() {
+  if (unbinding.value) return;
+  const ids = getSelectedAccountIds(
+    $t('accountPool.message.selectBeforeUnbind'),
+  );
+  if (!ids.length) return;
+
+  const count = ids.length;
+
+  ElMessageBox.confirm(
+    $t('accountPool.message.batchUnbindConfirm', { count }),
+    $t('accountPool.message.batchUnbindConfirmTitle'),
+    { type: 'warning' },
+  )
+    .then(async () => {
+      unbinding.value = true;
+      try {
+        const res = await batchUnbindAccountApi(ids);
+        if (res?.code === 100000) {
+          ElMessage.success(
+            $t('accountPool.message.batchUnbindSuccess', { count }),
+          );
+          (gridApi as any).grid.clearCheckboxReserve?.();
+          gridApi.reload();
+          await loadAccountPoolNum();
+        }
+      } catch (error) {
+        console.error('[accountPool] 批量解绑失败:', error);
+        ElMessage.error($t('accountPool.message.batchUnbindFailed'));
+      } finally {
+        unbinding.value = false;
+      }
     })
     .catch(() => {
       // 用户取消
@@ -506,6 +546,13 @@ onMounted(() => {
               {{ $t('accountPool.action.batchDelete') }}
             </ElButton>
             <ElButton
+              type="danger"
+              :loading="unbinding"
+              @click="onBatchUnbind"
+            >
+              {{ $t('accountPool.action.batchUnbind') }}
+            </ElButton>
+            <ElButton
               type="warning"
               :loading="locking"
               @click="onBatchLock(true)"
@@ -563,8 +610,13 @@ onMounted(() => {
   gap: 10px;
 }
 
+.toolbar-actions :deep(.el-button) {
+  margin: 0;
+}
+
 .import-platform-select {
   width: 240px;
+  flex-shrink: 0;
 }
 
 :deep(.el-form-item) {

@@ -565,6 +565,11 @@ onMounted(() => {
   gap: 10px;
 }
 
+/* 相邻 .el-button 默认 margin-left，与 flex gap 叠在一起会间距不均 */
+.toolbar-actions :deep(.el-button) {
+  margin: 0;
+}
+
 :deep(.el-form-item) {
   margin-bottom: 14px;
 }

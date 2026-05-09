@@ -46,6 +46,7 @@
     "lock": "锁定",
     "unlock": "解锁",
     "batchDelete": "批量删除",
+    "batchUnbind": "批量解绑",
     "setGrouping": "账号分组"
   },
   "groupForm": {
@@ -87,6 +88,7 @@
     "accountGroupPlaceholder": "请选择账号分组"
   },
   "message": {
+    "selectBeforeUnbind": "请先选择要解绑的账号",
     "selectBeforeDelete": "请先选择要删除的账号",
     "selectBeforeGrouping": "请先选择要分组的账号",
     "selectBeforeLock": "请先选择要操作的账号",
@@ -107,6 +109,10 @@
     "batchDeleteConfirmTitle": "批量删除确认",
     "batchDeleteSuccess": "成功删除 {count} 个账号",
     "batchDeleteFailed": "批量删除失败",
+    "batchUnbindConfirm": "确定要对选中的 {count} 个账号执行批量解绑吗？",
+    "batchUnbindConfirmTitle": "批量解绑确认",
+    "batchUnbindSuccess": "成功解绑 {count} 个账号",
+    "batchUnbindFailed": "批量解绑失败",
     "groupSetSuccess": "账号分组成功",
     "groupSetFailed": "账号分组失败",
     "importSuccess": "导入账号成功",

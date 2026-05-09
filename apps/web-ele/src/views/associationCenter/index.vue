@@ -6,6 +6,7 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import { TopRight } from '@element-plus/icons-vue';
 
 import {
+  batchUnbindAssetApi,
   checkAccountDeviceApi,
   enableAssetApi,
   assetUserAllocationApi,
@@ -62,6 +63,16 @@ const userQuery = reactive({
 
 /** 与后端 POST /asset/check/account-device 约定：需二次确认后方可继续绑定 */
 const ACCOUNT_DEVICE_CHECK_NEED_CONFIRM_CODE = 500511;
+
+type BatchUnbindDialogType = 'ACCOUNT' | 'ALL' | 'PROXY';
+
+const batchUnbindDialogVisible = ref(false);
+const batchUnbindSubmitting = ref(false);
+const batchUnbindDeviceIds = ref<string[]>([]);
+/** 解绑类型：与后端 BATCH_BIND 枚举一致 */
+const batchUnbindType = ref<BatchUnbindDialogType>('ACCOUNT');
+/** 是否解绑后删除相关数据 */
+const batchUnbindAlsoDelete = ref(false);
 
 async function loadAssetSummary() {
   try {
@@ -316,6 +327,58 @@ async function onSubmitUserAllocate() {
   }
 }
 
+function onOpenBatchUnbindDialog() {
+  const rawIds = deviceBoardRef.value?.getSelectedDeviceIds?.() || [];
+  const deviceIds = uniqueIds(rawIds) as string[];
+  if (!deviceIds.length) {
+    ElMessage.warning($t('associationCenter.selectDeviceBeforeBatchUnbind'));
+    return;
+  }
+  batchUnbindDeviceIds.value = deviceIds;
+  batchUnbindType.value = 'ACCOUNT';
+  batchUnbindAlsoDelete.value = false;
+  batchUnbindDialogVisible.value = true;
+}
+
+function onBatchUnbindDialogClosed() {
+  batchUnbindDeviceIds.value = [];
+  batchUnbindType.value = 'ACCOUNT';
+  batchUnbindAlsoDelete.value = false;
+}
+
+async function submitBatchUnbind() {
+  const deviceIds = batchUnbindDeviceIds.value;
+  if (!deviceIds.length || batchUnbindSubmitting.value) return;
+
+  batchUnbindSubmitting.value = true;
+  try {
+    const response = await batchUnbindAssetApi({
+      deviceIds,
+      type: batchUnbindType.value,
+      isDel: batchUnbindAlsoDelete.value,
+    });
+    if (response?.code === 100000) {
+      ElMessage.success(
+        response?.msg || $t('associationCenter.batchUnbindSuccess'),
+      );
+      batchUnbindDialogVisible.value = false;
+      deviceBoardRef.value?.clearSelectedDevices?.();
+      await deviceBoardRef.value?.refreshDeviceList?.();
+      await proxyBoardRef.value?.refreshProxyList?.();
+      await loadAssetSummary();
+      return;
+    }
+    if (!response?.msg) {
+      ElMessage.error($t('associationCenter.batchUnbindFailed'));
+    }
+  } catch (error) {
+    console.error('[associationCenter] 批量解绑失败:', error);
+    ElMessage.error($t('associationCenter.batchUnbindFailed'));
+  } finally {
+    batchUnbindSubmitting.value = false;
+  }
+}
+
 async function onContainerReset() {
   const rawIds = deviceBoardRef.value?.getSelectedDeviceIds?.() || [];
   const deviceIds = uniqueIds(rawIds) as string[];
@@ -554,6 +617,9 @@ function onClearSelection(command: ClearSelectionType) {
         <el-button type="primary" @click="onOfficialEnable">
           {{ $t('associationCenter.officialEnable') }}
         </el-button>
+        <el-button type="danger" @click="onOpenBatchUnbindDialog">
+          {{ $t('associationCenter.batchUnbind') }}
+        </el-button>
         <el-button type="danger" @click="onContainerReset">
           {{ $t('associationCenter.containerReset') }}
         </el-button>
@@ -600,6 +666,58 @@ function onClearSelection(command: ClearSelectionType) {
         @refresh-proxy-list="onDeviceBoardRefreshProxyList"
       />
     </el-card>
+
+    <el-dialog
+      v-model="batchUnbindDialogVisible"
+      :title="$t('associationCenter.batchUnbind')"
+      width="560px"
+      destroy-on-close
+      @closed="onBatchUnbindDialogClosed"
+    >
+      <el-alert
+        type="error"
+        :closable="false"
+        show-icon
+        class="batch-unbind-alert"
+      >
+        {{
+          $t('associationCenter.batchUnbindNotice', {
+            count: batchUnbindDeviceIds.length,
+          })
+        }}
+      </el-alert>
+      <div class="batch-unbind-form">
+        <div class="batch-unbind-field-label">
+          {{ $t('associationCenter.batchUnbindChooseType') }}
+        </div>
+        <el-radio-group v-model="batchUnbindType" class="batch-unbind-radio-group">
+          <el-radio label="PROXY">
+            {{ $t('associationCenter.batchUnbindProxy') }}
+          </el-radio>
+          <el-radio label="ACCOUNT">
+            {{ $t('associationCenter.batchUnbindAccount') }}
+          </el-radio>
+          <el-radio label="ALL">
+            {{ $t('associationCenter.batchUnbindAll') }}
+          </el-radio>
+        </el-radio-group>
+        <el-checkbox v-model="batchUnbindAlsoDelete" class="batch-unbind-delete-check">
+          {{ $t('associationCenter.batchUnbindAlsoDelete') }}
+        </el-checkbox>
+      </div>
+      <template #footer>
+        <el-button @click="batchUnbindDialogVisible = false">
+          {{ $t('associationCenter.cancelButtonText') }}
+        </el-button>
+        <el-button
+          type="danger"
+          :loading="batchUnbindSubmitting"
+          @click="submitBatchUnbind"
+        >
+          {{ $t('associationCenter.confirmButtonText') }}
+        </el-button>
+      </template>
+    </el-dialog>
 
     <el-dialog
       v-model="userAllocateDialogVisible"
@@ -671,14 +789,42 @@ function onClearSelection(command: ClearSelectionType) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 6px;
-  padding: 6px 0;
+  flex-wrap: wrap;
+  gap: 10px 12px;
+  /* 上与下的留白一致，并与上下区块拉开相等距离（原先仅 margin-bottom + 小号 padding，易显得「上宽下窄」） */
+  margin-block: 6px;
+  padding-block: 6px;
 }
 
 .action-left {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  min-height: var(--el-component-size); /* 与默认按钮高度对齐，便于垂直居中观感一致 */
+}
+
+/* 相邻 .el-button 自带 margin-left，与 flex gap 叠加会忽宽忽窄；下拉触发器外层不是 button，例外更明显 */
+.action-left :deep(.el-button) {
+  margin: 0;
+}
+
+.action-left :deep(.el-dropdown) {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+}
+
+/* 下拉触发器外层的包裹结点有时会多出半行高度的空隙 */
+.action-left :deep(.el-dropdown .el-tooltip__trigger) {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+}
+
+.action-bar > :deep(.el-button) {
+  margin: 0;
 }
 
 .board-card {
@@ -716,5 +862,41 @@ function onClearSelection(command: ClearSelectionType) {
 :deep(tr.locked-row td) {
   background: color-mix(in srgb, var(--el-fill-color-light) 45%, transparent);
   color: color-mix(in srgb, var(--el-text-color-secondary) 78%, var(--el-text-color-primary));
+}
+
+.batch-unbind-alert {
+  margin-bottom: 16px;
+}
+
+.batch-unbind-form {
+  padding: 0 4px;
+}
+
+.batch-unbind-field-label {
+  margin-bottom: 10px;
+  font-size: 14px;
+  color: var(--el-text-color-primary);
+}
+
+.batch-unbind-radio-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.batch-unbind-radio-group :deep(.el-radio) {
+  margin-right: 0;
+  height: auto;
+  align-items: flex-start;
+  white-space: normal;
+}
+
+.batch-unbind-delete-check {
+  display: flex;
+  width: 100%;
+  align-items: flex-start;
+  line-height: 1.45;
 }
 </style>
