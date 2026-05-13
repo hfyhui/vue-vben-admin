@@ -1578,11 +1578,10 @@ export function useWebAdbScrcpy(
       import.meta.env.MODE === 'development'
         ? 'test.callfansai.cn'
         : window.location.hostname;
-    const pathSegment = props.device?.connIp || hostname;
+    const pathSegment =
+      props.device?.chipCode === 'AIBOX_L02' ? props.device?.connIp : hostname;
     const wsUrl = `https://${hostname}/${pathSegment}/3333`;
-    //     httpPath.value = wsUrl;
-    const ip = 'http://192.168.9.31:3333';
-    httpPath.value = ip;
+    httpPath.value = wsUrl;
     getDevicesStatus();
     window.addEventListener('resize', handleResize, {
       signal: abortController.signal,
