@@ -7,6 +7,10 @@
     "casting": "Casting...",
     "reconnecting": "Reconnecting...",
     "refreshReconnect": "Reconnect",
+    "deviceTimeout": "Device timeout",
+    "doubleClickToReconnect": "Double click to reconnect",
+    "userIsUsing": "is using",
+    "doubleClickToOccupy": "Double click to force occupy",
     "operating": "Operating",
     "shutdown": "Shutdown",
     "powerOn": "Power On",
@@ -31,7 +35,13 @@
     "qrCodeTip2": "For direct access on the current computer, click",
     "qrCodeTip3": "here",
     "getQrCodeError": "Failed to get QR code information, please try again later!",
-    "goUrlQrCodeError": "Failed to get information, please try again later!"
+    "goUrlQrCodeError": "Failed to get information, please try again later!",
+    "ip": "IP",
+    "imei": "IMEI",
+    "verificationCode": "Verification code: ",
+    "pleaseRefresh": "Please refresh",
+    "refreshCode": "Refresh code",
+    "codeGetFailed": "Failed to get code, refresh or retry later"
   },
   "fileManager": {
     "connectionError": {
@@ -82,7 +92,39 @@
     },
     "drawer": {
       "title": "File Manager",
-      "tooltip": "File Manager"
+      "tooltip": "File Manager",
+      "tooltipLive": "Live Config",
+      "statusGetFailed": "Failed to get live status",
+      "deviceInfoMissing": "Missing device info",
+      "startLive": "Start Live",
+      "stopLive": "Stop Live",
+      "startLiveSuccess": "Live started successfully",
+      "startLiveFailed": "Failed to start live",
+      "stopLiveSuccess": "Live stopped successfully",
+      "stopLiveFailed": "Failed to stop live",
+      "upgradeAV": "Upgrade AV",
+      "upgradeAVSuccess": "AV upgraded successfully",
+      "upgradeAVFailed": "Failed to upgrade AV",
+      "upgradeAVDesc": "If the screen is stuttering, upgrade AV plugin and restart live service.",
+      "upgradeAVBtn": "Upgrade AV",
+      "OBSConfig": "OBS Config",
+      "OBSConfigDesc": "OBS Config Description",
+      "OBSAddressConfig": "OBS Live Address Config",
+      "OBSQualityConfig": "OBS Live Quality Config",
+      "OBSAudioConfig": "OBS Live Audio Config",
+      "OBSConfigExample": "Below is an example of OBS live address configuration",
+      "obsConfigPlaceholder": "Please complete OBS settings according to this tab.",
+      "serviceAddress": "Service Address",
+      "streamKey": "Stream Key",
+      "example": ", e.g.: ",
+      "notAv": "Current device has not installed AV plugin",
+      "notAvTip": "Notice: AV plugin is not installed on this device. Install now?",
+      "installAVSuccess": "AV plugin installed successfully",
+      "installAVFailed": "Failed to install AV plugin",
+      "installAVBtn": "Install AV",
+      "obsLiveTip": "Note",
+      "obsLiveTip1": "1. Start streaming in OBS first, then click {btn} to receive OBS stream on device.",
+      "obsLiveTip2": "2. If OBS push stream disconnects, related rooms disconnect and need restarting."
     }
   },
   "mediaPreview": {
@@ -95,6 +137,13 @@
     "nonOriginalSizeMode": "Fit window",
     "originalSizeMode": "Original size",
     "zoomOut": "Zoom out",
-    "zoomIn": "Zoom in"
+    "zoomIn": "Zoom in",
+    "imageFile": "Image File",
+    "videoFile": "Video File",
+    "previous": "← Previous",
+    "next": "→ Next",
+    "close": "ESC Close",
+    "zoom": "+/- Zoom",
+    "rotate": "R/L Rotate"
   }
 }

@@ -1,10 +1,10 @@
 <script setup lang="ts">
+import type { DeviceItem } from '#/api/core/asset';
+
 import { Box, CircleClose, Loading } from '@element-plus/icons-vue';
 
 import { $t } from '#/locales';
 import { formatProcessUrl } from '#/utils/asset-url';
-
-import type { DeviceItem } from '#/api/core/asset';
 
 import {
   canUnbindDeviceProxy,
@@ -16,36 +16,36 @@ import {
 
 type BoundAccountRow = {
   accountId?: string;
-  logoPath?: string;
-  userAccount?: string;
-  accountNickname?: string | null;
-  displayId?: string;
-  tooltip?: string;
+  accountNickname?: null | string;
   color?: string;
+  displayId?: string;
   /** 列表接口带回才可解绑 */
   fromServer?: boolean;
+  logoPath?: string;
+  tooltip?: string;
+  userAccount?: string;
 };
 
-function getLogoUrl(logoPath?: string) {
-  return formatProcessUrl(logoPath);
-}
-
 defineProps<{
+  finished: boolean;
   list: DeviceItem[];
   loading: boolean;
-  finished: boolean;
   selectedDeviceKeys: string[];
 }>();
 
 const emit = defineEmits<{
-  loadMore: [];
-  dragOver: [ev: DragEvent];
-  drop: [ev: DragEvent, item: DeviceItem];
   deviceClick: [item: DeviceItem];
   deviceDblclick: [item: DeviceItem];
+  dragOver: [ev: DragEvent];
+  drop: [ev: DragEvent, item: DeviceItem];
+  loadMore: [];
   unbindAccount: [item: DeviceItem, accountId: string];
   unbindProxy: [item: DeviceItem];
 }>();
+
+function getLogoUrl(logoPath?: string) {
+  return formatProcessUrl(logoPath);
+}
 
 function handleLoadMore() {
   emit('loadMore');
@@ -99,7 +99,7 @@ function getProxyDisplay(item: DeviceItem) {
     if (area) return area;
     return proxyIp ?? '';
   }
-  const area =  item.area;
+  const area = item.area;
   const proxyIp = item.proxyIp;
   if (area && proxyIp) return `${area} ${proxyIp}`;
   if (area) return area;
@@ -108,16 +108,17 @@ function getProxyDisplay(item: DeviceItem) {
 
 function getBoundAccounts(item: DeviceItem): BoundAccountRow[] {
   const rows =
-    (item.accountInfos as Array<Record<string, any>> | undefined)
-      ?.map((acc) => ({
+    (item.accountInfos as Array<Record<string, any>> | undefined)?.map(
+      (acc) => ({
         accountId: acc.accountId,
         logoPath: acc.appLogo,
         userAccount: acc.userAccount,
         accountNickname: acc.accountNickname,
-        tooltip:  acc.accountId,
-        color: (acc.color as string | undefined),
+        tooltip: acc.accountId,
+        color: acc.color as string | undefined,
         fromServer: acc.fromServer === true,
-      })) || [];
+      }),
+    ) || [];
   return rows;
 }
 
@@ -147,7 +148,7 @@ function getProxyLineTooltip(item: DeviceItem): string {
     :infinite-scroll-distance="200"
     :infinite-scroll-disabled="loading || finished"
   >
-    <template v-if="list.length">
+    <template v-if="list.length > 0">
       <div class="device-grid">
         <div
           v-for="item in list"
@@ -163,11 +164,11 @@ function getProxyLineTooltip(item: DeviceItem): string {
           @drop="onDrop($event, item)"
         >
           <el-tooltip
-            :content="item.devicePrompt"
+            :content="item.riskTip"
             placement="top"
-            :disabled="!item.devicePrompt"
+            :disabled="!item.riskTip"
           >
-            <div class="card-status" :class="item.color || 'gray'" />
+            <div class="card-status" :class="item.riskColor || 'gray'"></div>
           </el-tooltip>
           <div class="card-body">
             <el-tooltip
@@ -177,17 +178,16 @@ function getProxyLineTooltip(item: DeviceItem): string {
             >
               <div
                 class="card-ip"
-                :class="{ 'card-ip--proxy-on': getProxyEnabledState(item) === 'on' }"
+                :class="{
+                  'card-ip--proxy-on': getProxyEnabledState(item) === 'on',
+                }"
               >
                 {{ item.deviceIp }}
               </div>
             </el-tooltip>
             <div class="card-row">
               <span class="card-label">{{ $t('associationCenter.groupInfo') }}:</span>
-              <el-tooltip
-                :content="item.suiteNames?.join(',')"
-                placement="top"
-              >
+              <el-tooltip :content="item.suiteNames?.join(',')" placement="top">
                 <span class="card-text-ellipsis">{{
                   item.suiteNames?.join(',')
                 }}</span>
@@ -224,13 +224,13 @@ function getProxyLineTooltip(item: DeviceItem): string {
               <span>{{ getDeviceVersion(item) }}</span>
             </div>
             <div
-              v-if="getBoundAccounts(item).length"
+              v-if="getBoundAccounts(item).length > 0"
               class="card-row card-account"
             >
               <div class="account-icons">
                 <div
                   v-for="acc in getBoundAccounts(item)"
-                  :key="'bound-' + acc.accountId"
+                  :key="`bound-${ acc.accountId}`"
                   class="bound-account-row"
                 >
                   <div class="bound-account-main">
@@ -275,7 +275,7 @@ function getProxyLineTooltip(item: DeviceItem): string {
                     class="account-color-pill"
                     :class="acc.color"
                     aria-hidden="true"
-                  />
+                  ></span>
                   <div class="bound-account-actions">
                     <el-tooltip
                       v-if="acc.fromServer"
@@ -316,7 +316,7 @@ function getProxyLineTooltip(item: DeviceItem): string {
       </el-icon>
       <span>{{ $t('associationCenter.loadingMore') }}</span>
     </div>
-    <div v-else-if="finished && list.length" class="board-finished">
+    <div v-else-if="finished && list.length > 0" class="board-finished">
       {{ $t('associationCenter.noMoreData') }}
     </div>
   </div>
@@ -327,8 +327,8 @@ function getProxyLineTooltip(item: DeviceItem): string {
   height: 100%;
   min-height: 100%;
   overflow-y: scroll;
-  scrollbar-width: thin;
   scrollbar-color: var(--el-border-color) transparent;
+  scrollbar-width: thin;
 }
 
 .cards-wrapper::-webkit-scrollbar {
@@ -348,11 +348,11 @@ function getProxyLineTooltip(item: DeviceItem): string {
 
 .device-card {
   position: relative;
+  min-height: 190px;
+  padding: 14px 10px;
   background: var(--el-fill-color-blank);
   border: 1px solid var(--el-border-color-lighter);
   border-radius: 8px;
-  padding: 14px 10px;
-  min-height: 190px;
 }
 
 .device-card.selected {
@@ -361,10 +361,10 @@ function getProxyLineTooltip(item: DeviceItem): string {
 }
 
 .device-card.locked {
-  opacity: 0.55;
-  cursor: not-allowed;
-  filter: grayscale(0.35);
   pointer-events: none;
+  cursor: not-allowed;
+  opacity: 0.55;
+  filter: grayscale(0.35);
 }
 
 .card-status {
@@ -408,11 +408,11 @@ function getProxyLineTooltip(item: DeviceItem): string {
 }
 
 .card-ip {
+  margin-top: 4px;
+  margin-bottom: 4px;
   font-size: 15px;
   font-weight: 600;
   color: var(--el-text-color-primary);
-  margin-bottom: 4px;
-  margin-top: 4px;
 }
 
 .card-ip--proxy-on {
@@ -420,18 +420,18 @@ function getProxyLineTooltip(item: DeviceItem): string {
 }
 
 .card-row {
-  font-size: 12px;
-  color: var(--el-text-color-secondary);
   display: flex;
   align-items: center;
-  min-width: 0;
   width: 100%;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
 }
 
 .card-label {
-  color: var(--el-text-color-regular);
-  margin-right: 4px;
   flex-shrink: 0;
+  margin-right: 4px;
+  color: var(--el-text-color-regular);
 }
 
 .card-text-ellipsis {
@@ -448,11 +448,11 @@ function getProxyLineTooltip(item: DeviceItem): string {
 
 .card-proxy-line {
   display: flex;
+  flex: 1;
+  gap: 4px;
   align-items: center;
   justify-content: space-between;
-  gap: 4px;
   min-width: 0;
-  flex: 1;
 }
 
 .card-proxy-ellipsis {
@@ -467,8 +467,8 @@ function getProxyLineTooltip(item: DeviceItem): string {
 
 .card-phone {
   display: flex;
-  align-items: center;
   gap: 6px;
+  align-items: center;
 }
 
 .card-account {
@@ -477,8 +477,8 @@ function getProxyLineTooltip(item: DeviceItem): string {
 
 .account-remark {
   display: flex;
-  align-items: center;
   gap: 6px;
+  align-items: center;
   font-size: 12px;
 }
 
@@ -486,15 +486,16 @@ function getProxyLineTooltip(item: DeviceItem): string {
   display: inline-block;
   width: 16px;
   height: 16px;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23000000'%3E%3Cpath d='M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z'/%3E%3C/svg%3E") no-repeat center;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23000000'%3E%3Cpath d='M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z'/%3E%3C/svg%3E")
+    no-repeat center;
   background-size: contain;
 }
 
 .account-icons {
   display: flex;
   flex-direction: column;
-  align-items: stretch;
   gap: 4px;
+  align-items: stretch;
   width: 100%;
   min-width: 0;
 }
@@ -502,6 +503,7 @@ function getProxyLineTooltip(item: DeviceItem): string {
 .bound-account-row {
   display: flex;
   align-items: center;
+
   /* gap: 6px; */
   width: 100%;
   min-width: 0;
@@ -509,44 +511,46 @@ function getProxyLineTooltip(item: DeviceItem): string {
 
 .bound-account-main {
   display: flex;
-  align-items: center;
-  gap: 6px;
   flex: 1 1 0;
+  gap: 6px;
+  align-items: center;
   min-width: 0;
 }
 
 .bound-account-logo-slot {
-  flex-shrink: 0;
-  width: 24px;
-  height: 24px;
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
+  width: 24px;
+  height: 24px;
 }
 
 .bound-account-actions {
-  flex-shrink: 0;
-  width: 22px;
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
+  width: 22px;
 }
 
 .unbind-account-btn {
-  flex-shrink: 0;
   display: inline-flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
   width: 22px;
   height: 22px;
   padding: 0;
   margin: 0;
-  border: none;
-  background: transparent;
   color: var(--el-text-color-secondary);
   cursor: pointer;
+  background: transparent;
+  border: none;
   border-radius: 4px;
-  transition: color 0.15s, background 0.15s;
+  transition:
+    color 0.15s,
+    background 0.15s;
 }
 
 .unbind-account-btn:hover {
@@ -555,18 +559,18 @@ function getProxyLineTooltip(item: DeviceItem): string {
 }
 
 .bound-account-text {
-  flex: 1;
-  min-width: 0;
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
   line-height: 1.2;
 }
 
 .bound-account-text > .el-tooltip {
   display: block;
-  max-width: 100%;
   min-width: 0;
+  max-width: 100%;
 }
 
 .bound-account-text :deep(.el-tooltip__trigger) {
@@ -577,23 +581,24 @@ function getProxyLineTooltip(item: DeviceItem): string {
 
 .bound-account-line1,
 .bound-account-line2 {
-  font-size: 11px;
-  color: var(--el-text-color-regular);
   overflow: hidden;
   text-overflow: ellipsis;
+  font-size: 11px;
+  color: var(--el-text-color-regular);
   white-space: nowrap;
 }
 
 .bound-account-line2 {
-  color: var(--el-text-color-secondary);
   font-size: 10px;
+  color: var(--el-text-color-secondary);
 }
 
 .account-color-pill {
   flex-shrink: 0;
+  align-self: stretch;
   width: 3px;
   min-height: 28px;
-  align-self: stretch;
+
   /* margin-left: 6px; */
   border-radius: 999px;
   opacity: 0.85;
@@ -626,26 +631,26 @@ function getProxyLineTooltip(item: DeviceItem): string {
 .bound-account-logo {
   width: 24px;
   height: 24px;
-  border-radius: 4px;
-  object-fit: cover;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.6);
   cursor: pointer;
+  object-fit: cover;
+  border-radius: 4px;
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 60%);
 }
 
 .platform-icon {
-  width: 18px;
-  height: 18px;
-  border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 18px;
+  height: 18px;
   font-size: 11px;
   color: #fff;
   background: linear-gradient(135deg, #ff2442 0%, #ff6b6b 100%);
+  border-radius: 4px;
 }
 
 .platform-icon-bound {
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.6);
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 60%);
 }
 
 .board-loading {
@@ -663,9 +668,9 @@ function getProxyLineTooltip(item: DeviceItem): string {
 
 .board-finished {
   padding: 8px 0 4px;
-  text-align: center;
   font-size: 12px;
   color: var(--el-text-color-secondary);
+  text-align: center;
 }
 
 @media (max-width: 768px) {

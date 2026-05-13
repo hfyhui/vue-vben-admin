@@ -1,57 +1,8 @@
-<template>
-  <div class="webadb-large-screen">
-    <div class="webadb-large-screen__panel">
-      <div class="webadb-large-screen__header">
-        <div class="header-top">
-          <div class="header-left">
-            <span
-              v-if="device?.color"
-              class="status-circle"
-              :style="{ backgroundColor: device.color }"
-            />
-            <span class="device-title">{{ deviceTitle }}</span>
-          </div>
-          <div class="header-center">
-            <span class="device-ip">{{ deviceIp }}</span>
-          </div>
-          <button
-            v-if="showClose"
-            type="button"
-            class="close-btn"
-            aria-label="close"
-            @click="emit('close')"
-          >
-            ×
-          </button>
-        </div>
-      </div>
-
-      <div class="webadb-large-screen__body" :style="bodyStyle">
-        <WebAdb
-          v-if="normalizedDevice && normalizedDevice.serial"
-          ref="webAdbRef"
-          :device="normalizedDevice"
-          embedded
-          largeScreen
-          :auto-go-url="autoGoUrl"
-          @message-sent="messageSent"
-        />
-      </div>
-
-      <DeviceOperateButton
-        v-if="showFooterButtons && isWebAdbConnected"
-        @press-key="handlePressKey"
-        @open-setting="handleOpenSetting"
-      />
-    </div>
-  </div>
-</template>
-
 <script setup>
 import { computed, ref, unref } from 'vue';
 
-import WebAdb from '#/components/WebAdb/index.vue';
 import DeviceOperateButton from '#/components/WebAdb/DeviceOperateButton/index.vue';
+import WebAdb from '#/components/WebAdb/index.vue';
 
 defineOptions({ name: 'WebAdbLargeScreen' });
 
@@ -91,7 +42,8 @@ const normalizedDevice = computed(() => {
   if (!props.device) return null;
   return {
     ...props.device,
-    serial: props.device.serial || props.device.deviceIp || props.device.connIp || '',
+    serial:
+      props.device.serial || props.device.deviceIp || props.device.connIp || '',
   };
 });
 
@@ -139,6 +91,61 @@ defineExpose({
   getWebAdbInstance,
 });
 </script>
+
+<template>
+  <div class="webadb-large-screen">
+    <div class="webadb-large-screen__panel">
+      <div class="webadb-large-screen__header">
+        <div class="header-top">
+          <div class="header-left">
+            <el-tooltip
+              v-if="device?.riskColor"
+              :content="device.riskTip"
+              placement="top"
+            >
+              <span
+                class="status-circle"
+                :style="{ backgroundColor: device.riskColor }"
+              ></span>
+            </el-tooltip>
+
+            <span class="device-title">{{ deviceTitle }}</span>
+          </div>
+          <div class="header-center">
+            <span class="device-ip">{{ deviceIp }}</span>
+          </div>
+          <button
+            v-if="showClose"
+            type="button"
+            class="close-btn"
+            aria-label="close"
+            @click="emit('close')"
+          >
+            ×
+          </button>
+        </div>
+      </div>
+
+      <div class="webadb-large-screen__body" :style="bodyStyle">
+        <WebAdb
+          v-if="normalizedDevice && normalizedDevice.serial"
+          ref="webAdbRef"
+          :device="normalizedDevice"
+          embedded
+          large-screen
+          :auto-go-url="autoGoUrl"
+          @message-sent="messageSent"
+        />
+      </div>
+
+      <DeviceOperateButton
+        v-if="showFooterButtons && isWebAdbConnected"
+        @press-key="handlePressKey"
+        @open-setting="handleOpenSetting"
+      />
+    </div>
+  </div>
+</template>
 
 <style scoped lang="less">
 // 参考大屏：深紫顶栏、顶角圆角、内容区白底、IP 水平居中
@@ -264,5 +271,4 @@ defineExpose({
 .webadb-large-screen__body :deep(.loading-container--large .loading-text) {
   color: rgba(0, 0, 0, 0.55);
 }
-
 </style>

@@ -15,7 +15,7 @@ export const wsHeartbeat = function (buffer, socket) {
   }
 };
 
-export const wsScreenshot = function (buffer, socket) {
+export const wsScreenshot = function (buffer, socket, opts = {}) {
   try {
     // 检查是否是错误消息（JSON格式）
     const data = buffer.slice(1);
@@ -94,16 +94,16 @@ export const wsScreenshot = function (buffer, socket) {
     // 如果不是JSON格式的截图数据，使用原来的处理逻辑
     console.log(`[WebSocketStream] 截图数据信息:`, {
       dataLength: data.length,
-      deviceInfo: this.deviceInfo,
-      deviceRealWidth: this.deviceRealWidth,
-      deviceRealHeight: this.deviceRealHeight,
-      width: this.width,
-      height: this.height,
+      deviceInfo: opts.deviceInfo,
+      deviceRealWidth: opts.deviceRealWidth,
+      deviceRealHeight: opts.deviceRealHeight,
+      width: opts.width,
+      height: opts.height,
     });
 
     // 使用deviceInfo中的width和height，如果不存在则使用this.width和this.height
-    let validWidth = this.deviceInfo?.width || this.width;
-    let validHeight = this.deviceInfo?.height || this.height;
+    let validWidth = opts.deviceInfo?.width || opts.width;
+    let validHeight = opts.deviceInfo?.height || opts.height;
 
     // 如果还是无效值，尝试从数据长度推断
     if (validWidth <= 0 || validHeight <= 0) {

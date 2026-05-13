@@ -1,16 +1,5 @@
-import {
-  WebCodecsVideoDecoder,
-  BitmapVideoFrameRenderer,
-} from '@yume-chan/scrcpy-decoder-webcodecs';
-import {
-  AndroidKeyCode,
-  AndroidKeyEventAction,
-  AndroidMotionEventAction,
-  h264ParseConfiguration,
-  h265ParseConfiguration,
-  ScrcpyPointerId,
-  ScrcpyVideoCodecId,
-} from '@yume-chan/scrcpy';
+import type { ScrcpyEmitFn } from './useScrcpyDevice';
+
 import {
   computed,
   onBeforeUnmount,
@@ -21,12 +10,84 @@ import {
   watch,
 } from 'vue';
 
+import { useUserStore } from '@vben/stores';
+
+import {
+  Float32PcmPlayer,
+  Float32PlanerPcmPlayer,
+  Int16PcmPlayer,
+} from '@yume-chan/pcm-player';
+import {
+  AndroidKeyCode,
+  AndroidKeyEventAction,
+  AndroidMotionEventAction,
+  h264ParseConfiguration,
+  h265ParseConfiguration,
+  ScrcpyAudioCodec,
+  ScrcpyPointerId,
+  ScrcpyVideoCodecId,
+} from '@yume-chan/scrcpy';
+import {
+  BitmapVideoFrameRenderer,
+  WebCodecsVideoDecoder,
+} from '@yume-chan/scrcpy-decoder-webcodecs';
+import { WritableStream } from '@yume-chan/stream-extra';
+import { ElMessage } from 'element-plus';
+
+// @ts-expect-error - JS file without type declarations
+import {
+  AacDecodeStream,
+  OpusDecodeStream,
+} from '#/utils/scrcpy/audio-decode-stream.js';
 import { clamp, trailingThrottle } from '#/utils/webadb';
 
-import { useScrcpyDevice } from './useScrcpyDevice.js';
+import { useScrcpyDevice } from './useScrcpyDevice';
+// @ts-expect-error - JS file without type declarations
 import { wsHeartbeat, wsScreenshot, wsSetClipboard } from './utils.js';
 
-function isConfigurationData(data) {
+/* ------------------------------------------------------------------ */
+/*  Types                                                             */
+/* ------------------------------------------------------------------ */
+
+interface MediaPacket {
+  type: 'configuration' | 'data' | 'frame';
+  keyframe?: boolean;
+  pts?: bigint;
+  data: Uint8Array;
+}
+
+type ConnectionState =
+  | 'connected'
+  | 'connectedTrue'
+  | 'disconnected'
+  | 'error'
+  | 'loading';
+
+interface KeyParams {
+  action: AndroidKeyEventAction;
+  keyCode: number;
+  repeat: number;
+  metaState: number;
+  isVirtualBtn: boolean;
+}
+
+interface TouchParams {
+  action: AndroidMotionEventAction;
+  pointerId: number;
+  videoWidth: number;
+  videoHeight: number;
+  pointerX: number;
+  pointerY: number;
+  pressure: number;
+  actionButton: number;
+  buttons: number;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Helpers                                                            */
+/* ------------------------------------------------------------------ */
+
+function isConfigurationData(data: Uint8Array): boolean {
   if (!data?.length) return false;
   return (
     (data[0] === 0 && data[1] === 0 && data[2] === 1) ||
@@ -34,7 +95,43 @@ function isConfigurationData(data) {
   );
 }
 
-export function useWebAdbScrcpy(props, emit, renderRef) {
+async function safeDisposeDecoderInstance(
+  decoder: null | { dispose: () => Promise<void> },
+) {
+  if (!decoder) return;
+  try {
+    if (typeof decoder.dispose === 'function') {
+      await decoder.dispose();
+    }
+  } catch (error) {
+    console.warn(
+      '[WebAdb] decoder.dispose 已忽略:',
+      (error as Error)?.message || error,
+    );
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Composable                                                         */
+/* ------------------------------------------------------------------ */
+
+export function useWebAdbScrcpy(
+  props: {
+    [key: string]: unknown;
+    autoGoUrl?: boolean;
+    device?: {
+      chipCode?: string;
+      connIp?: string;
+      deviceStatus?: string;
+      serial?: string;
+    };
+    embedded?: boolean;
+    largeScreen?: boolean;
+  },
+  emit: ((event: 'connection-state', state: ConnectionState) => void) &
+    ScrcpyEmitFn,
+  renderRef: { value: null | { $el: HTMLElement } },
+) {
   const deviceRef = toRef(props, 'device');
   const {
     MOUSE_EVENT_BUTTON_TO_ANDROID_BUTTON,
@@ -55,16 +152,15 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
     openApp,
   } = useScrcpyDevice(deviceRef, emit);
 
-  const adb = ref(null);
-  const connectionState = ref('disconnected');
+  /* ---- Refs ---- */
+  const connectionState = ref<ConnectionState>('disconnected');
   const lastKeyframe = ref(0n);
   const width = ref(0);
   const height = ref(0);
   // 必须用 shallowRef：WebCodecsVideoDecoder 含私有字段，经 ref→reactive 的 Proxy 包装后会报 Cannot read from private field
-  const decoder = shallowRef(null);
-  const client = ref(null);
+  const decoder = shallowRef<any>(null);
   const rotation = ref(0);
-  const aspectRatio = ref(null);
+  const aspectRatio = ref<null | number>(null);
   const deviceRealWidth = ref(0);
   const deviceRealHeight = ref(0);
   const openInput = ref(false);
@@ -73,17 +169,15 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
   const windowWidth = ref(window.innerWidth);
   const shellValue = ref('');
   const lastClipboardContent = ref('');
-  const reconnectTimer = ref(null);
   const isDestroyed = ref(false);
-  const messageQueue = ref([]);
-  const videoRenderer = ref(null);
-  const deviceAdbInfo = ref({});
+  const messageQueue = ref<Uint8Array[]>([]);
+  const videoRenderer = ref<null | { canvas: HTMLCanvasElement }>(null);
   const metadata = ref({ codec: ScrcpyVideoCodecId.H264 });
-  const videoStream = ref(null);
-  const videoStreamController = ref(null);
+  const videoStream = ref<null | ReadableStream>(null);
+  const videoStreamController =
+    ref<null | ReadableStreamDefaultController<MediaPacket>>(null);
   const videoStreamClosed = ref(false);
-  const currentVideoHeader = ref(null);
-  const wsReconnectTimer = ref(null);
+  const wsReconnectTimer = ref<null | ReturnType<typeof setTimeout>>(null);
   const isStreamActive = ref(false);
   const isDecoderReady = ref(false);
   const abortController = new AbortController();
@@ -92,6 +186,18 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
   const decoderConfigured = ref(false);
   const receivedKeyframe = ref(false);
 
+  /* ---- Audio refs ---- */
+  const audioPlayer = ref<any>(null);
+  const audioCodec = ref<string>('RAW');
+  const audioStream = ref<null | ReadableStream>(null);
+  const audioStreamController =
+    ref<null | ReadableStreamDefaultController<MediaPacket>>(null);
+  const audioStreamClosed = ref(false);
+
+  /* ---- Occupancy refs ---- */
+  const occupyInfo = ref<Record<string, unknown>>({});
+
+  /* ---- Computed ---- */
   const classes = computed(() => ({
     video: {
       transformOrigin: 'center center',
@@ -99,12 +205,17 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
     },
   }));
 
-  function preventEventDefaults(event) {
+  /* ---- Core helpers ---- */
+
+  function preventEventDefaults(event: Event) {
     event.preventDefault();
     event.stopPropagation();
   }
 
-  function sendBinaryMessage(messageType, params) {
+  function sendBinaryMessage(
+    messageType: number,
+    params: Record<string, unknown>,
+  ) {
     const deviceSocket = getDeviceStore();
 
     if (!deviceSocket || deviceSocket?.readyState !== WebSocket.OPEN) {
@@ -114,7 +225,7 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
 
     try {
       const safeParams = JSON.parse(
-        JSON.stringify(params, (key, value) => {
+        JSON.stringify(params, (_key, value) => {
           return typeof value === 'bigint' ? value.toString() : value;
         }),
       );
@@ -125,10 +236,7 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
 
       buffer[0] = messageType;
       writeUInt32BE(buffer, 1, paramsBytes.length);
-
-      for (let i = 0; i < paramsBytes.length; i++) {
-        buffer[5 + i] = paramsBytes[i];
-      }
+      buffer.set(paramsBytes, 5);
 
       deviceSocket.send(buffer);
 
@@ -145,20 +253,28 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
     }
   }
 
+  /* ---- Video stream ---- */
+
   function createVideoStream() {
     videoStream.value = new ReadableStream({
       start(controller) {
-        videoStreamController.value = controller;
+        videoStreamController.value =
+          controller as ReadableStreamDefaultController<MediaPacket>;
       },
-      cancel() {},
+      cancel() {
+        /* noop */
+      },
     });
   }
 
-  async function initializeDecoder(clientArg) {
+  async function initializeDecoder(clientArg: any) {
     try {
-      let videoPacketStream;
-      let streamMetadata;
-      if (typeof clientArg.videoStream === 'object' && clientArg.videoStream !== null) {
+      let videoPacketStream: ReadableStream;
+      let streamMetadata: { codec: ScrcpyVideoCodecId };
+      if (
+        typeof clientArg.videoStream === 'object' &&
+        clientArg.videoStream !== null
+      ) {
         videoPacketStream = clientArg.videoStream.stream;
         streamMetadata = clientArg.videoStream.metadata;
       } else {
@@ -169,10 +285,10 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
 
       const renderer = new BitmapVideoFrameRenderer();
 
-      decoder.value = new WebCodecsVideoDecoder({
+      decoder.value = new (WebCodecsVideoDecoder as any)({
         codec: streamMetadata.codec,
         renderer,
-        onError: error => {
+        onError: (error: Error) => {
           console.warn('⚠️ 解码器错误:', error.message);
         },
       });
@@ -185,9 +301,9 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
       const el = renderRef.value.$el;
       const existingCanvas = el.querySelector('canvas');
       if (existingCanvas) {
-        el.replaceChild(renderer.canvas, existingCanvas);
+        el.replaceChild(renderer.canvas as unknown as Node, existingCanvas);
       } else {
-        el.appendChild(renderer.canvas);
+        el.append(renderer.canvas as unknown as Node);
       }
 
       lastKeyframe.value = 0n;
@@ -197,7 +313,7 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
       let localDecoderConfigured = false;
       let localReceivedKeyframe = false;
 
-      const handler = new TransformStream({
+      const handler = new TransformStream<MediaPacket, MediaPacket>({
         transform: (packet, controller) => {
           try {
             if (packet.type === 'configuration') {
@@ -217,7 +333,11 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
             if (packet.keyframe) {
               localReceivedKeyframe = true;
               receivedKeyframe.value = true;
+              connectionState.value = 'connected';
               console.log('[VideoDecoder] 收到关键帧，开始解码');
+              if (props.autoGoUrl) {
+                goUrl('https://www.ip138.com/');
+              }
             }
 
             if (!localReceivedKeyframe) {
@@ -227,7 +347,7 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
 
             controller.enqueue(packet);
           } catch (error) {
-            console.warn('⚠️ 处理视频包时出错:', error.message);
+            console.warn('⚠️ 处理视频包时出错:', (error as Error).message);
           }
         },
       });
@@ -236,7 +356,7 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
         videoPacketStream
           .pipeThrough(handler)
           .pipeTo(decoder.value.writable)
-          .catch(error => {
+          .catch((error) => {
             if (isDestroyed.value || abortController.signal.aborted) {
               return;
             }
@@ -254,24 +374,30 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
 
       hasInitializedDecoder.value = true;
     } catch (error) {
-      console.error('❌ 初始化解码器时出错:', error.message);
+      console.error('❌ 初始化解码器时出错:', (error as Error).message);
     }
   }
 
-  function handleConfiguration(data, meta) {
+  function handleConfiguration(
+    data: Uint8Array,
+    meta: { codec?: ScrcpyVideoCodecId },
+  ) {
     try {
-      let croppedWidth;
-      let croppedHeight;
+      let croppedWidth: number;
+      let croppedHeight: number;
       const codec = meta.codec || ScrcpyVideoCodecId.H264;
       switch (codec) {
-        case ScrcpyVideoCodecId.H264:
+        case ScrcpyVideoCodecId.H264: {
           ({ croppedWidth, croppedHeight } = h264ParseConfiguration(data));
           break;
-        case ScrcpyVideoCodecId.H265:
+        }
+        case ScrcpyVideoCodecId.H265: {
           ({ croppedWidth, croppedHeight } = h265ParseConfiguration(data));
           break;
-        default:
+        }
+        default: {
           throw new Error('Unsupported codec');
+        }
       }
       if (croppedWidth > 0 && croppedHeight > 0) {
         width.value = croppedWidth;
@@ -293,19 +419,25 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
     }
   }
 
-  function handleKeyframe(packet) {
+  function handleKeyframe(packet: MediaPacket) {
     if (lastKeyframe.value) {
-      Math.floor(Number(packet.pts - lastKeyframe.value) / 1000);
+      Math.floor(Number(packet.pts! - lastKeyframe.value) / 1000);
     }
-    lastKeyframe.value = packet.pts;
+    lastKeyframe.value = packet.pts!;
   }
 
-  function setRendererStyle(renderer, calcWidth, calcHeight) {
+  /* ---- Style / layout ---- */
+
+  function setRendererStyle(
+    renderer: HTMLElement,
+    calcWidth: number,
+    calcHeight: number,
+  ) {
     renderer.style.width = `${calcWidth}px`;
     renderer.style.height = `${calcHeight}px`;
   }
 
-  function updateContainerStyle(calcWidth, calcHeight) {
+  function updateContainerStyle(calcWidth: number, calcHeight: number) {
     const rotatedWidth = rotation.value & 1 ? height.value : width.value;
     const rotatedHeight = rotation.value & 1 ? width.value : height.value;
 
@@ -318,13 +450,16 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
     };
   }
 
-  function swapWidthHeight(widthVal, heightVal) {
+  function swapWidthHeight(
+    widthVal: number,
+    heightVal: number,
+  ): [number, number] {
     const w = calculateWidth();
     const h = windowHeight.value - 145;
     return widthVal > heightVal ? [h, w] : [w, h];
   }
 
-  function calculateWidth() {
+  function calculateWidth(): number {
     if (!aspectRatio.value && width.value > 0 && height.value > 0) {
       aspectRatio.value = width.value / height.value;
     }
@@ -348,9 +483,23 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
 
     const [calcWidth, calcHeight] = swapWidthHeight(width.value, height.value);
 
-    const renderer = videoRenderer.value || (decoder.value && decoder.value.renderer);
-    if (renderer && renderer.canvas) {
-      setRendererStyle(renderer.canvas, calcWidth, calcHeight);
+    const renderer =
+      videoRenderer.value ||
+      (decoder.value &&
+        (
+          decoder.value as unknown as {
+            renderer: { canvas: HTMLCanvasElement };
+          }
+        ).renderer);
+    if (
+      renderer &&
+      (renderer as unknown as { canvas: HTMLCanvasElement }).canvas
+    ) {
+      setRendererStyle(
+        (renderer as unknown as { canvas: HTMLCanvasElement }).canvas,
+        calcWidth,
+        calcHeight,
+      );
     }
 
     updateContainerStyle(calcWidth, calcHeight);
@@ -364,7 +513,13 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
     }
   }
 
-  function adjustPositionForRotation(pointerViewX, pointerViewY, rot) {
+  /* ---- Position / touch helpers ---- */
+
+  function adjustPositionForRotation(
+    pointerViewX: number,
+    pointerViewY: number,
+    rot: number,
+  ) {
     let adjustedX = pointerViewX;
     let adjustedY = pointerViewY;
 
@@ -373,25 +528,30 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
     const ROTATION_270 = 3;
 
     switch (rot) {
-      case ROTATION_90:
+      case ROTATION_90: {
         [adjustedX, adjustedY] = [adjustedY, adjustedX];
         adjustedY = 1 - adjustedY;
         break;
-      case ROTATION_180:
+      }
+      case ROTATION_180: {
         adjustedX = 1 - adjustedX;
         adjustedY = 1 - adjustedY;
         break;
-      case ROTATION_270:
+      }
+      case ROTATION_270: {
         [adjustedX, adjustedY] = [adjustedY, adjustedX];
         adjustedX = 1 - adjustedX;
         break;
+      }
     }
 
     return { x: adjustedX, y: adjustedY };
   }
 
-  function clientPositionToDevicePosition(clientX, clientY) {
-    const canvas = decoder.value?.renderer?.canvas;
+  function clientPositionToDevicePosition(clientX: number, clientY: number) {
+    const canvas = (
+      decoder.value as unknown as { renderer?: { canvas: HTMLCanvasElement } }
+    )?.renderer?.canvas;
     if (!canvas) {
       console.warn('Canvas 未找到，使用容器进行坐标计算');
       if (!renderRef.value) {
@@ -399,7 +559,11 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
       }
       const viewRect = renderRef.value.$el.getBoundingClientRect();
       const pointerViewX = clamp((clientX - viewRect.x) / viewRect.width, 0, 1);
-      const pointerViewY = clamp((clientY - viewRect.y) / viewRect.height, 0, 1);
+      const pointerViewY = clamp(
+        (clientY - viewRect.y) / viewRect.height,
+        0,
+        1,
+      );
       const adjustedPosition = adjustPositionForRotation(
         pointerViewX,
         pointerViewY,
@@ -412,8 +576,16 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
     }
 
     const canvasRect = canvas.getBoundingClientRect();
-    const pointerViewX = clamp((clientX - canvasRect.x) / canvasRect.width, 0, 1);
-    const pointerViewY = clamp((clientY - canvasRect.y) / canvasRect.height, 0, 1);
+    const pointerViewX = clamp(
+      (clientX - canvasRect.x) / canvasRect.width,
+      0,
+      1,
+    );
+    const pointerViewY = clamp(
+      (clientY - canvasRect.y) / canvasRect.height,
+      0,
+      1,
+    );
 
     const adjustedPosition = adjustPositionForRotation(
       pointerViewX,
@@ -422,7 +594,11 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
     );
 
     const videoX = clamp(adjustedPosition.x * width.value, 0, width.value - 1);
-    const videoY = clamp(adjustedPosition.y * height.value, 0, height.value - 1);
+    const videoY = clamp(
+      adjustedPosition.y * height.value,
+      0,
+      height.value - 1,
+    );
 
     return {
       x: videoX,
@@ -430,7 +606,14 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
     };
   }
 
-  function handleWebSocketVideoPacket(packet) {
+  /* ---- WebSocket video packet handlers ---- */
+
+  function handleWebSocketVideoPacket(packet: {
+    data: string;
+    keyframe: boolean;
+    pts?: string;
+    type: string;
+  }) {
     if (
       isDestroyed.value ||
       !isStreamActive.value ||
@@ -444,8 +627,8 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
     try {
       const data = base64ToUint8Array(packet.data);
 
-      const mediaPacket = {
-        type: packet.type,
+      const mediaPacket: MediaPacket = {
+        type: packet.type as MediaPacket['type'],
         keyframe: packet.keyframe,
         pts: packet.pts ? BigInt(packet.pts) : undefined,
         data,
@@ -454,7 +637,7 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
       videoStreamController.value.enqueue(mediaPacket);
     } catch (error) {
       console.error('[VideoStream] 处理视频包失败:', error);
-      if (error.message.includes('closed')) {
+      if ((error as Error).message.includes('closed')) {
         videoStreamClosed.value = true;
         isStreamActive.value = false;
       } else {
@@ -463,14 +646,17 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
     }
   }
 
-  async function handleWebSocketBinaryPacket(header, binaryData) {
+  async function handleWebSocketBinaryPacket(
+    header: { keyframe: boolean; type: string },
+    binaryData: ArrayBuffer | Blob,
+  ) {
     if (!decoder.value) {
       console.warn('[VideoDecoder] 解码器未初始化');
       return;
     }
 
     try {
-      let data;
+      let data: Uint8Array;
       if (binaryData instanceof Blob) {
         const arrayBuffer = await binaryData.arrayBuffer();
         data = new Uint8Array(arrayBuffer);
@@ -501,7 +687,7 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
     }
   }
 
-  function base64ToUint8Array(base64) {
+  function base64ToUint8Array(base64: string): Uint8Array {
     const binaryString = window.atob(base64);
     const bytes = new Uint8Array(binaryString.length);
     for (let i = 0; i < binaryString.length; i++) {
@@ -510,7 +696,10 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
     return bytes;
   }
 
-  function handlePacket(packet, meta) {
+  function handlePacket(
+    packet: MediaPacket,
+    meta: { codec: ScrcpyVideoCodecId },
+  ) {
     if (
       isDestroyed.value ||
       !isStreamActive.value ||
@@ -530,39 +719,59 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
       if (isDecoderReady.value) {
         try {
           // 流通过 pipeTo 解码
-        } catch (e) {
-          if (!e.message.includes('unconfigured') && !e.message.includes('closed')) {
-            console.error('解码失败:', e);
+        } catch (error) {
+          if (
+            !(error as Error).message.includes('unconfigured') &&
+            !(error as Error).message.includes('closed')
+          ) {
+            console.error('解码失败:', error);
           }
         }
       }
     }
   }
 
-  async function executeTouchAction(action, event) {
+  /* ---- Touch / mouse / keyboard ---- */
+
+  async function executeTouchAction(
+    action: AndroidMotionEventAction,
+    event: {
+      button: number;
+      buttons: number;
+      clientX: number;
+      clientY: number;
+    },
+  ) {
     try {
-      const { x, y } = clientPositionToDevicePosition(event.clientX, event.clientY);
-      const params = {
+      const { x, y } = clientPositionToDevicePosition(
+        event.clientX,
+        event.clientY,
+      );
+      const params: TouchParams = {
         action,
-        pointerId: ScrcpyPointerId.Finger,
+        pointerId: ScrcpyPointerId.Finger as unknown as number,
         videoWidth: width.value,
         videoHeight: height.value,
         pointerX: x,
         pointerY: y,
         pressure: event.buttons === 0 ? 0 : 1,
         actionButton:
-          MOUSE_EVENT_BUTTON_TO_ANDROID_BUTTON[event.button] ||
-          MOUSE_EVENT_BUTTON_TO_ANDROID_BUTTON[0],
+          MOUSE_EVENT_BUTTON_TO_ANDROID_BUTTON[(event.button as number) || 0] ||
+          MOUSE_EVENT_BUTTON_TO_ANDROID_BUTTON[0]!,
         buttons: event.buttons,
       };
 
-      sendBinaryMessage(0x10, params);
+      sendBinaryMessage(0x10, params as unknown as Record<string, unknown>);
     } catch (error) {
       console.error('触控操作失败:', error);
     }
   }
 
-  function calculateSyncPosition(event, targetSize, targetRotation) {
+  function calculateSyncPosition(
+    event: { clientX: number; clientY: number },
+    targetSize: { height: number; width: number },
+    targetRotation: number,
+  ): null | { x: number; y: number } {
     if (!renderRef.value || !renderRef.value.$el) return null;
 
     const containerRect = renderRef.value.$el.getBoundingClientRect();
@@ -577,7 +786,11 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
       1,
     );
 
-    const adjustedPos = adjustPositionForRotation(relativeX, relativeY, targetRotation);
+    const adjustedPos = adjustPositionForRotation(
+      relativeX,
+      relativeY,
+      targetRotation,
+    );
 
     return {
       x: adjustedPos.x * targetSize.width,
@@ -585,10 +798,13 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
     };
   }
 
-  async function handleWheel(event) {
+  async function handleWheel(event: WheelEvent) {
     preventEventDefaults(event);
 
-    const { x, y } = clientPositionToDevicePosition(event.clientX, event.clientY);
+    const { x, y } = clientPositionToDevicePosition(
+      event.clientX,
+      event.clientY,
+    );
 
     try {
       const params = {
@@ -610,13 +826,13 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
     openKeyInput('open');
   }
 
-  async function handlePointerDown(event) {
+  async function handlePointerDown(event: PointerEvent) {
     let pasteVal = '';
     if (navigator?.clipboard?.readText) {
       try {
         pasteVal = await navigator.clipboard.readText();
       } catch (error) {
-        console.warn('剪贴板读取失败:', error.message);
+        console.warn('剪贴板读取失败:', (error as Error).message);
       }
     }
 
@@ -627,14 +843,14 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
         content: pasteVal,
       };
       sendBinaryMessage(0x13, params);
-      lastClipboardContent.value = JSON.parse(JSON.stringify(pasteVal));
+      lastClipboardContent.value = pasteVal;
     }
 
     preventEventDefaults(event);
     await executeTouchAction(AndroidMotionEventAction.Down, event);
   }
 
-  const handlePointerMove = trailingThrottle(async event => {
+  const handlePointerMove = trailingThrottle(async (event: any) => {
     preventEventDefaults(event);
 
     if (event.buttons === 0) {
@@ -645,12 +861,12 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
     }
   }, 5);
 
-  async function handlePointerUp(event) {
+  async function handlePointerUp(event: PointerEvent) {
     preventEventDefaults(event);
     await executeTouchAction(AndroidMotionEventAction.Up, event);
   }
 
-  async function handlePointerLeave(event) {
+  async function handlePointerLeave(event: PointerEvent) {
     openKeyInput('close');
     preventEventDefaults(event);
     try {
@@ -668,11 +884,13 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
     }
   }
 
-  function handleContextMenu(event) {
+  function handleContextMenu(event: Event) {
     preventEventDefaults(event);
   }
 
-  function openKeyInput(type) {
+  /* ---- Keyboard ---- */
+
+  function openKeyInput(type: 'close' | 'open') {
     openInput.value = type === 'open';
     window.removeEventListener('keydown', handleKeyEvent);
     window.removeEventListener('keyup', handleKeyEvent);
@@ -683,19 +901,19 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
     }
   }
 
-  async function handleKeyEvent(e, code = null) {
+  async function handleKeyEvent(e: any, code: null | number = null) {
     if (code) {
       await handleKeyCode(e, code);
     } else if (openInput.value) {
-      await handleKeyCode(e);
+      await handleKeyCode(e as KeyboardEvent);
     }
   }
 
-  async function executeKeyAction(keyParams) {
+  async function executeKeyAction(keyParams: KeyParams) {
     try {
-      const { action, keyCode, repeat, metaState, isVirtualBtn } = keyParams;
+      const { action, keyCode, repeat, metaState } = keyParams;
 
-      const params = {
+      const params: Record<string, unknown> = {
         action,
         keyCode,
         repeat,
@@ -703,8 +921,8 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
       };
       sendBinaryMessage(0x12, params);
 
-      if (isVirtualBtn && action === AndroidKeyEventAction.Down) {
-        const upParams = {
+      if (keyParams.isVirtualBtn && action === AndroidKeyEventAction.Down) {
+        const upParams: Record<string, unknown> = {
           action: AndroidKeyEventAction.Up,
           keyCode,
           repeat: 0,
@@ -713,27 +931,28 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
         sendBinaryMessage(0x12, upParams);
       }
     } catch (error) {
-      console.error('❌ 键盘操作失败:', error.message);
+      console.error('❌ 键盘操作失败:', (error as Error).message);
       console.error('详细错误:', error);
     }
   }
 
-  async function handleKeyCode(e, code = null) {
-    if (e && (e.code === 'ControlLeft' || e.code === 'ControlRight')) {
+  async function handleKeyCode(e: any, code: null | number = null) {
+    if (e?.code === 'ControlLeft' || e?.code === 'ControlRight') {
       return;
     }
 
     if (e && e.ctrlKey) {
-      e.preventDefault();
-      e.stopPropagation();
+      e.preventDefault?.();
+      e.stopPropagation?.();
     }
 
-    const action = e
-      ? e.type === 'keydown'
-        ? AndroidKeyEventAction.Down
-        : AndroidKeyEventAction.Up
-      : AndroidKeyEventAction.Down;
-    const keyRepeat = e ? (e.repeat ? 1 : 0) : 0;
+    const action =
+      e && 'type' in e
+        ? (e.type === 'keydown'
+          ? AndroidKeyEventAction.Down
+          : AndroidKeyEventAction.Up)
+        : AndroidKeyEventAction.Down;
+    const keyRepeat = e && 'repeat' in e ? (e.repeat ? 1 : 0) : 0;
     const isVirtualBtn = !e;
 
     let metaState = 0;
@@ -741,8 +960,12 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
     if (e?.shiftKey) metaState |= 0x01;
     if (e?.altKey) metaState |= 0x02;
 
-    const finalKeyCode = code || (e ? AndroidKeyCode[e.code] : null);
-    const keyParams = {
+    const finalKeyCode: number =
+      code ||
+      (e && 'code' in e
+        ? (AndroidKeyCode[e.code as keyof typeof AndroidKeyCode] as number)
+        : 0);
+    const keyParams: KeyParams = {
       action,
       keyCode: finalKeyCode,
       repeat: keyRepeat,
@@ -753,23 +976,26 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
     try {
       await executeKeyAction(keyParams);
     } catch (error) {
-      console.error('❌ 当前设备按键注入失败:', error.message);
+      console.error('❌ 当前设备按键注入失败:', (error as Error).message);
     }
   }
+
+  /* ---- WebSocket lifecycle ---- */
 
   function flushMessageQueue() {
     while (messageQueue.value.length > 0) {
       const message = messageQueue.value.shift();
+      if (!message) continue;
       try {
         const deviceSocket = getDeviceStore();
-        deviceSocket.send(message);
+        deviceSocket!.send(message);
       } catch (error) {
         console.error('[WebSocketStream] 发送队列消息失败:', error);
       }
     }
   }
 
-  async function handleSocketOpen() {
+  async function handleSocketOpen(clarity = '') {
     try {
       const deviceSocket = getDeviceStore();
       if (!deviceSocket) return;
@@ -777,7 +1003,13 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
       flushMessageQueue();
       clearWsReconnectTimer();
 
-      const connectDataStr = props.device?.serial;
+      const userStore = useUserStore();
+      const connectData = {
+        serial: props.device?.serial,
+        userName: userStore.userInfo?.nickName || '',
+        clarity,
+      };
+      const connectDataStr = JSON.stringify(connectData);
       const connectDataBuffer = new TextEncoder().encode(connectDataStr);
       const connectMessage = new Uint8Array(connectDataBuffer.length + 1);
       connectMessage[0] = 0x01;
@@ -790,25 +1022,44 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
           console.error('[WebSocketStream] 发送消息失败:', error);
         }
       }
-    } catch (err) {
-      console.error('[WebSocketStream] 连接打开处理失败:', err);
+    } catch (error) {
+      console.error('[WebSocketStream] 连接打开处理失败:', error);
     }
   }
 
-  function handleSocketClose(e) {
-    console.log(`[WebSocketStream] 连接关闭: code=${e.code}, reason=${e.reason}`);
+  function handleSocketClose(e: CloseEvent) {
+    console.log(
+      `[WebSocketStream] 连接关闭: code=${e.code}, reason=${e.reason}`,
+    );
+
+    if ([4000, 4001, 4002].includes(e.code)) {
+      try {
+        const reason = JSON.parse(e.reason);
+        occupyInfo.value = reason;
+        connectionState.value = 'connectedTrue';
+        return;
+      } catch {
+        // ignore parse errors
+      }
+    }
+
     connectionState.value = 'disconnected';
-    if (e.code === 1006 || (e.code === 1000 && e.reason === '视频流结束')) {
+    if (
+      [1006, 1011, 1013].includes(e.code) ||
+      (e.code === 1000 && e.reason === '视频流结束')
+    ) {
       scheduleWsReconnect();
     }
   }
 
-  function handleSocketError(e) {
+  function handleSocketError(e: Event) {
     console.error('[WebSocketStream] 连接错误:', e);
     const deviceSocket = getDeviceStore();
 
     if (deviceSocket) {
-      console.error(`[WebSocketStream] WebSocket readyState: ${deviceSocket.readyState}`);
+      console.error(
+        `[WebSocketStream] WebSocket readyState: ${deviceSocket.readyState}`,
+      );
     }
     connectionState.value = 'error';
     scheduleWsReconnect();
@@ -819,7 +1070,9 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
 
     const shouldReconnect = !(
       (props.device && props.device.deviceStatus === 'OFFLINE') ||
-      (props.device && !props.device.connIp && props.device.deviceStatus === 'ONLINE')
+      (props.device &&
+        !props.device.connIp &&
+        props.device.deviceStatus === 'ONLINE')
     );
 
     if (!shouldReconnect) {
@@ -828,7 +1081,7 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
 
     await destroyClient();
     clearWsReconnectTimer();
-    const delay = 10000;
+    const delay = 10_000;
 
     wsReconnectTimer.value = setTimeout(() => {
       initWs();
@@ -838,7 +1091,9 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
   function checkDeviceStatus() {
     const shouldDestroy =
       (props.device && props.device.deviceStatus === 'OFFLINE') ||
-      (props.device && !props.device.connIp && props.device.deviceStatus === 'ONLINE');
+      (props.device &&
+        !props.device.connIp &&
+        props.device.deviceStatus === 'ONLINE');
 
     if (shouldDestroy) {
       destroyClient();
@@ -847,7 +1102,103 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
     }
   }
 
-  function wsShell(buffer) {
+  /* ---- Audio stream ---- */
+
+  function createAudioStream() {
+    audioStream.value = new ReadableStream({
+      start(controller) {
+        audioStreamController.value =
+          controller as ReadableStreamDefaultController<MediaPacket>;
+      },
+      cancel() {
+        console.log('[AudioStream] 流被取消');
+      },
+    });
+  }
+
+  async function initializeAudio({
+    audioStream: audioStreamParam,
+  }: {
+    audioStream: {
+      metadata: { optionValue?: string; webCodecId?: string };
+      stream: ReadableStream;
+    };
+  }) {
+    try {
+      let player: any = null;
+      const optionValue = audioCodec.value.optionValue;
+
+      switch (optionValue) {
+        case ScrcpyAudioCodec.Aac.optionValue: {
+          player = new Float32PlanerPcmPlayer(48_000, 2);
+          audioStreamParam.stream
+            .pipeThrough(
+              new AacDecodeStream({
+                codec: audioStreamParam.metadata.webCodecId,
+                numberOfChannels: 2,
+                sampleRate: 48_000,
+              }),
+            )
+            .pipeTo(
+              new WritableStream({
+                write: (chunk: Float32Array[]) => {
+                  (player as Float32PlanerPcmPlayer).feed(chunk);
+                },
+              }),
+            );
+          break;
+        }
+        case ScrcpyAudioCodec.Opus.optionValue: {
+          player = new Float32PcmPlayer(48_000, 2);
+          audioStreamParam.stream
+            .pipeThrough(
+              new OpusDecodeStream({
+                codec: audioStreamParam.metadata.webCodecId,
+                numberOfChannels: 2,
+                sampleRate: 48_000,
+              }),
+            )
+            .pipeTo(
+              new WritableStream({
+                write: (chunk: Float32Array) => {
+                  (player as Float32PcmPlayer).feed(chunk);
+                },
+              }),
+            );
+          break;
+        }
+        case ScrcpyAudioCodec.Raw.optionValue: {
+          player = new Int16PcmPlayer(48_000, 2);
+          audioStreamParam.stream.pipeTo(
+            new WritableStream({
+              write: (chunk: MediaPacket) => {
+                (player as Int16PcmPlayer).feed(
+                  new Int16Array(
+                    chunk.data.buffer,
+                    chunk.data.byteOffset,
+                    chunk.data.byteLength / Int16Array.BYTES_PER_ELEMENT,
+                  ),
+                );
+              },
+            }),
+          );
+          break;
+        }
+        default: {
+          throw new Error(`Unsupported audio codec ${audioCodec.value}`);
+        }
+      }
+      audioPlayer.value = player;
+      if (player) await player.start();
+      console.log('[initializeAudio] 音频播放器已就绪');
+    } catch (error) {
+      console.log('[initializeAudio] 错误:', error);
+    }
+  }
+
+  /* ---- WebSocket message handlers ---- */
+
+  function wsShell(buffer: Uint8Array) {
     const dataStr = new TextDecoder().decode(buffer.slice(1));
     const data = JSON.parse(dataStr);
     if (data.error) {
@@ -855,7 +1206,7 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
     }
   }
 
-  function wsStreamEnd(buffer, socket) {
+  function wsStreamEnd(_buffer: Uint8Array, socket: WebSocket) {
     connectionState.value = 'disconnected';
     if (videoStreamController.value) {
       videoStreamController.value.close();
@@ -864,8 +1215,8 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
     scheduleWsReconnect();
   }
 
-  function wsErrorLog(buffer, socket) {
-    const dataStr = new TextDecoder().decode(buffer.slice(1));
+  function wsErrorLog(_buffer: Uint8Array, socket: WebSocket) {
+    const dataStr = new TextDecoder().decode(_buffer.slice(1));
     const data = JSON.parse(dataStr);
     console.error('[WebSocketStream] 收到错误消息:', data.error);
     socket.close();
@@ -873,17 +1224,25 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
     scheduleWsReconnect();
   }
 
-  function wsDeviceInfo(buffer) {
+  function wsDeviceInfo(buffer: Uint8Array) {
     const dataStr = new TextDecoder().decode(buffer.slice(1));
     const data = JSON.parse(dataStr);
     deviceInfo.value = data;
-    connectionState.value = 'connected';
+    if (data.audioCodec) {
+      audioCodec.value = data.audioCodec;
+      initializeAudio({
+        audioStream: {
+          stream: audioStream.value!,
+          metadata: data.audioCodec,
+        },
+      });
+    }
     if (props.autoGoUrl) {
       goUrl('https://www.ip138.com/');
     }
   }
 
-  function wsVideoStream(buffer) {
+  function wsVideoStream(buffer: Uint8Array) {
     if (
       isDestroyed.value ||
       !isStreamActive.value ||
@@ -897,17 +1256,26 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
     if (videoStreamController.value && !videoStreamClosed.value) {
       try {
         const dataLength =
-          (buffer[1] << 24) | (buffer[2] << 16) | (buffer[3] << 8) | buffer[4];
-        const packetType = buffer[5];
+          (buffer[1]! << 24) |
+          (buffer[2]! << 16) |
+          (buffer[3]! << 8) |
+          buffer[4]!;
+        const packetType = buffer[5]!;
         const isKeyframe = buffer[6] === 1;
         const ptsHigh =
-          (buffer[7] << 24) | (buffer[8] << 16) | (buffer[9] << 8) | buffer[10];
+          (buffer[7]! << 24) |
+          (buffer[8]! << 16) |
+          (buffer[9]! << 8) |
+          buffer[10]!;
         const ptsLow =
-          (buffer[11] << 24) | (buffer[12] << 16) | (buffer[13] << 8) | buffer[14];
-        const pts = BigInt(ptsHigh) * BigInt(0x100000000) + BigInt(ptsLow);
+          (buffer[11]! << 24) |
+          (buffer[12]! << 16) |
+          (buffer[13]! << 8) |
+          buffer[14]!;
+        const pts = BigInt(ptsHigh) * BigInt(0x1_00_00_00_00) + BigInt(ptsLow);
         const videoData = buffer.slice(15, 15 + dataLength);
 
-        const mediaPacket = {
+        const mediaPacket: MediaPacket = {
           type: packetType === 2 ? 'configuration' : 'frame',
           keyframe: isKeyframe,
           pts,
@@ -919,7 +1287,10 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
         }
       } catch (error) {
         console.error('[WebSocketStream] 处理视频数据包失败:', error);
-        if (error.message?.includes('closed') || error.name === 'TypeError') {
+        if (
+          (error as Error).message?.includes('closed') ||
+          (error as Error).name === 'TypeError'
+        ) {
           console.warn('[WebSocketStream] 流已关闭，停止添加数据');
           videoStreamClosed.value = true;
           videoStreamController.value = null;
@@ -928,12 +1299,100 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
     }
   }
 
-  async function initWs() {
+  function wsAudioStream(buffer: Uint8Array) {
+    if (isDestroyed.value || !isStreamActive.value) return;
+    try {
+      const dataLength =
+        (buffer[1]! << 24) |
+        (buffer[2]! << 16) |
+        (buffer[3]! << 8) |
+        buffer[4]!;
+      if (dataLength <= 0) return;
+      const packetType = buffer[5]!;
+      const ptsHigh =
+        (buffer[6]! << 24) |
+        (buffer[7]! << 16) |
+        (buffer[8]! << 8) |
+        buffer[9]!;
+      const ptsLow =
+        (buffer[10]! << 24) |
+        (buffer[11]! << 16) |
+        (buffer[12]! << 8) |
+        buffer[13]!;
+      const pts = BigInt(ptsHigh) * BigInt(0x1_00_00_00_00) + BigInt(ptsLow);
+      const audioData = buffer.slice(14, 14 + dataLength);
+
+      const mediaPacket: MediaPacket = {
+        type: (packetType === 2
+          ? 'configuration'
+          : 'data') as MediaPacket['type'],
+        pts,
+        data: audioData,
+      };
+
+      if (audioStreamController.value && !audioStreamClosed.value) {
+        try {
+          audioStreamController.value.enqueue(mediaPacket);
+        } catch {
+          audioStreamClosed.value = true;
+          audioStreamController.value = null;
+        }
+      }
+    } catch (error) {
+      console.error('[WebSocketStream] 处理音频数据包失败:', error);
+    }
+  }
+
+  /* ---- Occupancy ---- */
+
+  async function dblclick() {
+    try {
+      console.log('dblclick');
+      occupyInfo.value = {};
+      connectionState.value = 'loading';
+      const res = await fetch(`${httpPath.value}/adb/device/disconnect`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ serial: props.device?.deviceIp }),
+      });
+      const data = await res.json();
+      console.log('断开设备:', data);
+      initWs();
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async function getDevicesStatus() {
+    try {
+      const res = await fetch(`${httpPath.value}/adb/device/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ serial: props.device?.deviceIp }),
+      });
+      const data = await res.json();
+      console.log('获取设备状态:', data);
+      occupyInfo.value = data;
+      if (data.connected) {
+        ElMessage.warning('设备已连接');
+        connectionState.value = 'connectedTrue';
+        return false;
+      }
+      initWs();
+    } catch (error) {
+      console.error('获取设备状态失败:', error);
+    }
+  }
+
+  /* ---- init / destroy ---- */
+
+  async function initWs(_clarity = '') {
     try {
       createVideoStream();
+      createAudioStream();
       await initializeDecoder({
         videoStream: {
-          stream: videoStream.value,
+          stream: videoStream.value!,
           metadata: metadata.value,
         },
       });
@@ -948,16 +1407,18 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
       isStreamActive.value = true;
       if (
         (props.device && props.device.deviceStatus === 'OFFLINE') ||
-        (props.device && !props.device.connIp && props.device.deviceStatus === 'ONLINE')
+        (props.device &&
+          !props.device.connIp &&
+          props.device.deviceStatus === 'ONLINE')
       ) {
         return false;
       }
 
       const socket = new WebSocket(httpPath.value);
       socket.binaryType = 'arraybuffer';
-      socket.onopen = handleSocketOpen;
+      socket.addEventListener('open', () => handleSocketOpen(_clarity));
 
-      socket.onmessage = e => {
+      socket.onmessage = (e) => {
         if (isDestroyed.value || !isStreamActive.value) return;
 
         if (e.data instanceof ArrayBuffer) {
@@ -965,39 +1426,53 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
           const messageType = buffer[0];
 
           switch (messageType) {
-            case 0x02:
+            case 0x02: {
               wsDeviceInfo(buffer);
               break;
-
-            case 0x03:
+            }
+            case 0x03: {
               wsVideoStream(buffer);
               break;
-
-            case 0x04:
-              wsErrorLog(buffer, socket);
+            }
+            case 0x04: {
+              wsAudioStream(buffer);
               break;
-            case 0x05:
+            }
+            case 0x05: {
               wsStreamEnd(buffer, socket);
               break;
-
-            case 0x14:
+            }
+            case 0x07: {
+              wsErrorLog(buffer, socket);
+              break;
+            }
+            case 0x14: {
               wsShell(buffer);
               break;
-
-            case 0x15:
-              wsScreenshot(buffer, socket);
+            }
+            case 0x15: {
+              wsScreenshot(buffer, socket, {
+                deviceInfo: deviceInfo.value,
+                deviceRealWidth: deviceRealWidth.value,
+                deviceRealHeight: deviceRealHeight.value,
+                width: width.value,
+                height: height.value,
+              });
               break;
-            case 0x17:
+            }
+            case 0x17: {
               wsHeartbeat(buffer, socket);
               break;
-            case 0x18:
+            }
+            case 0x18: {
               wsSetClipboard(buffer, socket);
               break;
+            }
           }
         }
       };
 
-      socket.onclose = handleSocketClose;
+      socket.addEventListener('close', handleSocketClose);
       socket.onerror = handleSocketError;
 
       setDeviceSocket(socket);
@@ -1016,7 +1491,8 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
       receivedKeyframe.value = false;
 
       if (decoder.value) {
-        await decoder.value.dispose();
+        await safeDisposeDecoderInstance(decoder.value);
+        decoder.value = null;
       }
 
       if (videoRenderer.value) {
@@ -1029,15 +1505,15 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
         try {
           deviceSocket.close();
           setDeviceSocket(null);
-        } catch (e) {
-          console.warn('客户端销毁出错:', e);
+        } catch (error) {
+          console.warn('客户端销毁出错:', error);
         }
       }
 
       if (renderRef.value && renderRef.value.$el) {
         const el = renderRef.value.$el;
         while (el.firstChild) {
-          el.removeChild(el.firstChild);
+          el.firstChild.remove();
         }
       }
 
@@ -1049,27 +1525,29 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
       hasInitializedDecoder.value = false;
       decoderConfigured.value = false;
       receivedKeyframe.value = false;
-    } catch (e) {
-      console.error('销毁 scrcpy 客户端资源时出错:', e);
+    } catch (error) {
+      console.error('销毁 scrcpy 客户端资源时出错:', error);
     }
   }
 
-  async function reconnect() {
+  async function reconnect(clarity = '') {
     if (isDestroyed.value) return;
 
     try {
       await destroyClient();
-      await new Promise(resolve => setTimeout(resolve, 500));
-      await initWs();
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      await initWs(clarity);
     } catch (error) {
       console.error('手动重连失败:', error);
     }
   }
 
-  function handlePressKey({ e, key }) {
-    const keyCode = AndroidKeyCode[key];
+  /* ---- Keyboard shortcuts ---- */
+
+  function handlePressKey({ key }: { key: string }) {
+    const keyCode = AndroidKeyCode[key as keyof typeof AndroidKeyCode];
     if (keyCode) {
-      const keyParams = {
+      const keyParams: KeyParams = {
         action: AndroidKeyEventAction.Down,
         keyCode,
         repeat: 0,
@@ -1084,6 +1562,8 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
     await spawnWaitText(shellValue.value);
   }
 
+  /* ---- Lifecycle ---- */
+
   watch(
     () => props.device?.deviceStatus,
     (newStatus, oldStatus) => {
@@ -1094,12 +1574,19 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
   );
 
   onMounted(() => {
-    const hostname = import.meta.env.MODE === 'development' ? 'test.callfansai.cn' : window.location.hostname;
+    const hostname =
+      import.meta.env.MODE === 'development'
+        ? 'test.callfansai.cn'
+        : window.location.hostname;
     const pathSegment = props.device?.connIp || hostname;
     const wsUrl = `https://${hostname}/${pathSegment}/3333`;
-    httpPath.value = wsUrl;
-    initWs();
-    window.addEventListener('resize', handleResize, { signal: abortController.signal });
+    //     httpPath.value = wsUrl;
+    const ip = 'http://192.168.9.31:3333';
+    httpPath.value = ip;
+    getDevicesStatus();
+    window.addEventListener('resize', handleResize, {
+      signal: abortController.signal,
+    });
   });
 
   onBeforeUnmount(() => {
@@ -1123,13 +1610,33 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
 
     if (videoStreamController.value) {
       try {
-        videoStreamController.value.close();
-      } catch (e) {
+        videoStreamController.value?.close();
+      } catch {
         /* ignore */
       }
       videoStreamController.value = null;
     }
     videoStreamClosed.value = true;
+
+    if (audioStreamController.value) {
+      try {
+        audioStreamController.value?.close();
+      } catch {
+        /* ignore */
+      }
+      audioStreamController.value = null;
+    }
+    audioStreamClosed.value = true;
+
+    if (audioPlayer.value) {
+      try {
+        audioPlayer.value?.stop();
+      } catch {
+        /* ignore */
+      }
+      audioPlayer.value = null;
+    }
+
     clearWsReconnectTimer();
     destroyClient().then(() => {
       decoder.value = null;
@@ -1139,6 +1646,8 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
     });
     openKeyInput('close');
   });
+
+  /* ---- Return ---- */
 
   return {
     classes,
@@ -1156,6 +1665,7 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
     reconnect,
     handlePressKey,
     executeShellCommand,
+    executeKeyAction,
     spawnWaitText,
     screenshot,
     screenshotToAlbum,
@@ -1172,5 +1682,8 @@ export function useWebAdbScrcpy(props, emit, renderRef) {
     handleWebSocketBinaryPacket,
     handlePacket,
     clientPositionToDevicePosition,
+    occupyInfo,
+    dblclick,
+    getDevicesStatus,
   };
 }

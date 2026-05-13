@@ -7,33 +7,37 @@
       placement="top"
       :hide-after="0"
     >
-      <div class="control-btn" @click="e => handlePress(e, btn.key)">
-        <i :class="`icon iconfont ${btn.icon}`"></i>
+      <div class="control-btn" @click="handlePress($event, btn.key)">
+        <el-icon :size="18"><component :is="btn.icon" /></el-icon>
       </div>
     </el-tooltip>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue';
-
-import { $t } from '#/locales';
+import {
+  ArrowLeft,
+  Grid,
+  Menu,
+  RefreshRight,
+  House,
+} from '@element-plus/icons-vue';
 
 defineOptions({ name: 'DeviceOperateButton' });
 
-const buttons = computed(() => [
-  { key: 'AndroidBack', content: $t('webadb.scrcpy.goBack'), icon: 'icon-back' },
-  { key: 'AndroidHome', content: $t('webadb.scrcpy.goHome'), icon: 'icon-home' },
-  { key: 'AndroidAppSwitch', content: $t('webadb.scrcpy.multitask'), icon: 'icon-multitask' },
-  { key: 'ContextMenu', content: $t('webadb.scrcpy.clearSpeed'), icon: 'icon-clear-speed' },
-  { key: 'openSetting', content: $t('webadb.scrcpy.setUp'), icon: 'icon-shezhi' },
-]);
+const buttons = [
+  { key: 'AndroidBack', content: '返回', icon: ArrowLeft },
+  { key: 'AndroidHome', content: '主页', icon: House },
+  { key: 'AndroidAppSwitch', content: '多任务', icon: Grid },
+  { key: 'ContextMenu', content: '菜单', icon: Menu },
+  { key: 'reconnect', content: '重连', icon: RefreshRight },
+];
 
-const emit = defineEmits(['openSetting', 'pressKey']);
+const emit = defineEmits(['reconnect', 'pressKey']);
 
 function handlePress(_e, key) {
-  if (key === 'openSetting') {
-    emit('openSetting');
+  if (key === 'reconnect') {
+    emit('reconnect');
   } else {
     emit('pressKey', { e: _e, key });
   }
@@ -65,10 +69,6 @@ function handlePress(_e, key) {
   display: flex;
   align-items: center;
   justify-content: center;
-
-  .icon {
-    font-size: 16px;
-  }
 
   &:hover {
     background-color: #40a9ff;

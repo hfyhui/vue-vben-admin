@@ -1,41 +1,38 @@
 <script setup lang="ts">
+import type { DeviceEnableItem, DeviceItem } from '#/api/core/asset';
+
 import { computed, nextTick, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
-import { ElMessage, ElMessageBox } from 'element-plus';
 import { TopRight } from '@element-plus/icons-vue';
-
-import { $t } from '#/locales';
-import { useAssetEnumsStore } from '#/store';
+import { ElMessage, ElMessageBox } from 'element-plus';
 
 import {
   getContainerAssetPageApi,
   unbindAccountApi,
   unbindProxyApi,
-  type DeviceEnableItem,
-  type DeviceItem,
 } from '#/api/core/asset';
+import ScrcpyAll from '#/components/Scrcpy/WebAdb/index.vue';
+import { $t } from '#/locales';
+import { useAssetEnumsStore } from '#/store';
 
-import LargeScreen from '#/components/WebAdb/LargeScreen.vue';
-
-import DevicePinActions from './DevicePinActions.vue';
-import DeviceGrid from './DeviceGrid.vue';
-import DeviceTable from './DeviceTable.vue';
 import { isDeviceLocked } from '../composables/useDeviceDisplay';
+import DeviceGrid from './DeviceGrid.vue';
+import DevicePinActions from './DevicePinActions.vue';
+import DeviceTable from './DeviceTable.vue';
 
-const router = useRouter();
 const props = defineProps<{
-  groupOptions?: Array<{ id: string; suiteName: string }>;
   /** 拖拽账号/代理到设备前调用 POST /asset/check/account-device，返回 false 时不落地绑定 */
   checkDropDeviceEnables?: (
     deviceEnables: DeviceEnableItem[],
   ) => Promise<boolean>;
+  groupOptions?: Array<{ id: string; suiteName: string }>;
 }>();
-
 const emit = defineEmits<{
   (e: 'refreshSummary'): void;
   (e: 'refreshProxyList'): void;
 }>();
+const router = useRouter();
 const loading = ref(false);
 const finished = ref(false);
 
@@ -48,7 +45,9 @@ const filterForm = reactive({
 });
 
 const viewMode = ref<'grid' | 'table'>('grid');
-const associationStatusOptions = ref<Array<{ name: string; content: string }>>([]);
+const associationStatusOptions = ref<Array<{ content: string; name: string }>>(
+  [],
+);
 const assetEnumsStore = useAssetEnumsStore();
 
 const tablePagination = reactive({
@@ -77,7 +76,7 @@ const selectedDeviceKeys = ref<string[]>([]);
 const pinnedDeviceKeys = ref<string[]>([]);
 const pinMode = ref(false);
 const pinnedRecords = computed(() => {
-  if (!pinnedDeviceKeys.value.length) return [];
+  if (pinnedDeviceKeys.value.length === 0) return [];
   return allMockRecords.value.filter((item) =>
     pinnedDeviceKeys.value.includes(getDeviceKey(item)),
   );
@@ -88,30 +87,30 @@ const displayGridList = computed(() =>
 );
 
 type BoundAccount = {
-  accountId?: string;
   account?: string;
-  userAccount?: string;
+  accountId?: string;
   appId?: string;
-  platform?: string;
-  logoPath?: string;
   /** true：列表接口带回，可解绑；false：拖拽/自动关联，未正式启用不可解绑 */
   fromServer?: boolean;
+  logoPath?: string;
+  platform?: string;
+  userAccount?: string;
 };
 
 type BoundProxy = {
-  proxyId?: string;
-  id?: string;
-  /** 设备-代理关联 id，解绑接口使用 */
-  assId?: string;
   accountId?: string;
   area?: string;
+  /** 设备-代理关联 id，解绑接口使用 */
+  assId?: string;
+  bandingCount?: number;
+  /** true：列表/接口带回，可解绑；false：拖拽/自动关联，未正式启用不可解绑 */
+  fromServer?: boolean;
+  id?: string;
   ip?: string;
   proxy?: string;
   proxyArea?: string;
   proxyGroup?: string;
-  bandingCount?: number;
-  /** true：列表/接口带回，可解绑；false：拖拽/自动关联，未正式启用不可解绑 */
-  fromServer?: boolean;
+  proxyId?: string;
 };
 
 function getProxyId(proxy: Partial<BoundProxy> & Record<string, any>) {
@@ -123,7 +122,9 @@ function getProxyDisplayText(proxy: Partial<BoundProxy> & Record<string, any>) {
   return proxy.proxy as string;
 }
 
-function getProxyBindingCount(proxy: Partial<BoundProxy> & Record<string, any>) {
+function getProxyBindingCount(
+  proxy: Partial<BoundProxy> & Record<string, any>,
+) {
   return Number(proxy?.bandingCount ?? 0);
 }
 
@@ -131,7 +132,7 @@ async function allocateProxiesForAutoAssociate(
   proxies: BoundProxy[],
   bindCount: number,
 ) {
-  if (!proxies.length || bindCount <= 0) return [] as BoundProxy[];
+  if (proxies.length === 0 || bindCount <= 0) return [] as BoundProxy[];
 
   const states = proxies.map((proxy, index) => ({
     index,
@@ -159,10 +160,17 @@ async function allocateProxiesForAutoAssociate(
   }
 
   const pickLowestWithRandomTie = (
-    pool: Array<{ index: number; proxy: BoundProxy; current: number; reused: number }>,
+    pool: Array<{
+      current: number;
+      index: number;
+      proxy: BoundProxy;
+      reused: number;
+    }>,
   ) => {
     const minCurrent = Math.min(...pool.map((item) => item.current));
-    const currentCandidates = pool.filter((item) => item.current === minCurrent);
+    const currentCandidates = pool.filter(
+      (item) => item.current === minCurrent,
+    );
     const minReused = Math.min(...currentCandidates.map((item) => item.reused));
     const finalCandidates = currentCandidates.filter(
       (item) => item.reused === minReused,
@@ -176,18 +184,18 @@ async function allocateProxiesForAutoAssociate(
     const pool = [...states];
     const result: BoundProxy[] = [];
     for (let i = 0; i < bindCount; i++) {
-      if (!pool.length) break;
+      if (pool.length === 0) break;
       const picked = pickLowestWithRandomTie(pool);
       if (!picked) break;
       result.push(picked.proxy);
       const removeIndex = pool.findIndex((item) => item.index === picked.index);
-      if (removeIndex > -1) pool.splice(removeIndex, 1);
+      if (removeIndex !== -1) pool.splice(removeIndex, 1);
     }
     return result;
   }
 
   // 设备数 > 代理数：先按选择顺序一轮分配，再复用“使用数更低”的代理（同数量随机）
-  const result: BoundProxy[] = proxies.slice();
+  const result: BoundProxy[] = [...proxies];
   const remaining = bindCount - proxies.length;
   if (remaining <= 0) return result.slice(0, bindCount);
 
@@ -216,8 +224,10 @@ function getAccountAppId(
 /** 收集设备已绑定的 appId（含后端 accountInfos 与前端 boundAccounts） */
 function getDeviceBoundAppIds(item: DeviceItem) {
   const appIds: string[] = [];
-  const boundAccounts = (item.boundAccounts as BoundAccount[] | undefined) || [];
-  const accountInfos = (item.accountInfos as Record<string, any>[] | undefined) || [];
+  const boundAccounts =
+    (item.boundAccounts as BoundAccount[] | undefined) || [];
+  const accountInfos =
+    (item.accountInfos as Record<string, any>[] | undefined) || [];
 
   boundAccounts.forEach((acc) => {
     const appId = getAccountAppId(acc as Record<string, any>);
@@ -232,7 +242,8 @@ function getDeviceBoundAppIds(item: DeviceItem) {
 
 /** 合并 accountInfos（接口）与 boundAccounts（前端新增），按 accountId 去重 */
 function getMergedBoundAccounts(item: DeviceItem): BoundAccount[] {
-  const fromApi = (item.accountInfos as Record<string, any>[] | undefined) || [];
+  const fromApi =
+    (item.accountInfos as Record<string, any>[] | undefined) || [];
   const fromBound = (item.boundAccounts as BoundAccount[] | undefined) || [];
   const byId = new Map<string, BoundAccount>();
   fromApi.forEach((a) => {
@@ -300,16 +311,20 @@ function markProxyBindingsFromServer(item: DeviceItem) {
 /** 收集设备已绑定的账号 ID（兼容后端 accountInfos 与前端 boundAccounts） */
 function getDeviceBoundAccountIds(item: DeviceItem) {
   const accountIds: string[] = [];
-  const boundAccounts = (item.boundAccounts as BoundAccount[] | undefined) || [];
-  const accountInfos = (item.accountInfos as Record<string, any>[] | undefined) || [];
+  const boundAccounts =
+    (item.boundAccounts as BoundAccount[] | undefined) || [];
+  const accountInfos =
+    (item.accountInfos as Record<string, any>[] | undefined) || [];
 
   boundAccounts.forEach((acc) => {
     const accountId = acc.accountId;
-    if (accountId && !accountIds.includes(accountId)) accountIds.push(accountId);
+    if (accountId && !accountIds.includes(accountId))
+      accountIds.push(accountId);
   });
   accountInfos.forEach((acc) => {
     const accountId = acc.accountId as string;
-    if (accountId && !accountIds.includes(accountId)) accountIds.push(accountId);
+    if (accountId && !accountIds.includes(accountId))
+      accountIds.push(accountId);
   });
 
   return accountIds;
@@ -324,7 +339,7 @@ function buildRequestParams() {
     search: filterForm.search,
     relationStatus: filterForm.associationStatus,
   };
-  if (filterForm.suiteIds.length) {
+  if (filterForm.suiteIds.length > 0) {
     params.suiteIds = filterForm.suiteIds;
   }
   return params;
@@ -345,7 +360,8 @@ async function fetchData() {
       markProxyBindingsFromServer(item);
     }
     allMockRecords.value.push(...records);
-    finished.value = records.length === 0 || allMockRecords.value.length >= total;
+    finished.value =
+      records.length === 0 || allMockRecords.value.length >= total;
     if (!finished.value) pagination.current += 1;
     refreshDisplayedDeviceData();
   } catch (error) {
@@ -429,10 +445,10 @@ function handleLoadMore() {
 function onTableDragOver(ev: DragEvent) {
   const dt = ev.dataTransfer;
   if (!dt) return;
-  const types = Array.from(dt.types);
+  const types = new Set(dt.types);
   if (
-    types.includes('application/x-account-items') ||
-    types.includes('application/x-proxy-item')
+    types.has('application/x-account-items') ||
+    types.has('application/x-proxy-item')
   ) {
     ev.preventDefault();
   }
@@ -448,11 +464,11 @@ function onTableDrop(ev: DragEvent) {
 
   const tbody = rowEl.parentElement;
   if (!tbody) return;
-  const rows = Array.from(
-    tbody.querySelectorAll<HTMLTableRowElement>('.el-table__row'),
-  );
+  const rows = [
+    ...tbody.querySelectorAll<HTMLTableRowElement>('.el-table__row'),
+  ];
   const rowIndex = rows.indexOf(rowEl);
-  if (rowIndex < 0 || rowIndex >= tableData.value.length) return;
+  if (rowIndex === -1 || rowIndex >= tableData.value.length) return;
 
   const row = tableData.value[rowIndex];
   if (!row) return;
@@ -462,7 +478,11 @@ function onTableDrop(ev: DragEvent) {
 
 /** 刷新表格分页数据（与筛选条件保持一致） */
 function updateTableData() {
-  if (viewMode.value === 'table' && tableServerPaged.value && !showPinnedOnly.value) {
+  if (
+    viewMode.value === 'table' &&
+    tableServerPaged.value &&
+    !showPinnedOnly.value
+  ) {
     return;
   }
   const filtered = showPinnedOnly.value ? pinnedRecords.value : list.value;
@@ -475,9 +495,13 @@ function updateTableData() {
 }
 
 function normalizePinnedDeviceKeys() {
-  const existingKeys = allMockRecords.value.map((item) => getDeviceKey(item));
-  pinnedDeviceKeys.value = pinnedDeviceKeys.value.filter((key) => existingKeys.includes(key));
-  if (!pinnedDeviceKeys.value.length) pinMode.value = false;
+  const existingKeys = new Set(
+    allMockRecords.value.map((item) => getDeviceKey(item)),
+  );
+  pinnedDeviceKeys.value = pinnedDeviceKeys.value.filter((key) =>
+    existingKeys.has(key),
+  );
+  if (pinnedDeviceKeys.value.length === 0) pinMode.value = false;
 }
 
 function refreshDisplayedDeviceData() {
@@ -524,7 +548,7 @@ function getDeviceKey(item: DeviceItem) {
 
 /** 从设备记录中提取可用于正式启用接口的设备 ID */
 function getDeviceId(item: DeviceItem) {
-  return item.deviceId
+  return item.deviceId;
 }
 
 /** 从设备记录中提取可用于正式启用接口的代理 ID */
@@ -532,7 +556,7 @@ function getDeviceProxyId(item: DeviceItem) {
   const bound = (item.boundProxies as BoundProxy[] | undefined) || [];
   const fromBound = bound.length > 0 ? getProxyId(bound[0]!) : '';
   if (fromBound) return fromBound;
-  return ((item as Record<string, any>)?.proxyId) as string;
+  return (item as Record<string, any>)?.proxyId as string;
 }
 
 /** 构造单台设备的 deviceEnables 项（与正式启用接口结构一致） */
@@ -540,8 +564,8 @@ function buildDeviceEnablePayload(
   item: DeviceItem,
   overrides?: {
     accountIds?: string[];
+    mode?: 'accountBind' | 'full' | 'proxyBind';
     proxyId?: string;
-    mode?: 'full' | 'accountBind' | 'proxyBind';
   },
 ): DeviceEnableItem | null {
   const deviceId = getDeviceId(item);
@@ -553,8 +577,7 @@ function buildDeviceEnablePayload(
   };
 
   if (mode === 'accountBind') {
-    base.accountIds =
-      overrides?.accountIds ?? getDeviceBoundAccountIds(item);
+    base.accountIds = overrides?.accountIds ?? getDeviceBoundAccountIds(item);
     return base;
   }
 
@@ -565,10 +588,8 @@ function buildDeviceEnablePayload(
     return base;
   }
 
-  base.accountIds =
-    overrides?.accountIds ?? getDeviceBoundAccountIds(item);
-  base.proxyId =
-    overrides?.proxyId ?? (getDeviceProxyId(item) || '');
+  base.accountIds = overrides?.accountIds ?? getDeviceBoundAccountIds(item);
+  base.proxyId = overrides?.proxyId ?? (getDeviceProxyId(item) || '');
   return base;
 }
 
@@ -577,29 +598,38 @@ function handleDeviceClick(item: DeviceItem) {
   if (isDeviceLocked(item)) return;
   toggleDeviceSelect(item);
 }
+const ScrcpyAllRef = ref<any>(null);
 
 /** 双击设备：打开 WebAdb 大屏 */
 function handleDeviceDblClick(item: DeviceItem) {
   if (isDeviceLocked(item)) return;
   largeScreenDevice.value = item;
   largeScreenVisible.value = true;
+  nextTick(() => {
+    ScrcpyAllRef.value?.openLarge();
+  });
 }
 
 function closeLargeScreen() {
+  console.log('closeLargeScreen');
   largeScreenVisible.value = false;
-}
-
-function onLargeScreenDialogClosed() {
   largeScreenDevice.value = null;
 }
+
+// function onLargeScreenDialogClosed() {
+//   largeScreenDevice.value = null;
+// }
 
 /** 切换设备选中状态（用于自动关联） */
 function toggleDeviceSelect(item: DeviceItem) {
   const key = getDeviceKey(item);
   if (!key) return;
   const idx = selectedDeviceKeys.value.indexOf(key);
-  if (idx > -1) selectedDeviceKeys.value.splice(idx, 1);
-  else selectedDeviceKeys.value.push(key);
+  if (idx === -1) {
+    selectedDeviceKeys.value.push(key);
+  } else {
+    selectedDeviceKeys.value.splice(idx, 1);
+  }
 }
 
 /** 清空设备选中状态（对外暴露给父组件） */
@@ -616,7 +646,7 @@ function handleTogglePinDevices() {
     refreshDisplayedDeviceData();
     return;
   }
-  if (!selectedDeviceKeys.value.length) {
+  if (selectedDeviceKeys.value.length === 0) {
     ElMessage.warning($t('associationCenter.selectDeviceBeforePin'));
     return;
   }
@@ -703,9 +733,9 @@ function getSelectedDeviceEnables() {
       const deviceIp = item.deviceIp ?? '';
       if (!deviceId) return null;
       const payload: {
+        accountIds: string[];
         deviceId: string;
         deviceIp: string;
-        accountIds: string[];
         proxyId: string;
       } = {
         deviceId,
@@ -715,25 +745,17 @@ function getSelectedDeviceEnables() {
       };
       return payload;
     })
-    .filter(
-      (item): item is {
-        deviceId: string;
-        deviceIp: string;
-        accountIds: string[];
-        proxyId: string;
-      } =>
-        Boolean(item),
-    );
+    .filter(Boolean);
 }
 
 /** 卡片区域拖拽悬停处理：仅允许账号/代理数据进入 */
 function onCardDragOver(ev: DragEvent) {
   const dt = ev.dataTransfer;
   if (!dt) return;
-  const types = Array.from(dt.types);
+  const types = new Set(dt.types);
   if (
-    types.includes('application/x-account-items') ||
-    types.includes('application/x-proxy-item')
+    types.has('application/x-account-items') ||
+    types.has('application/x-proxy-item')
   ) {
     ev.preventDefault();
   }
@@ -830,7 +852,12 @@ async function onCardDrop(ev: DragEvent, item: DeviceItem) {
 
     const displayProxy = getProxyDisplayText(proxy);
     target.boundProxies = [
-      { ...proxy, proxy: displayProxy, proxyArea: proxy.area, fromServer: false },
+      {
+        ...proxy,
+        proxy: displayProxy,
+        proxyArea: proxy.area,
+        fromServer: false,
+      },
     ];
     target.proxy = displayProxy;
     target.proxyArea = proxy.area;
@@ -879,13 +906,13 @@ async function refreshDeviceListAfterUnbind() {
 
 /** 解绑设备上的代理（仅列表/正式绑定可解绑） */
 async function handleUnbindProxy(item: DeviceItem) {
-  const proxyId = item?.proxyId
-  const assId = item?.assId
+  const proxyId = item?.proxyId;
+  const assId = item?.assId;
 
   const payload: { assId: string; proxyId: string } = { assId, proxyId };
   try {
     const res = await unbindProxyApi(payload);
-    if (res?.code === 100000) {
+    if (res?.code === 100_000) {
       if (res.msg) {
         ElMessage.success(res.msg);
       }
@@ -893,8 +920,8 @@ async function handleUnbindProxy(item: DeviceItem) {
       emit('refreshSummary');
       emit('refreshProxyList');
     }
-  } catch (e) {
-    console.error(e);
+  } catch (error) {
+    console.error(error);
     ElMessage.error($t('associationCenter.unbindProxyFailed'));
   }
 }
@@ -920,15 +947,15 @@ async function handleUnbindAccount(item: DeviceItem, accountId: string) {
       accountIds: [accountId],
       bind: 'UNBINDING',
     });
-    if (res?.code === 100000) {
+    if (res?.code === 100_000) {
       if (res.msg) {
         ElMessage.success(res.msg);
       }
       await refreshDeviceListAfterUnbind();
       emit('refreshSummary');
     }
-  } catch (e) {
-    console.error(e);
+  } catch (error) {
+    console.error(error);
     ElMessage.error($t('associationCenter.unbindAccountFailed'));
   }
 }
@@ -945,37 +972,47 @@ async function autoAssociateWithSelections(
   });
   const devicesRaw = selectedDeviceKeys.value
     .map((key) => deviceMap.get(key))
-    .filter((item): item is DeviceItem => Boolean(item));
+    .filter(Boolean);
   const devices = devicesRaw.filter((d) => !isDeviceLocked(d));
   const hasAccounts = accounts.length > 0;
   const hasProxies = proxies.length > 0;
-  if (devicesRaw.length && !devices.length) {
+  if (devicesRaw.length > 0 && devices.length === 0) {
     ElMessage.warning($t('associationCenter.allSelectedDevicesLocked'));
     return;
   }
-  if (!devices.length || (!hasAccounts && !hasProxies)) {
+  if (devices.length === 0 || (!hasAccounts && !hasProxies)) {
     ElMessage.warning($t('associationCenter.selectDataInAllBoardsFirst'));
     return;
   }
 
   const selectedAppIds = hasAccounts
-    ? Array.from(
-        new Set(
+    ? [
+        ...new Set(
           accounts
             .map((item) => getAccountAppId(item as Record<string, any>))
             .filter(Boolean),
         ),
-      )
+      ]
     : [];
 
   /** 账号和设备二方配置：当账号覆盖多个 appId 时，只允许选单台设备 */
-  if (hasAccounts && !hasProxies && devices.length > 1 && selectedAppIds.length > 1) {
+  if (
+    hasAccounts &&
+    !hasProxies &&
+    devices.length > 1 &&
+    selectedAppIds.length > 1
+  ) {
     ElMessage.error($t('associationCenter.multiAppOnlyOneDevice'));
     return;
   }
 
   /** 多台设备 + 单一应用：账号数与设备数须 1v1 */
-  if (hasAccounts && devices.length > 1 && selectedAppIds.length === 1 && accounts.length !== devices.length) {
+  if (
+    hasAccounts &&
+    devices.length > 1 &&
+    selectedAppIds.length === 1 &&
+    accounts.length !== devices.length
+  ) {
     ElMessage.error($t('associationCenter.samePlatformCountMismatch'));
     return;
   }
@@ -1062,7 +1099,7 @@ async function autoAssociateWithSelections(
     }
   }
 
-  if (props.checkDropDeviceEnables && deviceEnablesForCheck.length) {
+  if (props.checkDropDeviceEnables && deviceEnablesForCheck.length > 0) {
     const ok = await props.checkDropDeviceEnables(deviceEnablesForCheck);
     if (!ok) return;
   }
@@ -1071,7 +1108,7 @@ async function autoAssociateWithSelections(
     const target = devices[0];
     if (target) {
       const existingAccounts = getMergedBoundAccounts(target);
-      let existingAppIds = new Set(getDeviceBoundAppIds(target));
+      const existingAppIds = new Set(getDeviceBoundAppIds(target));
       for (const account of accounts) {
         const accountAppId = getAccountAppId(account as Record<string, any>);
         if (accountAppId && existingAppIds.has(accountAppId)) {
@@ -1137,7 +1174,12 @@ async function autoAssociateWithSelections(
         if (!proxy) continue;
         const displayProxy = getProxyDisplayText(proxy);
         target.boundProxies = [
-          { ...proxy, proxy: displayProxy, proxyArea: proxy.area, fromServer: false },
+          {
+            ...proxy,
+            proxy: displayProxy,
+            proxyArea: proxy.area,
+            fromServer: false,
+          },
         ];
         target.proxy = displayProxy;
         target.proxyArea = proxy.area;
@@ -1176,8 +1218,15 @@ async function autoAssociateWithSelections(
     );
     return;
   }
-  ElMessage.success($t('associationCenter.autoAssociateSuccess', { bindCount }));
+  ElMessage.success(
+    $t('associationCenter.autoAssociateSuccess', { bindCount }),
+  );
 }
+let specialKey: {
+  APK: 'SET_APK_MODAL_Drag';
+  LOCATION: 'SET_LOCATION_MODAL_Drag';
+  RESOLUTION_RATIO: 'SET_RESOLUTION_RATIO_MODAL_Drag';
+};
 
 /** 向父组件暴露的方法：切换视图、自动关联、清空设备选择 */
 defineExpose({
@@ -1202,14 +1251,20 @@ onMounted(() => {
   <div class="device-board">
     <div class="board-header">
       <h2 class="board-title">{{ $t('associationCenter.deviceBoard') }}</h2>
-      <el-link type="primary" underline="never" @click="router.push('/containerPool')">
+      <el-link
+        type="primary"
+        underline="never"
+        @click="router.push('/containerPool')"
+      >
         <el-icon :size="22"><TopRight /></el-icon>
       </el-link>
     </div>
 
     <div class="filter-bar">
       <div class="filter-item">
-        <label class="filter-label">{{ $t('associationCenter.deviceFilter') }}</label>
+        <label class="filter-label">{{
+          $t('associationCenter.deviceFilter')
+        }}</label>
         <el-input
           v-model="filterForm.screening"
           :placeholder="$t('associationCenter.deviceFilter')"
@@ -1219,7 +1274,9 @@ onMounted(() => {
         />
       </div>
       <div class="filter-item">
-        <label class="filter-label">{{ $t('associationCenter.deviceSearch') }}</label>
+        <label class="filter-label">{{
+          $t('associationCenter.deviceSearch')
+        }}</label>
         <el-input
           v-model="filterForm.search"
           :placeholder="$t('associationCenter.deviceSearch')"
@@ -1229,7 +1286,9 @@ onMounted(() => {
         />
       </div>
       <div class="filter-item">
-        <label class="filter-label">{{ $t('associationCenter.deviceGroup') }}</label>
+        <label class="filter-label">{{
+          $t('associationCenter.deviceGroup')
+        }}</label>
         <el-select
           v-model="filterForm.suiteIds"
           :placeholder="$t('associationCenter.deviceGroup')"
@@ -1249,7 +1308,9 @@ onMounted(() => {
         </el-select>
       </div>
       <div class="filter-item">
-        <label class="filter-label">{{ $t('associationCenter.associationStatus') }}</label>
+        <label class="filter-label">{{
+          $t('associationCenter.associationStatus')
+        }}</label>
         <el-select
           v-model="filterForm.associationStatus"
           :placeholder="$t('associationCenter.associationStatus')"
@@ -1308,28 +1369,33 @@ onMounted(() => {
       />
     </div>
 
-    <el-dialog
-      v-model="largeScreenVisible"
-      :show-close="false"
-      :modal="false"
-      width="auto"
-      align-center
-      destroy-on-close
-      class="device-board-large-screen-dialog"
-      append-to-body
-      @closed="onLargeScreenDialogClosed"
-    >
-      <LargeScreen
-        v-if="largeScreenDevice"
+    <div class="large_screen_modal" v-if="largeScreenVisible">
+      <ScrcpyAll
+        ref="ScrcpyAllRef"
+        :show-live-manage="false"
+        :show-file-manager="false"
+        :show-dropdown-tab="false"
+        :show-operation-tab="true"
+        :key="largeScreenDevice.deviceId"
         :device="largeScreenDevice"
-        :width="380"
-        @close="closeLargeScreen"
+        :show-checkbox="false"
+        :is-header-btn="false"
+        :width="390"
+        store-module="AccountPromotionScrcpy"
+        :special-key="specialKey"
+        @close-scrcpy="closeLargeScreen"
       />
-    </el-dialog>
+    </div>
   </div>
 </template>
 
 <style scoped>
+.large_screen_modal {
+  position: absolute;
+  top: -20000px;
+  left: -20000px;
+}
+
 .device-board {
   display: flex;
   flex-direction: column;

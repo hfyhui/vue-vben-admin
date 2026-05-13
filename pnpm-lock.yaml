@@ -352,7 +352,7 @@ catalogs:
       specifier: ^0.3.12
       version: 0.3.12
     qrcode:
-      specifier: ^1.5.4
+      specifier: 1.5.4
       version: 1.5.4
     qs:
       specifier: ^6.14.0
@@ -692,6 +692,9 @@ importers:
       '@yume-chan/fallback-websocket':
         specifier: ^1.0.4
         version: 1.0.4(ws@8.20.0)
+      '@yume-chan/pcm-player':
+        specifier: ^1.0.0
+        version: 1.0.0
       '@yume-chan/scrcpy':
         specifier: ^2.3.0
         version: 2.3.0
@@ -713,6 +716,9 @@ importers:
       pinia:
         specifier: ^3.0.3
         version: 3.0.3(typescript@5.8.3)(vue@3.5.17(typescript@5.8.3))
+      qrcode:
+        specifier: 'catalog:'
+        version: 1.5.4
       vue:
         specifier: ^3.5.17
         version: 3.5.17(typescript@5.8.3)
@@ -4838,6 +4844,9 @@ packages:
 
   '@yume-chan/no-data-view@2.0.0':
     resolution: {integrity: sha512-0GRJrrt6wtZlbiE92jocHOnaAvjQ+Y7xwwhwOPqLkwf90Kj1JIHJ5Zh4wJVQSQIkzfRSOpM+jeEQdC2K15snlA==}
+
+  '@yume-chan/pcm-player@1.0.0':
+    resolution: {integrity: sha512-J+OvXT+btycGkdGFUigmx2yPDk170MB6rnInnKSyzAcFOHq4tDG0LcBR55xTNIwkiq2VG1Ie1wrQGpbKnqiULA==}
 
   '@yume-chan/scrcpy-decoder-tinyh264@2.1.0':
     resolution: {integrity: sha512-Ou2ejwUZEUlwyorqzjzN6Y3YqMZvAmUi2jK9QsPBbQIVDYu/kbql5l5aXJzatgURTmxbf5HvGnOuEDFzJMqGsQ==}
@@ -14449,6 +14458,8 @@ snapshots:
       ws: 8.20.0
 
   '@yume-chan/no-data-view@2.0.0': {}
+
+  '@yume-chan/pcm-player@1.0.0': {}
 
   '@yume-chan/scrcpy-decoder-tinyh264@2.1.0':
     dependencies:

@@ -4,18 +4,20 @@
     class="css-important"
     :class="classes"
     :style="containerStyle"
-    @pointerdown="onPointerDown"
-    @pointermove="onPointerMove"
-    @pointerup="onPointerUp"
-    @pointercancel="onPointerUp"
-    @contextmenu="onContextMenu"
-    @pointerleave="onPointerLeave"
-    @wheel="onWheel"
-    @pointerenter="onPointerEnter"
+    @pointerdown="emit('pointerdown', $event)"
+    @pointermove="emit('pointermove', $event)"
+    @pointerup="emit('pointerup', $event)"
+    @pointercancel="emit('pointerup', $event)"
+    @contextmenu="emit('contextmenu', $event)"
+    @pointerleave="emit('pointerleave', $event)"
+    @wheel="emit('wheel', $event)"
+    @pointerenter="emit('pointerenter', $event)"
   />
 </template>
 
 <script setup>
+import { ref } from 'vue';
+
 defineOptions({ name: 'RenderContainer' });
 
 defineProps({
@@ -39,27 +41,8 @@ const emit = defineEmits([
   'pointerleave',
 ]);
 
-function onPointerDown(event) {
-  emit('pointerdown', event);
-}
-function onPointerMove(event) {
-  emit('pointermove', event);
-}
-function onPointerUp(event) {
-  emit('pointerup', event);
-}
-function onContextMenu(event) {
-  emit('contextmenu', event);
-}
-function onWheel(event) {
-  emit('wheel', event);
-}
-function onPointerEnter(event) {
-  emit('pointerenter', event);
-}
-function onPointerLeave(event) {
-  emit('pointerleave', event);
-}
+const renderContainer = ref(null);
+defineExpose({ renderContainer });
 </script>
 
 <style lang="less" scoped>

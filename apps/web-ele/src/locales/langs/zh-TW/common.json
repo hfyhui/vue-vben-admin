@@ -31,5 +31,12 @@
   "selectNone": "全不選",
   "enable": "啟用",
   "disable": "禁用",
-  "OperationSuccess": "操作成功"
+  "OperationSuccess": "操作成功",
+  "pleaseInput": "請輸入",
+  "success": "成功",
+  "operationFailed": "操作失敗",
+  "home": "主頁",
+  "task": "任務",
+  "clear": "清除",
+  "settings": "設置"
 }

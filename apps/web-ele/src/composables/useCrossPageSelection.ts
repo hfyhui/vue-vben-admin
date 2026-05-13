@@ -22,19 +22,19 @@ export function useCrossPageSelection(gridApiRef: any) {
     try {
       const vxeGrid = gridApiRef.value?.grid;
       if (!vxeGrid) return [];
-      
+
       // 优先使用getTableData方法获取当前页可见数据
       const tableData = vxeGrid.getTableData?.();
       if (tableData?.visibleData?.length > 0) {
         return tableData.visibleData;
       }
-      
+
       // 备选方案：使用getData方法
       const data = vxeGrid.getData?.();
       if (data && data.length > 0) {
         return data;
       }
-      
+
       return [];
     } catch (error) {
       console.warn('获取当前页数据失败:', error);
@@ -52,7 +52,7 @@ export function useCrossPageSelection(gridApiRef: any) {
     const isSelected = selectedRowIds.value.includes(row.id);
     if (isSelected) {
       // 取消选中：从列表中移除
-      selectedRowIds.value = selectedRowIds.value.filter(id => id !== row.id);
+      selectedRowIds.value = selectedRowIds.value.filter((id) => id !== row.id);
     } else {
       // 选中：添加到列表
       selectedRowIds.value.push(row.id);
@@ -63,13 +63,19 @@ export function useCrossPageSelection(gridApiRef: any) {
   const toggleAllCurrentPage = () => {
     try {
       const currentPageData = getCurrentPageData();
-      if (currentPageData.length === 0) return
+      if (currentPageData.length === 0) return;
       // 检查当前页是否全部选中
-      const allSelected = currentPageData.every((row: any) => selectedRowIds.value.includes(row.id));
+      const allSelected = currentPageData.every((row: any) =>
+        selectedRowIds.value.includes(row.id),
+      );
       if (allSelected) {
         // 取消全选：移除当前页所有ID
-        const currentPageIds = currentPageData.map((row: any) => row.id);
-        selectedRowIds.value = selectedRowIds.value.filter(id => !currentPageIds.includes(id));
+        const currentPageIds = new Set(
+          currentPageData.map((row: any) => row.id),
+        );
+        selectedRowIds.value = selectedRowIds.value.filter(
+          (id) => !currentPageIds.has(id),
+        );
       } else {
         // 全选：添加当前页所有ID
         currentPageData.forEach((row: any) => {
@@ -89,8 +95,10 @@ export function useCrossPageSelection(gridApiRef: any) {
     try {
       const currentPageData = getCurrentPageData();
       if (currentPageData.length === 0) return false;
-      return currentPageData.every((row: any) => selectedRowIds.value.includes(row.id));
-    } catch (error) {
+      return currentPageData.every((row: any) =>
+        selectedRowIds.value.includes(row.id),
+      );
+    } catch {
       return false;
     }
   };
@@ -100,7 +108,9 @@ export function useCrossPageSelection(gridApiRef: any) {
     try {
       const currentPageData = getCurrentPageData();
       if (currentPageData.length === 0) return false;
-      const selectedCount = currentPageData.filter((row: any) => selectedRowIds.value.includes(row.id)).length;
+      const selectedCount = currentPageData.filter((row: any) =>
+        selectedRowIds.value.includes(row.id),
+      ).length;
       return selectedCount > 0 && selectedCount < currentPageData.length;
     } catch {
       return false;
@@ -140,10 +150,12 @@ export function useCrossPageSelection(gridApiRef: any) {
  * @param options 配置选项
  * @returns VXE Table的列配置
  */
-export function createCrossPageSelectionColumn(options: {
-  width?: number;
-  align?: string;
-} = {}) {
+export function createCrossPageSelectionColumn(
+  options: {
+    align?: string;
+    width?: number;
+  } = {},
+) {
   return {
     field: 'crossPageCheckbox',
     title: '',
@@ -151,8 +163,8 @@ export function createCrossPageSelectionColumn(options: {
     align: options.align || 'center',
     slots: {
       default: 'crossPageCheckbox',
-      header: 'crossPageCheckboxHeader'
-    }
+      header: 'crossPageCheckboxHeader',
+    },
   };
 }
 

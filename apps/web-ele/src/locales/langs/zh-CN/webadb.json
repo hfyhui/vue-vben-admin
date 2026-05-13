@@ -7,6 +7,10 @@
     "casting": "投屏中...",
     "reconnecting": "投屏断开，重连中...",
     "refreshReconnect": "刷新重连",
+    "deviceTimeout": "设备超时",
+    "doubleClickToReconnect": "双击重连",
+    "userIsUsing": "正在使用",
+    "doubleClickToOccupy": "双击强制占用",
     "operating": "操作中",
     "shutdown": "关机",
     "powerOn": "开机",
@@ -31,7 +35,13 @@
     "qrCodeTip2": "当前电脑直接打开请点击",
     "qrCodeTip3": "这里",
     "getQrCodeError": "获取二维码信息失败，请稍后再试！",
-    "goUrlQrCodeError": "获取信息失败，请稍后再试！"
+    "goUrlQrCodeError": "获取信息失败，请稍后再试！",
+    "ip": "IP",
+    "imei": "IMEI",
+    "verificationCode": "验证码：",
+    "pleaseRefresh": "请刷新",
+    "refreshCode": "刷新验证码",
+    "codeGetFailed": "二次验证码获取失败，请手动刷新或稍后再试！"
   },
   "fileManager": {
     "connectionError": {
@@ -82,7 +92,39 @@
     },
     "drawer": {
       "title": "文件管理",
-      "tooltip": "文件管理"
+      "tooltip": "文件管理",
+      "tooltipLive": "直播配置",
+      "statusGetFailed": "获取直播状态失败",
+      "deviceInfoMissing": "设备信息缺失",
+      "startLive": "开始直播",
+      "stopLive": "停止直播",
+      "startLiveSuccess": "直播开始成功",
+      "startLiveFailed": "直播开始失败",
+      "stopLiveSuccess": "直播停止成功",
+      "stopLiveFailed": "直播停止失败",
+      "upgradeAV": "升级AV",
+      "upgradeAVSuccess": "升级AV成功",
+      "upgradeAVFailed": "升级AV失败",
+      "upgradeAVDesc": "如遇到画面卡顿，请升级AV插件，升级后请重启直播服务",
+      "upgradeAVBtn": "升级AV",
+      "OBSConfig": "OBS配置",
+      "OBSConfigDesc": "OBS配置说明",
+      "OBSAddressConfig": "OBS直播地址配置",
+      "OBSQualityConfig": "OBS直播质量配置",
+      "OBSAudioConfig": "OBS直播音频配置",
+      "OBSConfigExample": "以下为OBS直播地址配置示例",
+      "obsConfigPlaceholder": "请根据当前页签完成 OBS 对应配置。",
+      "serviceAddress": "服务地址",
+      "streamKey": "推流码",
+      "example": "，例如：",
+      "notAv": "当前设备未安装AV插件",
+      "notAvTip": "注意：当前设备AV插件未安装，是否",
+      "installAVSuccess": "安装AV成功",
+      "installAVFailed": "安装AV失败",
+      "installAVBtn": "安装AV？",
+      "obsLiveTip": "注意",
+      "obsLiveTip1": "1.需要OBS开启直播后，再点击上方{btn}按钮，设备才可以正常获取OBS画面流",
+      "obsLiveTip2": "2.OBS推流断开后，相关直播间自动断开，需要重新开启直播。"
     }
   },
   "mediaPreview": {
@@ -95,6 +137,13 @@
     "nonOriginalSizeMode": "适应窗口",
     "originalSizeMode": "原始大小",
     "zoomOut": "缩小",
-    "zoomIn": "放大"
+    "zoomIn": "放大",
+    "imageFile": "图片文件",
+    "videoFile": "视频文件",
+    "previous": "← 上一张",
+    "next": "→ 下一张",
+    "close": "ESC 关闭",
+    "zoom": "+/- 缩放",
+    "rotate": "R/L 旋转"
   }
 }

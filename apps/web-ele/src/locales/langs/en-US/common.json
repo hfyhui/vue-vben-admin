@@ -31,5 +31,12 @@
   "selectNone": "Select None",
   "enable": "Enable",
   "disable": "Disable",
-  "OperationSuccess": "Operation success"
+  "OperationSuccess": "Operation success",
+  "pleaseInput": "Please enter",
+  "success": "Success",
+  "operationFailed": "Operation failed",
+  "home": "Home",
+  "task": "Task",
+  "clear": "Clear",
+  "settings": "Settings"
 }
