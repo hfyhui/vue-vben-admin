@@ -46,6 +46,7 @@
     "lock": "Lock",
     "unlock": "Unlock",
     "batchDelete": "Batch Delete",
+    "batchUnbind": "Batch Unbind",
     "setGrouping": "Set Grouping"
   },
   "groupForm": {
@@ -87,6 +88,7 @@
     "accountGroupPlaceholder": "Please select account group"
   },
   "message": {
+    "selectBeforeUnbind": "Please select the accounts to unbind first",
     "selectBeforeDelete": "Please select the accounts to delete first",
     "selectBeforeGrouping": "Please select accounts before grouping",
     "selectBeforeLock": "Please select accounts to operate first",
@@ -107,6 +109,10 @@
     "batchDeleteConfirmTitle": "Batch Delete Confirmation",
     "batchDeleteSuccess": "Successfully deleted {count} accounts",
     "batchDeleteFailed": "Batch delete failed",
+    "batchUnbindConfirm": "Unbind the {count} selected account(s)?",
+    "batchUnbindConfirmTitle": "Confirm batch unbind",
+    "batchUnbindSuccess": "Successfully unbound {count} account(s)",
+    "batchUnbindFailed": "Batch unbind failed",
     "groupSetSuccess": "Account grouping succeeded",
     "groupSetFailed": "Account grouping failed",
     "importSuccess": "Account import succeeded",

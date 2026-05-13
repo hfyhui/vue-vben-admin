@@ -19,6 +19,7 @@ import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import {
   addProxyRemarkApi,
   batchDeleteProxyApi,
+  batchUnbindProxyApi,
   downloadProxyTemplateApi,
   getAssetGroupApi,
   getProxyPoolNumApi,
@@ -48,6 +49,7 @@ const groupOptions = ref<ProxyPoolGroupOption[]>([]);
 const regionOptions = ref<ProxyPoolRegionOption[]>([]);
 const importFileInputRef = ref<HTMLInputElement>();
 const importing = ref(false);
+const unbinding = ref(false);
 const assetEnumsStore = useAssetEnumsStore();
 
 function toSafeNumber(value: unknown) {
@@ -370,6 +372,47 @@ function onBatchDelete() {
     });
 }
 
+function onBatchUnbind() {
+  if (unbinding.value) return;
+  const proxyIds = getSelectedProxyIds();
+
+  if (proxyIds.length === 0) {
+    ElMessage.warning($t('proxyPool.message.selectBeforeUnbind'));
+    return;
+  }
+
+  const count = proxyIds.length;
+
+  ElMessageBox.confirm(
+    $t('proxyPool.message.batchUnbindConfirm', { count }),
+    $t('proxyPool.message.batchUnbindConfirmTitle'),
+    { type: 'warning' },
+  )
+    .then(async () => {
+      unbinding.value = true;
+      try {
+        const res = await batchUnbindProxyApi(proxyIds);
+        if (res?.code === 100_000) {
+          ElMessage.success(
+            $t('proxyPool.message.batchUnbindSuccess', { count }),
+          );
+          (gridApi as any).grid.clearCheckboxReserve?.();
+          gridApi.reload();
+          await loadProxyPoolNum();
+        }
+        // 非成功：proxyClient 已按业务 code 弹出 msg
+      } catch (error) {
+        console.error('[proxyPool] 批量解绑代理失败:', error);
+        ElMessage.error($t('proxyPool.message.batchUnbindFailed'));
+      } finally {
+        unbinding.value = false;
+      }
+    })
+    .catch(() => {
+      // 用户取消
+    });
+}
+
 function getSelectedProxyIds() {
   const grid = (gridApi as any).grid;
   const current = grid.getCheckboxRecords?.() || [];
@@ -484,6 +527,13 @@ const [ImportLogModal, importLogModalApi] = useVbenModal({
             <ElButton type="danger" @click="onBatchDelete">
               {{ $t('proxyPool.action.batchDelete') }}
             </ElButton>
+            <ElButton
+              type="danger"
+              :loading="unbinding"
+              @click="onBatchUnbind"
+            >
+              {{ $t('proxyPool.action.batchUnbind') }}
+            </ElButton>
             <ElButton type="primary" @click="onSetGrouping">
               {{ $t('proxyPool.action.setGrouping') }}
             </ElButton>
@@ -527,10 +577,10 @@ const [ImportLogModal, importLogModalApi] = useVbenModal({
   flex-wrap: wrap;
   gap: 10px;
   align-items: center;
+}
 
-  .el-button + .el-button {
-    margin-left: 0;
-  }
+.toolbar-actions :deep(.el-button) {
+  margin: 0;
 }
 
 :deep(.el-form-item) {

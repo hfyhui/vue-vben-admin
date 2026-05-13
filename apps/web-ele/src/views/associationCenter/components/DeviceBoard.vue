@@ -655,10 +655,21 @@ async function loadAssociationStatusOptions() {
   associationStatusOptions.value = Array.isArray(children) ? children : [];
 }
 
+/** 反向查询用 riskColor/riskTip，看板仍用 color/devicePrompt */
+function normalizeReverseQueryDeviceItem(item: DeviceItem) {
+  const d = item as any;
+  if (d.riskColor) d.color = d.riskColor;
+  if (String(d.riskTip ?? '').trim()) d.devicePrompt = d.riskTip;
+  for (const acc of d.accountInfos || []) {
+    if (d.riskColor && !acc.color) acc.color = d.riskColor;
+  }
+}
+
 /** 应用反向查询结果（有数据则覆盖渲染，无数据则展示空） */
 function applyReverseQueryDevices(devices: DeviceItem[] | null | undefined) {
-  const nextList = Array.isArray(devices) ? devices : [];
+  const nextList = devices ?? [];
   for (const item of nextList) {
+    normalizeReverseQueryDeviceItem(item);
     markAccountInfosFromServer(item);
     markProxyBindingsFromServer(item);
   }
