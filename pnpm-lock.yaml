@@ -148,7 +148,7 @@ catalogs:
       specifier: ^10.4.21
       version: 10.4.21
     axios:
-      specifier: ^1.10.0
+      specifier: 1.10.0
       version: 1.10.0
     axios-mock-adapter:
       specifier: ^2.1.0
@@ -707,6 +707,9 @@ importers:
       '@yume-chan/struct':
         specifier: ^2.3.2
         version: 2.3.2
+      axios:
+        specifier: 'catalog:'
+        version: 1.10.0
       dayjs:
         specifier: 'catalog:'
         version: 1.11.13
