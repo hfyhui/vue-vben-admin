@@ -1,19 +1,18 @@
 <script setup>
+import { computed, onMounted, reactive, ref } from 'vue';
+
 import { Delete, Download, FolderAdd, Upload } from '@element-plus/icons-vue';
 import axios from 'axios';
 import { ElMessage } from 'element-plus';
-import { computed, onMounted, reactive, ref } from 'vue';
-import { useI18n } from 'vue-i18n';
-import MediaPreview from '#/components/MediaPreview/MediaPreview.vue';
 
 import fileGeneric from '#/assets/image/file-manager/file-generic.svg';
 import fileImage from '#/assets/image/file-manager/file-image.svg';
 import fileVideo from '#/assets/image/file-manager/file-video.svg';
 import folderPng from '#/assets/image/folder.png';
+import MediaPreview from '#/components/MediaPreview/MediaPreview.vue';
+import { $t } from '#/locales';
 
 defineOptions({ name: 'FileManager' });
-
-const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'];
 
 const props = defineProps({
   device: {
@@ -22,11 +21,13 @@ const props = defineProps({
   },
 });
 
-const { t } = useI18n();
+const IMAGE_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp']);
 
 const deviceSerial = computed(() => props.device?.serial || props.device?.deviceIp || '');
 
-const isDeviceConnected = computed(() => !!deviceSerial.value && !!httpPath.value);
+const isDeviceConnected = computed(
+  () => !!deviceSerial.value && !!httpPath.value,
+);
 
 const loading = ref(false);
 const fileList = ref([]);
@@ -75,11 +76,7 @@ async function navigateToPath(path) {
     const command = path ? `ls -lL ${path}` : 'ls -lL';
     const result = await getSpawnWaitText(command);
 
-    if (result) {
-      fileList.value = parseFileList(result);
-    } else {
-      fileList.value = [];
-    }
+    fileList.value = result ? parseFileList(result) : [];
   } catch (error) {
     fileList.value = [];
     console.error('获取文件列表失败:', error);
@@ -98,7 +95,7 @@ async function getSpawnWaitText(args) {
 }
 
 function parseFileList(output) {
-  const normalizedOutput = output.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const normalizedOutput = output.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
   const lines = normalizedOutput.split('\n').filter(Boolean);
   const files = [];
 
@@ -116,7 +113,9 @@ function parseFileList(output) {
 
       if (
         parts.length >= 8 &&
-        (parts[0].startsWith('d') || parts[0].startsWith('-') || parts[0].startsWith('l'))
+        (parts[0].startsWith('d') ||
+          parts[0].startsWith('-') ||
+          parts[0].startsWith('l'))
       ) {
         if (parts.length < 8) continue;
 
@@ -147,27 +146,32 @@ function parseFileList(output) {
         if (name === '.' || name === '..') continue;
 
         const linkIndex = name.indexOf(' -> ');
-        const displayName = linkIndex > -1 ? name.substring(0, linkIndex) : name;
+        const displayName =
+          linkIndex !== -1 ? name.slice(0, Math.max(0, linkIndex)) : name;
 
         const isDirectory = displayName.split('.').length <= 1;
-        const fileType = isDirectory ? t('webadb.fileManager.fileTypes.folder') : getFileType(displayName);
+        const fileType = isDirectory
+          ? $t('webadb.fileManager.fileTypes.folder')
+          : getFileType(displayName);
 
         files.push({
           name: displayName,
           isDirectory,
           type: fileType,
-          size: parseInt(size, 10),
+          size: Number.parseInt(size, 10),
           owner,
           group,
           modifiedAt: `${date} ${time}`,
-          path: currentPath.value ? `${currentPath.value}/${displayName}` : displayName,
+          path: currentPath.value
+            ? `${currentPath.value}/${displayName}`
+            : displayName,
           permissions,
         });
       } else {
         if (line === '.' || line === '..') continue;
 
         const isDirectory = true;
-        const fileType = t('webadb.fileManager.fileTypes.folder');
+        const fileType = $t('webadb.fileManager.fileTypes.folder');
 
         files.push({
           name: line,
@@ -185,18 +189,18 @@ function parseFileList(output) {
 function getFileType(fileName) {
   const extension = fileName.split('.').pop().toLowerCase();
 
-  if (IMAGE_EXTENSIONS.includes(extension)) {
-    return t('webadb.fileManager.fileTypes.image');
-  } else if (['mp4', 'avi', 'mov', 'mkv', 'wmv', 'flv'].includes(extension)) {
-    return t('webadb.fileManager.fileTypes.video');
-  } else if (['pdf', 'doc', 'docx', 'txt', 'md', 'rtf'].includes(extension)) {
-    return t('webadb.fileManager.fileTypes.document');
-  } else if (['xls', 'xlsx', 'csv', 'ods'].includes(extension)) {
-    return t('webadb.fileManager.fileTypes.spreadsheet');
-  } else if (['zip', 'rar', 'tar', 'gz', '7z'].includes(extension)) {
-    return t('webadb.fileManager.fileTypes.archive');
+  if (IMAGE_EXTENSIONS.has(extension)) {
+    return $t('webadb.fileManager.fileTypes.image');
+  } else if (['avi', 'flv', 'mkv', 'mov', 'mp4', 'wmv'].includes(extension)) {
+    return $t('webadb.fileManager.fileTypes.video');
+  } else if (['doc', 'docx', 'md', 'pdf', 'rtf', 'txt'].includes(extension)) {
+    return $t('webadb.fileManager.fileTypes.document');
+  } else if (['csv', 'ods', 'xls', 'xlsx'].includes(extension)) {
+    return $t('webadb.fileManager.fileTypes.spreadsheet');
+  } else if (['7z', 'gz', 'rar', 'tar', 'zip'].includes(extension)) {
+    return $t('webadb.fileManager.fileTypes.archive');
   } else {
-    return t('webadb.fileManager.fileTypes.file');
+    return $t('webadb.fileManager.fileTypes.file');
   }
 }
 
@@ -207,10 +211,10 @@ function getFileIconSrc(file) {
 
   const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
 
-  if (IMAGE_EXTENSIONS.includes(extension)) {
+  if (IMAGE_EXTENSIONS.has(extension)) {
     return fileImage;
   }
-  if (['mp4', 'avi', 'mov', 'mkv', 'wmv', 'flv'].includes(extension)) {
+  if (['avi', 'flv', 'mkv', 'mov', 'mp4', 'wmv'].includes(extension)) {
     return fileVideo;
   }
   return fileGeneric;
@@ -218,7 +222,10 @@ function getFileIconSrc(file) {
 
 function handleRowClick(record, event) {
   const target = event?.target;
-  if (target && (target.closest('.file-list-item-checkbox') || target.tagName === 'INPUT')) {
+  if (
+    target &&
+    (target.closest('.file-list-item-checkbox') || target.tagName === 'INPUT')
+  ) {
     return;
   }
 
@@ -228,7 +235,7 @@ function handleRowClick(record, event) {
 
 function handleSelectAll(val) {
   if (val) {
-    selectedRowKeys.value = fileList.value.map(item => item.path);
+    selectedRowKeys.value = fileList.value.map((item) => item.path);
     selectedItems.value = [...fileList.value];
   } else {
     selectedRowKeys.value = [];
@@ -242,8 +249,12 @@ function handleItemCheck(val, record) {
     selectedRowKeys.value = [...selectedRowKeys.value, record.path];
     selectedItems.value = [...selectedItems.value, record];
   } else {
-    selectedRowKeys.value = selectedRowKeys.value.filter(key => key !== record.path);
-    selectedItems.value = selectedItems.value.filter(item => item.path !== record.path);
+    selectedRowKeys.value = selectedRowKeys.value.filter(
+      (key) => key !== record.path,
+    );
+    selectedItems.value = selectedItems.value.filter(
+      (item) => item.path !== record.path,
+    );
   }
 }
 
@@ -259,7 +270,9 @@ async function customRequest(options) {
   try {
     loading.value = true;
     const file = options.file;
-    const remotePath = currentPath.value ? `/${currentPath.value}/${file.name}` : `/${file.name}`;
+    const remotePath = currentPath.value
+      ? `/${currentPath.value}/${file.name}`
+      : `/${file.name}`;
 
     const formData = new FormData();
     formData.append('file', file);
@@ -274,17 +287,25 @@ async function customRequest(options) {
 
     if (res.data.success !== true) {
       ElMessage.closeAll();
-      ElMessage.error(t('webadb.fileManager.messages.uploadFailed', { error: res.data.error }));
+      ElMessage.error(
+        $t('webadb.fileManager.messages.uploadFailed', {
+          error: res.data.error,
+        }),
+      );
       return;
     }
 
     await navigateToPath(currentPath.value);
     ElMessage.closeAll();
-    ElMessage.success(t('webadb.fileManager.messages.uploadSuccess', { fileName: file.name }));
+    ElMessage.success(
+      $t('webadb.fileManager.messages.uploadSuccess', { fileName: file.name }),
+    );
   } catch (error) {
     console.error('上传文件失败:', error);
     ElMessage.closeAll();
-    ElMessage.error(t('webadb.fileManager.messages.uploadFailed', { error: error.message }));
+    ElMessage.error(
+      $t('webadb.fileManager.messages.uploadFailed', { error: error.message }),
+    );
   } finally {
     loading.value = false;
   }
@@ -292,7 +313,7 @@ async function customRequest(options) {
 
 async function handleFileNameClick(record) {
   const ext = record.name.split('.').pop()?.toLowerCase();
-  if (!IMAGE_EXTENSIONS.includes(ext)) return;
+  if (!IMAGE_EXTENSIONS.has(ext)) return;
 
   try {
     const paths = [`/${currentPath.value}/${record.name}`];
@@ -321,13 +342,17 @@ async function handleFileNameClick(record) {
     mediaPreview.value?.open();
   } catch (error) {
     ElMessage.closeAll();
-    ElMessage.error(t('webadb.fileManager.messages.readImageFailed', { error: error.message }));
+    ElMessage.error(
+      $t('webadb.fileManager.messages.readImageFailed', {
+        error: error.message,
+      }),
+    );
   }
 }
 
 async function cancelMedia() {
   if (mediaList.value && mediaList.value.length > 0) {
-    mediaList.value.forEach(item => {
+    mediaList.value.forEach((item) => {
       if (item.fileUrl) {
         URL.revokeObjectURL(item.fileUrl);
       }
@@ -360,14 +385,18 @@ function formatFileSize(bytes) {
 
 async function handleDownload() {
   try {
-    const hasDirectory = selectedItems.value.some(item => item.isDirectory);
+    const hasDirectory = selectedItems.value.some((item) => item.isDirectory);
     if (hasDirectory) {
       ElMessage.closeAll();
-      ElMessage.warning(t('webadb.fileManager.messages.directoryDownloadError'));
+      ElMessage.warning(
+        $t('webadb.fileManager.messages.directoryDownloadError'),
+      );
       return;
     }
 
-    const paths = selectedItems.value.map(el => `/${currentPath.value}/${el.name}`);
+    const paths = selectedItems.value.map(
+      (el) => `/${currentPath.value}/${el.name}`,
+    );
 
     const res = await axios.post(
       `${httpPath.value}/adb/download`,
@@ -393,7 +422,7 @@ async function handleDownload() {
       }
     }
 
-    fileName = fileName.replace(/[<>:"\/|?*]/g, '_');
+    fileName = fileName.replaceAll(/[<>:"/|?*]/g, '_');
 
     if (!fileName || fileName === '') {
       fileName = 'download';
@@ -403,9 +432,9 @@ async function handleDownload() {
     const link = document.createElement('a');
     link.href = url;
     link.download = fileName;
-    document.body.appendChild(link);
+    document.body.append(link);
     link.click();
-    document.body.removeChild(link);
+    link.remove();
     URL.revokeObjectURL(url);
 
     selectedItems.value = [];
@@ -419,10 +448,16 @@ async function handleDownload() {
         return false;
       }
       ElMessage.closeAll();
-      ElMessage.error(t('webadb.fileManager.messages.downloadFailed', { error: '请重试' }));
+      ElMessage.error(
+        $t('webadb.fileManager.messages.downloadFailed', { error: '请重试' }),
+      );
     } else {
       ElMessage.closeAll();
-      ElMessage.error(t('webadb.fileManager.messages.downloadFailed', { error: '网络错误，请检查连接' }));
+      ElMessage.error(
+        $t('webadb.fileManager.messages.downloadFailed', {
+          error: '网络错误，请检查连接',
+        }),
+      );
     }
   }
 }
@@ -459,7 +494,9 @@ async function confirmDelete() {
     loading.value = true;
 
     for (const item of selectedItems.value) {
-      const command = item.isDirectory ? `rm -rf /${item.path}` : `rm /${item.path}`;
+      const command = item.isDirectory
+        ? `rm -rf /${item.path}`
+        : `rm /${item.path}`;
       await getSpawnWaitText(command);
     }
 
@@ -473,7 +510,10 @@ async function confirmDelete() {
 }
 
 onMounted(() => {
-  const hostname = import.meta.env.MODE === 'development' ? 'test.callfansai.cn' : window.location.hostname;
+  const hostname =
+    import.meta.env.MODE === 'development'
+      ? 'test.callfansai.cn'
+      : window.location.hostname;
   const connIp =
     props.device.chipCode == 'AIBOX_L02'
       ? `https://${hostname}/${props.device.connIp}/3333`
@@ -498,18 +538,28 @@ onMounted(() => {
     <div v-else class="file-manager-content">
       <div class="toolbar">
         <div class="toolbar-left">
-          <template v-if="!selectedItems.length">
+          <template v-if="selectedItems.length === 0">
             <el-upload :show-file-list="false" :http-request="customRequest">
               <el-button type="primary" :icon="Upload" :disabled="loading">
                 {{ $t('webadb.fileManager.toolbar.upload') }}
               </el-button>
             </el-upload>
-            <el-button type="primary" :icon="FolderAdd" :disabled="loading" @click="handleCreateFolder">
+            <el-button
+              type="primary"
+              :icon="FolderAdd"
+              :disabled="loading"
+              @click="handleCreateFolder"
+            >
               {{ $t('webadb.fileManager.toolbar.createFolder') }}
             </el-button>
           </template>
           <template v-else>
-            <el-button type="primary" :icon="Download" :disabled="loading" @click="handleDownload">
+            <el-button
+              type="primary"
+              :icon="Download"
+              :disabled="loading"
+              @click="handleDownload"
+            >
               {{ $t('webadb.fileManager.toolbar.download') }}
             </el-button>
             <el-button
@@ -538,14 +588,19 @@ onMounted(() => {
               {{ $t('webadb.fileManager.breadcrumb.device') }}
             </el-button>
           </el-breadcrumb-item>
-          <el-breadcrumb-item v-for="(item, index) in currentPathArray" :key="index">
+          <el-breadcrumb-item
+            v-for="(item, index) in currentPathArray"
+            :key="index"
+          >
             <el-button
               link
               type="primary"
               :disabled="index === currentPathArray.length - 1"
               @click="
                 index < currentPathArray.length - 1
-                  ? navigateToPath('/' + currentPathArray.slice(0, index + 1).join('/'))
+                  ? navigateToPath(
+                      `/${  currentPathArray.slice(0, index + 1).join('/')}`,
+                    )
                   : undefined
               "
             >
@@ -565,18 +620,28 @@ onMounted(() => {
             <div class="file-list-header-checkbox">
               <el-checkbox
                 :model-value="
-                  selectedRowKeys.length === fileList.length && fileList.length > 0
+                  selectedRowKeys.length === fileList.length &&
+                  fileList.length > 0
                 "
                 :indeterminate="
-                  selectedRowKeys.length > 0 && selectedRowKeys.length < fileList.length
+                  selectedRowKeys.length > 0 &&
+                  selectedRowKeys.length < fileList.length
                 "
                 @change="handleSelectAll"
               />
             </div>
-            <div class="file-list-header-name">{{ $t('webadb.fileManager.fileList.name') }}</div>
-            <div class="file-list-header-owner">{{ $t('webadb.fileManager.fileList.owner') }}</div>
-            <div class="file-list-header-size">{{ $t('webadb.fileManager.fileList.size') }}</div>
-            <div class="file-list-header-modified">{{ $t('webadb.fileManager.fileList.modified') }}</div>
+            <div class="file-list-header-name">
+              {{ $t('webadb.fileManager.fileList.name') }}
+            </div>
+            <div class="file-list-header-owner">
+              {{ $t('webadb.fileManager.fileList.owner') }}
+            </div>
+            <div class="file-list-header-size">
+              {{ $t('webadb.fileManager.fileList.size') }}
+            </div>
+            <div class="file-list-header-modified">
+              {{ $t('webadb.fileManager.fileList.modified') }}
+            </div>
           </div>
 
           <div
@@ -584,13 +649,13 @@ onMounted(() => {
             :key="record.path"
             class="file-list-item"
             :class="{ selected: selectedRowKeys.includes(record.path) }"
-            @click="event => handleRowClick(record, event)"
+            @click="(event) => handleRowClick(record, event)"
             @dblclick="handleDoubleClick(record)"
           >
             <div class="file-list-item-checkbox" @click.stop>
               <el-checkbox
                 :model-value="selectedRowKeys.includes(record.path)"
-                @change="val => handleItemCheck(val, record)"
+                @change="(val) => handleItemCheck(val, record)"
               />
             </div>
             <div class="file-list-item-name">
@@ -608,7 +673,9 @@ onMounted(() => {
               >
             </div>
             <div class="file-list-item-owner">{{ record.owner }}</div>
-            <div class="file-list-item-size">{{ formatFileSize(record.size) }}</div>
+            <div class="file-list-item-size">
+              {{ formatFileSize(record.size) }}
+            </div>
             <div class="file-list-item-modified">{{ record.modifiedAt }}</div>
           </div>
         </div>
@@ -633,12 +700,16 @@ onMounted(() => {
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="createFolderModalVisible = false">{{
-          $t('webadb.fileManager.buttons.cancel')
-        }}</el-button>
-        <el-button type="primary" :loading="loading" @click="confirmCreateFolder">{{
-          $t('webadb.fileManager.buttons.confirm')
-        }}</el-button>
+        <el-button @click="createFolderModalVisible = false">
+          {{ $t('webadb.fileManager.buttons.cancel') }}
+        </el-button>
+        <el-button
+          type="primary"
+          :loading="loading"
+          @click="confirmCreateFolder"
+          >
+{{ $t('webadb.fileManager.buttons.confirm') }}
+</el-button>
       </template>
     </el-dialog>
 
@@ -648,19 +719,31 @@ onMounted(() => {
       width="480px"
       destroy-on-close
     >
-      <p>{{ $t('webadb.fileManager.deleteConfirm.message', { count: selectedItems.length }) }}</p>
-      <p class="text-warning">{{ $t('webadb.fileManager.deleteConfirm.warning') }}</p>
+      <p>
+        {{
+          $t('webadb.fileManager.deleteConfirm.message', {
+            count: selectedItems.length,
+          })
+        }}
+      </p>
+      <p class="text-warning">
+        {{ $t('webadb.fileManager.deleteConfirm.warning') }}
+      </p>
       <template #footer>
-        <el-button @click="deleteConfirmVisible = false">{{
-          $t('webadb.fileManager.buttons.cancel')
-        }}</el-button>
-        <el-button type="danger" :loading="loading" @click="confirmDelete">{{
-          $t('webadb.fileManager.buttons.confirm')
-        }}</el-button>
+        <el-button @click="deleteConfirmVisible = false">
+          {{ $t('webadb.fileManager.buttons.cancel') }}
+        </el-button>
+        <el-button type="danger" :loading="loading" @click="confirmDelete">
+          {{ $t('webadb.fileManager.buttons.confirm') }}
+        </el-button>
       </template>
     </el-dialog>
 
-    <MediaPreview ref="mediaPreview" :media-list="mediaList" @cancel="cancelMedia" />
+    <MediaPreview
+      ref="mediaPreview"
+      :media-list="mediaList"
+      @cancel="cancelMedia"
+    />
   </div>
 </template>
 

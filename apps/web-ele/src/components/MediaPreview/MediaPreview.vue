@@ -1,4 +1,6 @@
 <script setup>
+import { computed, onBeforeUnmount, ref } from 'vue';
+
 import {
   ArrowLeft,
   ArrowRight,
@@ -10,8 +12,8 @@ import {
   ZoomIn,
   ZoomOut,
 } from '@element-plus/icons-vue';
-import { computed, onBeforeUnmount, ref } from 'vue';
-import { useI18n } from 'vue-i18n';
+
+import { $t } from '#/locales';
 
 defineOptions({ name: 'MediaPreview' });
 
@@ -23,7 +25,6 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['media-change', 'reach-end', 'cancel']);
-const { t } = useI18n();
 
 const internalVisible = ref(false);
 const currentIndex = ref(0);
@@ -50,7 +51,9 @@ function isVideoType(fileType) {
   return videoTypes.includes(fileType?.toLowerCase());
 }
 
-const isImageType = computed(() => currentMedia.value && !isVideoType(currentMedia.value.fileType));
+const isImageType = computed(
+  () => currentMedia.value && !isVideoType(currentMedia.value.fileType),
+);
 
 const mediaStyle = computed(() => {
   const baseStyle = {
@@ -191,9 +194,9 @@ function handleVideoWheel(event) {
 
 function getFileTypeText(fileType) {
   if (isVideoType(fileType)) {
-    return t('webadb.mediaPreview.videoFile');
+    return $t('webadb.mediaPreview.videoFile');
   }
-  return t('webadb.mediaPreview.imageFile');
+  return $t('webadb.mediaPreview.imageFile');
 }
 
 function switchMedia(direction) {
@@ -204,7 +207,8 @@ function switchMedia(direction) {
     currentIndex.value += isNext ? 1 : -1;
 
     const newMedia = props.mediaList[currentIndex.value];
-    const prevMedia = props.mediaList[isNext ? currentIndex.value - 1 : currentIndex.value + 1];
+    const prevMedia =
+      props.mediaList[isNext ? currentIndex.value - 1 : currentIndex.value + 1];
 
     if (
       !prevMedia ||
@@ -294,17 +298,24 @@ defineExpose({ open, close });
 onBeforeUnmount(() => {
   removeKeyboardListeners();
 });
-
 </script>
 
 <template>
-  <div v-if="internalVisible" class="media-preview-modal" @click.self="handleCancel">
+  <div
+    v-if="internalVisible"
+    class="media-preview-modal"
+    @click.self="handleCancel"
+  >
     <div class="media-preview-container">
       <div class="close-btn" @click="handleCancel">
         <el-icon :size="23"><Close /></el-icon>
       </div>
 
-      <div v-if="hasPrevious" class="nav-arrow left-arrow" @click="handlePrevious">
+      <div
+        v-if="hasPrevious"
+        class="nav-arrow left-arrow"
+        @click="handlePrevious"
+      >
         <el-icon :size="20"><ArrowLeft /></el-icon>
       </div>
 
@@ -348,12 +359,16 @@ onBeforeUnmount(() => {
 
         <div v-if="loading" class="loading-container">
           <el-icon class="toolbar-spin" :size="40"><LoadingIcon /></el-icon>
-          <div class="loading-text">{{ $t('webadb.mediaPreview.loading') }}</div>
+          <div class="loading-text">
+            {{ $t('webadb.mediaPreview.loading') }}
+          </div>
         </div>
 
         <div v-if="error" class="error-container">
           <el-icon class="error-icon" :size="48"><WarningFilled /></el-icon>
-          <div class="error-text">{{ $t('webadb.mediaPreview.loadFailed') }}</div>
+          <div class="error-text">
+            {{ $t('webadb.mediaPreview.loadFailed') }}
+          </div>
         </div>
       </div>
 
@@ -362,31 +377,55 @@ onBeforeUnmount(() => {
       </div>
 
       <div class="media-info">
-        <div class="file-type">{{ getFileTypeText(currentMedia?.fileType) }}</div>
+        <div class="file-type">
+          {{ getFileTypeText(currentMedia?.fileType) }}
+        </div>
         <div class="file-name">{{ currentMedia?.fileName || '' }}</div>
-        <div class="pagination">{{ currentIndex + 1 }} / {{ mediaList.length }}</div>
+        <div class="pagination">
+          {{ currentIndex + 1 }} / {{ mediaList.length }}
+        </div>
       </div>
 
       <div v-if="isImageType" class="toolbar">
-        <div class="toolbar-item" :title="$t('webadb.mediaPreview.rotateLeft')" @click="rotateLeft">
+        <div
+          class="toolbar-item"
+          :title="$t('webadb.mediaPreview.rotateLeft')"
+          @click="rotateLeft"
+        >
           <el-icon :size="23"><RefreshLeft /></el-icon>
         </div>
-        <div class="toolbar-item" :title="$t('webadb.mediaPreview.rotateRight')" @click="rotateRight">
+        <div
+          class="toolbar-item"
+          :title="$t('webadb.mediaPreview.rotateRight')"
+          @click="rotateRight"
+        >
           <el-icon :size="23"><RefreshRight /></el-icon>
         </div>
         <div
           class="toolbar-item"
           :title="
-            isOriginalSize ? $t('webadb.mediaPreview.nonOriginalSizeMode') : $t('webadb.mediaPreview.originalSizeMode')
+            isOriginalSize
+              ? $t('webadb.mediaPreview.nonOriginalSizeMode')
+              : $t('webadb.mediaPreview.originalSizeMode')
           "
           @click="toggleOriginalSize"
         >
-          <i :class="`icon iconfont ${isOriginalSize ? 'icon-icon-test' : 'icon-quanping'}`"></i>
+          <i
+            :class="`icon iconfont ${isOriginalSize ? 'icon-icon-test' : 'icon-quanping'}`"
+          ></i>
         </div>
-        <div class="toolbar-item" :title="$t('webadb.mediaPreview.zoomOut')" @click="zoomOut">
+        <div
+          class="toolbar-item"
+          :title="$t('webadb.mediaPreview.zoomOut')"
+          @click="zoomOut"
+        >
           <el-icon :size="23"><ZoomOut /></el-icon>
         </div>
-        <div class="toolbar-item" :title="$t('webadb.mediaPreview.zoomIn')" @click="zoomIn">
+        <div
+          class="toolbar-item"
+          :title="$t('webadb.mediaPreview.zoomIn')"
+          @click="zoomIn"
+        >
           <el-icon :size="23"><ZoomIn /></el-icon>
         </div>
       </div>
