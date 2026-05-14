@@ -1351,17 +1351,19 @@ export function useWebAdbScrcpy(
       occupyInfo.value = {};
       connectionState.value = 'loading';
       const userStore = useUserStore();
+      if (occupyInfo.value.action !== 'timeout') {
+        const res = await fetch(`${httpPath.value}/adb/device/disconnect`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            serial: props.device?.deviceIp,
+            userName: userStore.userInfo?.nickName || '',
+          }),
+        });
+        const data = await res.json();
+        console.log('断开设备:', data);
+      }
 
-      const res = await fetch(`${httpPath.value}/adb/device/disconnect`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          serial: props.device?.deviceIp,
-          userName: userStore.userInfo?.nickName || '',
-        }),
-      });
-      const data = await res.json();
-      console.log('断开设备:', data);
       initWs();
     } catch (error) {
       console.log(error);
