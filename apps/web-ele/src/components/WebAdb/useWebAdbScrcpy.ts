@@ -948,9 +948,9 @@ export function useWebAdbScrcpy(
 
     const action =
       e && 'type' in e
-        ? (e.type === 'keydown'
+        ? e.type === 'keydown'
           ? AndroidKeyEventAction.Down
-          : AndroidKeyEventAction.Up)
+          : AndroidKeyEventAction.Up
         : AndroidKeyEventAction.Down;
     const keyRepeat = e && 'repeat' in e ? (e.repeat ? 1 : 0) : 0;
     const isVirtualBtn = !e;
@@ -1351,7 +1351,9 @@ export function useWebAdbScrcpy(
       occupyInfo.value = {};
       connectionState.value = 'loading';
       const userStore = useUserStore();
-      if (occupyInfo.value.action !== 'timeout') {
+      if (occupyInfo.value.action == 'timeout') {
+        getDevicesStatus();
+      } else {
         const res = await fetch(`${httpPath.value}/adb/device/disconnect`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1362,9 +1364,8 @@ export function useWebAdbScrcpy(
         });
         const data = await res.json();
         console.log('断开设备:', data);
+        initWs();
       }
-
-      initWs();
     } catch (error) {
       console.log(error);
     }
