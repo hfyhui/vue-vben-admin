@@ -1350,6 +1350,8 @@ export function useWebAdbScrcpy(
       console.log('dblclick');
       occupyInfo.value = {};
       connectionState.value = 'loading';
+      const userStore = useUserStore();
+
       const res = await fetch(`${httpPath.value}/adb/device/disconnect`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
