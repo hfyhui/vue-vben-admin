@@ -1353,7 +1353,10 @@ export function useWebAdbScrcpy(
       const res = await fetch(`${httpPath.value}/adb/device/disconnect`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ serial: props.device?.deviceIp }),
+        body: JSON.stringify({
+          serial: props.device?.deviceIp,
+          userName: userStore.userInfo?.nickName || '',
+        }),
       });
       const data = await res.json();
       console.log('断开设备:', data);
@@ -1581,6 +1584,7 @@ export function useWebAdbScrcpy(
     const pathSegment =
       props.device?.chipCode === 'AIBOX_L02' ? props.device?.connIp : hostname;
     const wsUrl = `https://${hostname}/${pathSegment}/3333`;
+    httpPath.value = wsUrl;
     httpPath.value = wsUrl;
     getDevicesStatus();
     window.addEventListener('resize', handleResize, {
