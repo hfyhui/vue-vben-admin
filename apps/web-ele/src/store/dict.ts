@@ -6,7 +6,7 @@ import { getDictPullArray } from '#/api';
 
 type DictInfo = Record<string, any>;
 
-const DICT_STORAGE_KEY = 'dictInfo';
+const DICT_STORAGE_KEY = 'asset-enums';
 
 function readCachedDictInfo(): DictInfo {
   try {

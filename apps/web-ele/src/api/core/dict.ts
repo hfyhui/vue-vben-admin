@@ -1,6 +1,4 @@
-import { socialClient } from '#/api/request';
 
-import { proxyClient } from '../request';
 
 export interface DictItem {
   code: string;
@@ -31,4 +29,5 @@ export async function getDictPullArray(
   _keys?: string[],
 ): Promise<DictResponse> {
   return proxyClient.get('/dict/pull-array');
+  // return socialClient.get('/dict/pull-array');
 }

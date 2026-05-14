@@ -14,6 +14,13 @@ import {
   intelligentRecognitionApi,
 } from '#/api/core/asset';
 import { $t } from '#/locales';
+import { useAssetEnumsStore } from '#/store';
+
+const emit = defineEmits<{
+  (e: 'success-after'): void;
+}>();
+
+const assetEnumsStore = useAssetEnumsStore();
 
 interface ProxyFormValues {
   ip?: string;
@@ -28,11 +35,7 @@ interface ProxyFormValues {
   /** 节点 IP，多选 */
   phoneIp?: string[];
 }
-
-const emit = defineEmits<{
-  (e: 'success-after'): void;
-}>();
-
+const agreementOptions = ref<any[]>([]);
 const creating = ref(false);
 /** 与接口 records 项结构一致，直接交给 ElSelectV2 */
 const deviceNodeOptions = ref<DeviceItem[]>([]);
@@ -54,10 +57,11 @@ async function loadDeviceNodeOptions() {
         ...item,
         deviceIp,
         disabled,
-        deviceIpLabel: item.disabled === true ? `${deviceIp}${boundMark}` : deviceIp,
+        deviceIpLabel:
+          item.disabled === true ? `${deviceIp}${boundMark}` : deviceIp,
       };
     });
-    deviceNodeOptions.value = list
+    deviceNodeOptions.value = list;
   } catch (error) {
     console.error('[proxyPool] 加载设备列表失败:', error);
     ElMessage.error($t('proxyPool.message.deviceListLoadFailed'));
@@ -89,7 +93,7 @@ async function onNetworkLinkBlur(event: FocusEvent) {
   if (!networkLink) return;
   try {
     const res = await intelligentRecognitionApi({ networkLink });
-    if (res?.code !== 100000) {
+    if (res?.code !== 100_000) {
       ElMessage.error(res?.msg);
       return;
     }
@@ -215,15 +219,21 @@ const [Form, formApi] = useVbenForm({
       },
     },
     {
-      component: 'Input',
+      component: 'Select',
       fieldName: 'agreement',
       label: $t('proxyPool.form.agreement'),
       rules: 'required',
       componentProps: {
         placeholder: $t('proxyPool.form.agreementPlaceholder'),
         clearable: true,
-        maxlength: 200,
-        showWordLimit: true,
+        filterable: true,
+        // 不折叠展示，避免出现 "+1"
+        collapseTags: false,
+        options: agreementOptions,
+        props: {
+          label: 'label',
+          value: 'value',
+        },
       },
     },
     {
@@ -254,6 +264,8 @@ const [Modal, modalApi] = useVbenModal({
   },
   onOpenChange: async (isOpen) => {
     if (isOpen) {
+      agreementOptions.value =
+        await assetEnumsStore.getEnumOptionsAsync('PROTOCOL_TYPE');
       await loadDeviceNodeOptions();
       await formApi.resetForm();
       await formApi.setValues(getDefaultValues());
@@ -292,7 +304,7 @@ async function onSubmit(values: ProxyFormValues) {
       phones,
     };
     const res = await addProxyApi(payload);
-    if (res?.code === 100000) {
+    if (res?.code === 100_000) {
       ElMessage.success($t('proxyPool.message.addSuccess'));
       modalApi.close();
       emit('success-after');
