@@ -2,8 +2,8 @@
 import { nextTick, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
-import { ElMessage, ElMessageBox } from 'element-plus';
 import { TopRight } from '@element-plus/icons-vue';
+import { ElMessage, ElMessageBox } from 'element-plus';
 
 import {
   batchUnbindAssetApi,
@@ -20,17 +20,17 @@ import { postSystemAccountsUsersPageApi } from '#/api/core/social-system-account
 import { $t } from '#/locales';
 import { useAssetEnumsStore } from '#/store';
 
-import StatsOverview from './components/StatsOverview.vue';
 import AccountBoard from './components/AccountBoard.vue';
-import ProxyBoard from './components/ProxyBoard.vue';
 import DeviceBoard from './components/DeviceBoard.vue';
+import ProxyBoard from './components/ProxyBoard.vue';
+import StatsOverview from './components/StatsOverview.vue';
 
 const router = useRouter();
 const accountBoardRef = ref<InstanceType<typeof AccountBoard> | null>(null);
 const proxyBoardRef = ref<InstanceType<typeof ProxyBoard> | null>(null);
 const deviceBoardRef = ref<InstanceType<typeof DeviceBoard> | null>(null);
 
-type OverviewStatRow = { key: string; current: number; total: number };
+type OverviewStatRow = { current: number; key: string; total: number };
 
 function toSafeNumber(value: unknown) {
   const num = Number(value ?? 0);
@@ -62,7 +62,7 @@ const userQuery = reactive({
 });
 
 /** 与后端 POST /asset/check/account-device 约定：需二次确认后方可继续绑定 */
-const ACCOUNT_DEVICE_CHECK_NEED_CONFIRM_CODE = 500511;
+const ACCOUNT_DEVICE_CHECK_NEED_CONFIRM_CODE = 500_511;
 
 type BatchUnbindDialogType = 'ACCOUNT' | 'ALL' | 'PROXY';
 
@@ -109,7 +109,7 @@ async function loadGroupOptions() {
   try {
     const response = await getAssetGroupApi();
     const groups = Array.isArray(response?.data) ? response.data : [];
-    sharedGroupOptions.value = groups
+    sharedGroupOptions.value = groups;
   } catch (error) {
     console.error('[associationCenter] 获取分组失败:', error);
   }
@@ -117,9 +117,8 @@ async function loadGroupOptions() {
 
 async function loadSortOptions() {
   try {
-    sharedSortOptions.value = await assetEnumsStore.getEnumOptionsAsync(
-      'ACCOUNT_ORDER',
-    );
+    sharedSortOptions.value =
+      await assetEnumsStore.getEnumOptionsAsync('ACCOUNT_ORDER');
   } catch (error) {
     console.error('[associationCenter] 获取排序枚举失败:', error);
     sharedSortOptions.value = [];
@@ -165,10 +164,12 @@ async function confirmAccountDeviceCheckWarning(msg: string | undefined) {
 async function checkDropDeviceEnables(deviceEnables: DeviceEnableItem[]) {
   try {
     const checkResponse = await checkAccountDeviceApi({ deviceEnables });
-    if (checkResponse?.code === 100000) {
+    if (checkResponse?.code === 100_000) {
       return true;
     }
-    if (Number(checkResponse?.code) === ACCOUNT_DEVICE_CHECK_NEED_CONFIRM_CODE) {
+    if (
+      Number(checkResponse?.code) === ACCOUNT_DEVICE_CHECK_NEED_CONFIRM_CODE
+    ) {
       return confirmAccountDeviceCheckWarning(checkResponse?.msg);
     }
     if (!checkResponse?.msg) {
@@ -214,8 +215,10 @@ async function loadUsersPage() {
     userList.value = Array.isArray(page.records) ? page.records : [];
     userPagination.total = Number(page.total ?? 0);
     await nextTick();
-    const selectedIds = new Set(toIdList(userSelection.value, ['userId', 'id']));
-    if (selectedIds.size && userTableRef.value?.toggleRowSelection) {
+    const selectedIds = new Set(
+      toIdList(userSelection.value, ['userId', 'id']),
+    );
+    if (selectedIds.size > 0 && userTableRef.value?.toggleRowSelection) {
       for (const row of userList.value) {
         const rowId = String(row?.userId ?? row?.id ?? '').trim();
         if (rowId && selectedIds.has(rowId)) {
@@ -235,10 +238,14 @@ async function onOpenUserAllocateDialog() {
   const accounts = accountBoardRef.value?.getSelectedAccounts?.() || [];
   const proxies = proxyBoardRef.value?.getSelectedProxies?.() || [];
   const deviceIds = deviceBoardRef.value?.getSelectedDeviceIds?.() || [];
-  const accountIds = uniqueIds(toIdList(accounts, ['accountId', 'id'])) as string[];
-  const networkIds = uniqueIds(toIdList(proxies, ['networkId', 'proxyId', 'id'])) as string[];
+  const accountIds = uniqueIds(
+    toIdList(accounts, ['accountId', 'id']),
+  ) as string[];
+  const networkIds = uniqueIds(
+    toIdList(proxies, ['networkId', 'proxyId', 'id']),
+  ) as string[];
   const finalDeviceIds = uniqueIds(deviceIds) as string[];
-  if (!accountIds.length && !networkIds.length && !finalDeviceIds.length) {
+  if (accountIds.length === 0 && networkIds.length === 0 && finalDeviceIds.length === 0) {
     ElMessage.warning($t('associationCenter.selectAccountProxyOrDeviceFirst'));
     return;
   }
@@ -281,35 +288,43 @@ async function onSubmitUserAllocate() {
   const accounts = accountBoardRef.value?.getSelectedAccounts?.() || [];
   const proxies = proxyBoardRef.value?.getSelectedProxies?.() || [];
   const deviceIds = deviceBoardRef.value?.getSelectedDeviceIds?.() || [];
-  const accountIds = uniqueIds(toIdList(accounts, ['accountId', 'id'])) as string[];
-  const networkIds = uniqueIds(toIdList(proxies, ['networkId', 'proxyId', 'id'])) as string[];
+  const accountIds = uniqueIds(
+    toIdList(accounts, ['accountId', 'id']),
+  ) as string[];
+  const networkIds = uniqueIds(
+    toIdList(proxies, ['networkId', 'proxyId', 'id']),
+  ) as string[];
   const finalDeviceIds = uniqueIds(deviceIds) as string[];
-  const userIds = uniqueIds(toIdList(userSelection.value, ['userId', 'id'])) as string[];
+  const userIds = uniqueIds(
+    toIdList(userSelection.value, ['userId', 'id']),
+  ) as string[];
 
-  if (!accountIds.length && !networkIds.length && !finalDeviceIds.length) {
+  if (accountIds.length === 0 && networkIds.length === 0 && finalDeviceIds.length === 0) {
     ElMessage.warning($t('associationCenter.selectAccountProxyOrDeviceFirst'));
     return;
   }
-  if (!userIds.length) {
+  if (userIds.length === 0) {
     ElMessage.warning($t('associationCenter.selectAtLeastOneUser'));
     return;
   }
 
   const payload: {
     accountIds?: string[];
-    networkIds?: string[];
     deviceIds?: string[];
+    networkIds?: string[];
     userIds: string[];
   } = { userIds };
-  if (accountIds.length) payload.accountIds = accountIds;
-  if (networkIds.length) payload.networkIds = networkIds;
-  if (finalDeviceIds.length) payload.deviceIds = finalDeviceIds;
+  if (accountIds.length > 0) payload.accountIds = accountIds;
+  if (networkIds.length > 0) payload.networkIds = networkIds;
+  if (finalDeviceIds.length > 0) payload.deviceIds = finalDeviceIds;
 
   userAllocateSaving.value = true;
   try {
     const response = await assetUserAllocationApi(payload);
-    if (response?.code === 100000) {
-      ElMessage.success(response.msg || $t('associationCenter.userAllocationSuccess'));
+    if (response?.code === 100_000) {
+      ElMessage.success(
+        response.msg || $t('associationCenter.userAllocationSuccess'),
+      );
       userAllocateDialogVisible.value = false;
       userSelection.value = [];
       accountBoardRef.value?.clearSelectedAccounts?.();
@@ -318,7 +333,9 @@ async function onSubmitUserAllocate() {
       await loadAssetSummary();
       return;
     }
-    ElMessage.error(response?.msg || $t('associationCenter.userAllocationFailed'));
+    ElMessage.error(
+      response?.msg || $t('associationCenter.userAllocationFailed'),
+    );
   } catch (error) {
     console.error('[associationCenter] 用户分配失败:', error);
     ElMessage.error($t('associationCenter.userAllocationFailed'));
@@ -330,7 +347,7 @@ async function onSubmitUserAllocate() {
 function onOpenBatchUnbindDialog() {
   const rawIds = deviceBoardRef.value?.getSelectedDeviceIds?.() || [];
   const deviceIds = uniqueIds(rawIds) as string[];
-  if (!deviceIds.length) {
+  if (deviceIds.length === 0) {
     ElMessage.warning($t('associationCenter.selectDeviceBeforeBatchUnbind'));
     return;
   }
@@ -348,7 +365,7 @@ function onBatchUnbindDialogClosed() {
 
 async function submitBatchUnbind() {
   const deviceIds = batchUnbindDeviceIds.value;
-  if (!deviceIds.length || batchUnbindSubmitting.value) return;
+  if (deviceIds.length === 0 || batchUnbindSubmitting.value) return;
 
   batchUnbindSubmitting.value = true;
   try {
@@ -357,7 +374,7 @@ async function submitBatchUnbind() {
       type: batchUnbindType.value,
       isDel: batchUnbindAlsoDelete.value,
     });
-    if (response?.code === 100000) {
+    if (response?.code === 100_000) {
       ElMessage.success(
         response?.msg || $t('associationCenter.batchUnbindSuccess'),
       );
@@ -383,7 +400,7 @@ async function submitBatchUnbind() {
 async function onContainerReset() {
   const rawIds = deviceBoardRef.value?.getSelectedDeviceIds?.() || [];
   const deviceIds = uniqueIds(rawIds) as string[];
-  if (!deviceIds.length) {
+  if (deviceIds.length === 0) {
     ElMessage.warning($t('associationCenter.selectDeviceBeforeContainerReset'));
     return;
   }
@@ -407,10 +424,8 @@ async function onContainerReset() {
           instance.confirmButtonLoading = true;
           try {
             const response = await resetContainerApi({ deviceIds });
-            if (response?.code === 100000) {
-              ElMessage.success(
-                response.msg || $t('associationCenter.containerResetSuccess'),
-              );
+            if (response?.code === 100_000) {
+              ElMessage.success($t('associationCenter.containerResetSuccess'));
               // 重置成功后，刷新代理看板与汇总区
               await proxyBoardRef.value?.refreshProxyList?.();
               await loadAssetSummary();
@@ -440,15 +455,16 @@ async function onContainerReset() {
 }
 
 async function onOfficialEnable() {
-  const deviceEnables = deviceBoardRef.value?.getSelectedDeviceEnables?.() || [];
-  if (!deviceEnables.length) {
+  const deviceEnables =
+    deviceBoardRef.value?.getSelectedDeviceEnables?.() || [];
+  if (deviceEnables.length === 0) {
     ElMessage.warning($t('associationCenter.selectDeviceBeforeOfficialEnable'));
     return;
   }
 
   try {
     const response = await enableAssetApi({ deviceEnables });
-    if (response?.code === 100000) {
+    if (response?.code === 100_000) {
       ElMessage.success(
         response.msg || $t('associationCenter.officialEnableSuccess'),
       );
@@ -475,7 +491,7 @@ function normalizeStringIds(values: unknown[]) {
   return uniqueIds(
     values
       .map((item) => String(item ?? '').trim())
-      .filter((item): item is string => Boolean(item)),
+      .filter(Boolean),
   );
 }
 
@@ -508,25 +524,25 @@ async function onReverseQuery() {
   try {
     const payload: {
       accountIds?: string[];
-      proxyIds?: string[];
       deviceIds?: string[];
-    } = accountIds.length
+      proxyIds?: string[];
+    } = accountIds.length > 0
       ? { accountIds }
-      : proxyIds.length
+      : proxyIds.length > 0
         ? { proxyIds }
         : { deviceIds: finalDeviceIds };
-    const selectedType: 'account' | 'proxy' | 'device' = accountIds.length
+    const selectedType: 'account' | 'device' | 'proxy' = accountIds.length > 0
       ? 'account'
-      : proxyIds.length
+      : proxyIds.length > 0
         ? 'proxy'
         : 'device';
     console.log('[associationCenter] 反向查询基本信息:', payload);
     const response = await reverseQueryAssetApi(payload);
-    if (response?.code === 100000) {
+    if (response?.code === 100_000) {
       const reverseData = (response?.data ?? {}) as {
         accountInfos?: any[] | null;
-        proxyInfos?: any[] | null;
         deviceInfos?: any[] | null;
+        proxyInfos?: any[] | null;
       };
       // 查询源看板保持原样，仅刷新其它两个看板。
       if (selectedType !== 'account') {
@@ -535,9 +551,7 @@ async function onReverseQuery() {
         );
       }
       if (selectedType !== 'proxy') {
-        proxyBoardRef.value?.applyReverseQueryProxies?.(
-          reverseData.proxyInfos,
-        );
+        proxyBoardRef.value?.applyReverseQueryProxies?.(reverseData.proxyInfos);
       }
       if (selectedType !== 'device') {
         deviceBoardRef.value?.applyReverseQueryDevices?.(
@@ -554,7 +568,7 @@ async function onReverseQuery() {
   }
 }
 
-type ClearSelectionType = 'deviceBoard' | 'accountBoard' | 'proxyBoard' | 'all';
+type ClearSelectionType = 'accountBoard' | 'all' | 'deviceBoard' | 'proxyBoard';
 
 function onClearSelection(command: ClearSelectionType) {
   if (command === 'accountBoard' || command === 'all') {
@@ -579,7 +593,11 @@ function onClearSelection(command: ClearSelectionType) {
           <template #header>
             <div class="board-header">
               <span>{{ $t('associationCenter.accountBoard') }}</span>
-              <el-link type="primary" underline="never" @click="router.push('/accountPool')">
+              <el-link
+                type="primary"
+                underline="never"
+                @click="router.push('/accountPool')"
+              >
                 <el-icon :size="22"><TopRight /></el-icon>
               </el-link>
             </div>
@@ -596,7 +614,11 @@ function onClearSelection(command: ClearSelectionType) {
           <template #header>
             <div class="board-header">
               <span>{{ $t('associationCenter.proxyBoard') }}</span>
-              <el-link type="primary" underline="never" @click="router.push('/proxyPool')">
+              <el-link
+                type="primary"
+                underline="never"
+                @click="router.push('/proxyPool')"
+              >
                 <el-icon :size="22"><TopRight /></el-icon>
               </el-link>
             </div>
@@ -691,7 +713,10 @@ function onClearSelection(command: ClearSelectionType) {
         <div class="batch-unbind-field-label">
           {{ $t('associationCenter.batchUnbindChooseType') }}
         </div>
-        <el-radio-group v-model="batchUnbindType" class="batch-unbind-radio-group">
+        <el-radio-group
+          v-model="batchUnbindType"
+          class="batch-unbind-radio-group"
+        >
           <el-radio label="PROXY">
             {{ $t('associationCenter.batchUnbindProxy') }}
           </el-radio>
@@ -702,7 +727,10 @@ function onClearSelection(command: ClearSelectionType) {
             {{ $t('associationCenter.batchUnbindAll') }}
           </el-radio>
         </el-radio-group>
-        <el-checkbox v-model="batchUnbindAlsoDelete" class="batch-unbind-delete-check">
+        <el-checkbox
+          v-model="batchUnbindAlsoDelete"
+          class="batch-unbind-delete-check"
+        >
           {{ $t('associationCenter.batchUnbindAlsoDelete') }}
         </el-checkbox>
       </div>
@@ -777,7 +805,11 @@ function onClearSelection(command: ClearSelectionType) {
         <el-button @click="userAllocateDialogVisible = false">
           {{ $t('associationCenter.cancelButtonText') }}
         </el-button>
-        <el-button type="primary" :loading="userAllocateSaving" @click="onSubmitUserAllocate">
+        <el-button
+          type="primary"
+          :loading="userAllocateSaving"
+          @click="onSubmitUserAllocate"
+        >
           {{ $t('common.save') }}
         </el-button>
       </template>
@@ -802,7 +834,9 @@ function onClearSelection(command: ClearSelectionType) {
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
-  min-height: var(--el-component-size); /* 与默认按钮高度对齐，便于垂直居中观感一致 */
+  min-height: var(
+    --el-component-size
+  ); /* 与默认按钮高度对齐，便于垂直居中观感一致 */
 }
 
 /* 相邻 .el-button 自带 margin-left，与 flex gap 叠加会忽宽忽窄；下拉触发器外层不是 button，例外更明显 */
@@ -862,7 +896,11 @@ function onClearSelection(command: ClearSelectionType) {
 
 :deep(tr.locked-row td) {
   background: color-mix(in srgb, var(--el-fill-color-light) 45%, transparent);
-  color: color-mix(in srgb, var(--el-text-color-secondary) 78%, var(--el-text-color-primary));
+  color: color-mix(
+    in srgb,
+    var(--el-text-color-secondary) 78%,
+    var(--el-text-color-primary)
+  );
 }
 
 .batch-unbind-alert {

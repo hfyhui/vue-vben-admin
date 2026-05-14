@@ -7,6 +7,7 @@ import { Page, useVbenModal } from '@vben/common-ui';
 
 import { ElMessage, ElMessageBox } from 'element-plus';
 
+import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import {
   addDeviceRemarkApi,
   getAssetAiboxDeviceModelsApi,
@@ -22,18 +23,18 @@ import {
   type AssetOperatorItem,
   type ContainerPoolNumData,
 } from '#/api/core/asset';
-import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import { $t } from '#/locales';
 import { useAssetEnumsStore } from '#/store';
 
 import {
-  type ContainerPoolBrandOption,
-  type ContainerPoolStatusOption,
-  type ContainerPoolSortOption,
+  
+  
+  
   getContainerPoolListApi,
   getFormOptions,
-  useColumns,
+  useColumns
 } from './container-pool-table-config';
+import type {ContainerPoolBrandOption, ContainerPoolStatusOption, ContainerPoolSortOption} from './container-pool-table-config';
 import * as DeviceGroupModalModule from './device-group-modal.vue';
 import * as QuickNewDeviceModalModule from './quick-new-device-modal.vue';
 
@@ -64,7 +65,7 @@ const statsData = ref<ContainerStatRow[]>(
   containerNumStatKeys.map((key) => ({ key, value: 0 })),
 );
 
-const editingRemarkDeviceId = ref<string | null>(null);
+const editingRemarkDeviceId = ref<null | string>(null);
 const editingRemarkValue = ref('');
 const savingRemark = ref(false);
 
@@ -105,10 +106,10 @@ const [Grid, gridApi] = useVbenVxeGrid({
         savingRemark.value = true;
         const deviceId = editingRemarkDeviceId.value;
         const trimmed = editingRemarkValue.value.trim();
-        const remark = trimmed ? trimmed : undefined;
+        const remark = trimmed || undefined;
         try {
           const res = await addDeviceRemarkApi({ deviceId, remark });
-          if (res?.code === 100000) {
+          if (res?.code === 100_000) {
             ElMessage.success($t('containerPool.message.editRemarkSuccess'));
             gridApi.query?.();
           } else {
@@ -185,9 +186,8 @@ function applyFormOptions() {
 
 async function loadSortOptions() {
   try {
-    sortOptions.value = await assetEnumsStore.getEnumOptionsAsync(
-      'ACCOUNT_ORDER',
-    );
+    sortOptions.value =
+      await assetEnumsStore.getEnumOptionsAsync('ACCOUNT_ORDER');
   } catch (error) {
     console.error('[containerPool] 获取排序枚举失败:', error);
     sortOptions.value = [];
@@ -197,9 +197,8 @@ async function loadSortOptions() {
 
 async function loadStatusOptions() {
   try {
-    statusOptions.value = await assetEnumsStore.getEnumOptionsAsync(
-      'NEW_DEVICE_STATUS',
-    );
+    statusOptions.value =
+      await assetEnumsStore.getEnumOptionsAsync('NEW_DEVICE_STATUS');
   } catch (error) {
     console.error('[containerPool] 获取设备状态枚举失败:', error);
     statusOptions.value = [];
@@ -226,9 +225,15 @@ async function loadBrandModelOptions() {
       getAssetCloudDeviceModelsApi(),
     ]);
     const allModels: MobileDeviceBrandItem[] = [
-      ...(aiboxRes?.code === 100000 ? (aiboxRes.data?.mobileDeviceModels ?? []) : []),
-      ...(futureRes?.code === 100000 ? (futureRes.data?.mobileDeviceModels ?? []) : []),
-      ...(cloudRes?.code === 100000 ? (cloudRes.data?.mobileDeviceModels ?? []) : []),
+      ...(aiboxRes?.code === 100_000
+        ? (aiboxRes.data?.mobileDeviceModels ?? [])
+        : []),
+      ...(futureRes?.code === 100_000
+        ? (futureRes.data?.mobileDeviceModels ?? [])
+        : []),
+      ...(cloudRes?.code === 100_000
+        ? (cloudRes.data?.mobileDeviceModels ?? [])
+        : []),
     ];
 
     const brandSet = new Set<string>();
@@ -282,13 +287,13 @@ function getSelectedDeviceIds() {
   return uniqueIds(
     records
       .map((item) => item?.deviceId)
-      .filter((id): id is string => Boolean(id))
-      .map((id) => String(id)),
+      .filter(Boolean)
+      .map(String),
   );
 }
 
 /** 一键新机：仅允许勾选一台设备，按 deviceId 去重后取唯一一行 */
-function getSingleSelectedRowForQuickNew(): Record<string, any> | null {
+function getSingleSelectedRowForQuickNew(): null | Record<string, any> {
   const records = getSelectedDeviceRecords();
   const map = new Map<string, Record<string, any>>();
   for (const row of records) {
@@ -321,7 +326,7 @@ function getSelectedDeviceMobiles() {
 function onBatchLock(isLock: boolean) {
   if (locking.value) return;
   const deviceIds = getSelectedDeviceIds();
-  if (!deviceIds.length) {
+  if (deviceIds.length === 0) {
     ElMessage.warning($t('containerPool.message.selectBeforeLock'));
     return;
   }
@@ -347,7 +352,7 @@ function onBatchLock(isLock: boolean) {
           (gridApi as any).grid.clearCheckboxReserve?.();
           gridApi.reload();
           await loadContainerPoolNum();
-          return;
+          
         }
       } catch (error) {
         console.error('[containerPool] 锁定/解锁设备失败:', error);
@@ -368,7 +373,7 @@ function onBatchLock(isLock: boolean) {
 async function onDeviceReset() {
   const deviceIds = getSelectedDeviceIds();
 
-  if (!deviceIds.length) {
+  if (deviceIds.length === 0) {
     ElMessage.warning($t('containerPool.message.selectDeviceBeforeReset'));
     return;
   }
@@ -392,10 +397,8 @@ async function onDeviceReset() {
           instance.confirmButtonLoading = true;
           try {
             const response = await resetContainerApi({ deviceIds });
-            if (response?.code === 100000) {
-              ElMessage.success(
-                response.msg || $t('containerPool.message.resetSuccess'),
-              );
+            if (response?.code === 100_000) {
+              ElMessage.success($t('containerPool.message.resetSuccess'));
               (gridApi as any).grid.clearCheckboxReserve?.();
               gridApi.reload();
               await loadContainerPoolNum();
@@ -439,7 +442,7 @@ function onQuickNewDeviceSuccess() {
 
 function onDeviceGroup() {
   const mobiles = getSelectedDeviceMobiles();
-  if (!mobiles.length) {
+  if (mobiles.length === 0) {
     ElMessage.warning($t('containerPool.message.selectBeforeGrouping'));
     return;
   }
@@ -587,4 +590,3 @@ onMounted(() => {
   color: var(--el-text-color-placeholder) !important;
 }
 </style>
-
