@@ -948,9 +948,9 @@ export function useWebAdbScrcpy(
 
     const action =
       e && 'type' in e
-        ? e.type === 'keydown'
+        ? (e.type === 'keydown'
           ? AndroidKeyEventAction.Down
-          : AndroidKeyEventAction.Up
+          : AndroidKeyEventAction.Up)
         : AndroidKeyEventAction.Down;
     const keyRepeat = e && 'repeat' in e ? (e.repeat ? 1 : 0) : 0;
     const isVirtualBtn = !e;
@@ -1345,12 +1345,13 @@ export function useWebAdbScrcpy(
   async function dblclick() {
     try {
       console.log('dblclick');
-      occupyInfo.value = {};
       connectionState.value = 'loading';
       const userStore = useUserStore();
       if (occupyInfo.value.action == 'timeout') {
+        occupyInfo.value = {};
         getDevicesStatus();
       } else {
+        occupyInfo.value = {};
         const res = await fetch(`${httpPath.value}/adb/device/disconnect`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
