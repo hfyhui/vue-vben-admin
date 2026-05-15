@@ -831,16 +831,13 @@ onMounted(async () => {
 });
 
 // isLarge 为 true 时绑定 ESC 关闭事件，false 时移除
-watch(
-  isLarge,
-  (val) => {
-    if (val) {
-      document.addEventListener('keydown', closeLargeOnEsc);
-    } else {
-      document.removeEventListener('keydown', closeLargeOnEsc);
-    }
-  },
-);
+watch(isLarge, (val) => {
+  if (val) {
+    document.addEventListener('keydown', closeLargeOnEsc);
+  } else {
+    document.removeEventListener('keydown', closeLargeOnEsc);
+  }
+});
 
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', closeLargeOnEsc);
@@ -914,9 +911,10 @@ function closeLargeOnEsc(e: KeyboardEvent) {
                     :key="idx"
                     class="scrcpy-device-info-tooltip__row"
                   >
-                    <span class="scrcpy-device-info-tooltip__label">{ >{{ row.label }}:</s
-                      >{ >{{ row.label }}:</span
-                    span class="scrcpy-device-info-tooltip__value">{{
+                    <span class="scrcpy-device-info-tooltip__label"
+                      >{{ row.label }}:</span
+                    >
+                    <span class="scrcpy-device-info-tooltip__value">{{
                       row.value
                     }}</span>
                   </div>
@@ -997,11 +995,12 @@ function closeLargeOnEsc(e: KeyboardEvent) {
                     :key="idx"
                     class="scrcpy-device-info-tooltip__row"
                   >
-                    <span class="scrcpy-device-info-tooltip__label">{{ row.label }}:</span
+                    <span class="scrcpy-device-info-tooltip__label"
                       >{{ row.label }}:</span
-                    span class="scrcpy-device-info-tooltip__value">{{
+                    >
+                    <span class="scrcpy-device-info-tooltip__value">{{ 
                       row.value
-                    }}</span>
+                     }}</span>
                   </div>
                 </div>
               </template>
