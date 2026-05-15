@@ -1044,10 +1044,7 @@ export function useWebAdbScrcpy(
     }
 
     connectionState.value = 'disconnected';
-    if (
-      [1006, 1011, 1013].includes(e.code) ||
-      (e.code === 1000 && e.reason === '视频流结束')
-    ) {
+    if ([1006, 1011, 1013, 4003, 4004].includes(e.code)) {
       scheduleWsReconnect();
     }
   }
