@@ -899,7 +899,6 @@ function closeLargeOnEsc(e: KeyboardEvent) {
             </el-tooltip>
             <el-tooltip
               class="header-scrcpy-tooltip"
-              effect="dark"
               placement="right-start"
               :show-after="300"
               popper-class="scrcpy-device-info-tooltip"
@@ -983,7 +982,6 @@ function closeLargeOnEsc(e: KeyboardEvent) {
             </el-tooltip>
             <el-tooltip
               class="header-scrcpy-tooltip header-scrcpy-tooltip--large"
-              effect="dark"
               placement="right-start"
               :show-after="300"
               popper-class="scrcpy-device-info-tooltip"
@@ -998,7 +996,7 @@ function closeLargeOnEsc(e: KeyboardEvent) {
                     <span class="scrcpy-device-info-tooltip__label"
                       >{{ row.label }}:</span
                     >
-                    <span class="scrcpy-device-info-tooltip__value">{{ 
+                    <span class="scrcpy-device-info-tooltip__value">{{
                       row.value
                      }}</span>
                   </div>
@@ -1089,7 +1087,6 @@ function closeLargeOnEsc(e: KeyboardEvent) {
                           >
                             <template #reference>
                               <el-tooltip
-                                effect="dark"
                                 placement="right"
                                 :show-after="200"
                                 :content="dictItemLabel(item)"
@@ -1118,7 +1115,6 @@ function closeLargeOnEsc(e: KeyboardEvent) {
                       >
                         <div class="dropdown-tooltip-anchor">
                           <el-tooltip
-                            effect="dark"
                             placement="right"
                             :show-after="200"
                             :content="dictItemLabel(item)"
@@ -1144,7 +1140,6 @@ function closeLargeOnEsc(e: KeyboardEvent) {
                     >
                       <div class="dropdown-tooltip-anchor">
                         <el-tooltip
-                          effect="dark"
                           placement="right"
                           :show-after="200"
                           :content="item.apkName ?? ''"
