@@ -172,7 +172,7 @@
         "minRows": "最小行高",
         "maxRows": "最大行高",
         "textareaUpload": "是否导入内容",
-        "showCharCount": "是否展示字数",
+        "showCharCount": "是否展示行数",
         "aigc": "是否 AIGC",
         "max": "最大值",
         "min": "最小值",

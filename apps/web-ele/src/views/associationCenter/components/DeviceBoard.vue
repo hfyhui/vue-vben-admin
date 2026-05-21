@@ -1394,6 +1394,7 @@ onMounted(() => {
   position: absolute;
   top: -20000px;
   left: -20000px;
+  z-index: 300;
 }
 
 .device-board {

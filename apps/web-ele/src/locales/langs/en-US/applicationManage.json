@@ -172,7 +172,7 @@
         "minRows": "Min row height",
         "maxRows": "Max row height",
         "textareaUpload": "Import content",
-        "showCharCount": "Show character count",
+        "showCharCount": "Show line count",
         "aigc": "AIGC",
         "max": "Max",
         "min": "Min",

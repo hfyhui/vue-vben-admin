@@ -303,15 +303,43 @@ function bindDragDialog(
   dialogHeaderEl.addEventListener('selectstart', () => false);
   dialogHeaderEl.style.cursor = 'move';
 
+  /** 大屏：用视口坐标写 left/top，避免父级偏移导致拖不到屏幕左侧 */
+  const syncFixedToViewportPx = () => {
+    const rect = dragDom.getBoundingClientRect();
+    dragDom.style.left = `${rect.left}px`;
+    dragDom.style.top = `${rect.top}px`;
+    dragDom.style.transform = 'none';
+  };
+
+  const clampViewportPosition = (left: number, top: number) => {
+    const rect = dragDom.getBoundingClientRect();
+    const maxLeft = Math.max(0, window.innerWidth - rect.width);
+    const maxTop = Math.max(0, window.innerHeight - rect.height);
+    return {
+      left: Math.min(Math.max(left, 0), maxLeft),
+      top: Math.min(Math.max(top, 0), maxTop),
+    };
+  };
+
+  if (dragDom.classList.contains('fixed')) {
+    const saved = window.sessionStorage.getItem(dragPositionKey);
+    if (!saved) {
+      syncFixedToViewportPx();
+    }
+  }
+
   const moveDown = (event: MouseEvent) => {
     if (!dragDom.classList.contains('fixed')) return;
+    syncFixedToViewportPx();
     const rect = dragDom.getBoundingClientRect();
     const disX = event.clientX - rect.left;
     const disY = event.clientY - rect.top;
 
     const onMove = (e: MouseEvent) => {
-      const left = e.clientX - disX;
-      const top = e.clientY - disY;
+      const { left, top } = clampViewportPosition(
+        e.clientX - disX,
+        e.clientY - disY,
+      );
       dragDom.style.left = `${left}px`;
       dragDom.style.top = `${top}px`;
       dragDom.style.transform = 'none';
@@ -330,9 +358,24 @@ function bindDragDialog(
     document.addEventListener('mouseup', onUp);
   };
 
+  const onWindowResize = () => {
+    if (!dragDom.classList.contains('fixed')) return;
+    const rect = dragDom.getBoundingClientRect();
+    const { left, top } = clampViewportPosition(rect.left, rect.top);
+    dragDom.style.left = `${left}px`;
+    dragDom.style.top = `${top}px`;
+    dragDom.style.transform = 'none';
+    window.sessionStorage.setItem(
+      dragPositionKey,
+      JSON.stringify({ left: `${left}px`, top: `${top}px` }),
+    );
+  };
+
   dialogHeaderEl.addEventListener('mousedown', moveDown);
+  window.addEventListener('resize', onWindowResize);
   (el as any).__dragCleanup__ = () => {
     dialogHeaderEl.removeEventListener('mousedown', moveDown);
+    window.removeEventListener('resize', onWindowResize);
   };
 }
 
@@ -1222,7 +1265,8 @@ function closeLargeOnEsc(e: KeyboardEvent) {
 }
 
 .zIndex {
-  z-index: 9;
+  /* 须高于布局侧栏/顶栏（默认 z-index 约 200） */
+  z-index: 300;
 }
 
 .screen_casting {
