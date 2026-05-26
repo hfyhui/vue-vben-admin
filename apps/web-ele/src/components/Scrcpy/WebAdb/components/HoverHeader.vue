@@ -34,7 +34,7 @@ async function oneClick(operation: string) {
 <template>
   <ul class="hover-header">
     <li v-for="item in menuItems" :key="item.key">
-      <el-tooltip effect="dark" placement="top" :show-after="120" :content="$t(item.title)">
+      <el-tooltip  placement="top" :show-after="120" :content="$t(item.title)">
         <i class="icon iconfont" :class="item.icon" @click.stop="oneClick(item.key)" />
       </el-tooltip>
     </li>

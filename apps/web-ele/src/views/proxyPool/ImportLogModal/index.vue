@@ -138,7 +138,6 @@ function downloadReport(row: RowType) {
         <template v-if="row.status === 'FAILED'">
           <el-tooltip
             raw-content
-            effect="dark"
             :content="`${$t('proxyPool.importLog.failedReason')}:<br> ${row.failedReason}`"
           >
             <el-tag type="danger" disable-transitions>

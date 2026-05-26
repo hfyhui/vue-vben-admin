@@ -635,7 +635,6 @@ onMounted(() => {
             <template #default="{ row }">
               <ElTooltip
                 placement="top"
-                effect="dark"
                 :show-after="200"
                 :content="getOwnerText(row) || '—'"
               >
