@@ -146,7 +146,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       icon: 'lucide:settings',
       title: $t('page.dashboard.systemManage'),
-      order: 10000,
+      order: 10_000,
     },
     children: [
       {
@@ -171,7 +171,8 @@ const routes: RouteRecordRaw[] = [
           {
             name: 'SocialMediaAccountManage',
             path: 'socialMediaAccount',
-            component: () => import('#/views/systemManage/socialMediaAccount/index.vue'),
+            component: () =>
+              import('#/views/systemManage/socialMediaAccount/index.vue'),
             meta: {
               title: $t('page.dashboard.socialMediaAccount'),
               order: 1,
@@ -180,7 +181,8 @@ const routes: RouteRecordRaw[] = [
           {
             name: 'ApplicationSystemProxyManage',
             path: 'proxyManage',
-            component: () => import('#/views/systemManage/proxyManage/index.vue'),
+            component: () =>
+              import('#/views/systemManage/proxyManage/index.vue'),
             meta: {
               title: $t('page.dashboard.proxyManage'),
               order: 2,
@@ -189,7 +191,8 @@ const routes: RouteRecordRaw[] = [
           {
             name: 'ApplicationSystemContainerResourceManage',
             path: 'containerResourceManage',
-            component: () => import('#/views/systemManage/containerResourceManage/index.vue'),
+            component: () =>
+              import('#/views/systemManage/containerResourceManage/index.vue'),
             meta: {
               title: $t('page.dashboard.containerResourceManage'),
               order: 3,
@@ -209,6 +212,40 @@ const routes: RouteRecordRaw[] = [
   //     order: 9999,
   //   },
   // },
+
+  {
+    name: 'processManage',
+    path: '/processManage',
+    redirect: '/processManage/list',
+    component: () => import('#/views/processManage/index.vue'),
+    meta: {
+      icon: 'lucide:layout-grid',
+      title: $t('page.dashboard.processManage'),
+      order: 9999,
+    },
+    children: [
+      {
+        name: 'ProcessManageList',
+        path: 'list',
+        component: () => import('#/views/processManage/index.vue'),
+        meta: {
+          title: '流程管理',
+          order: 1,
+        },
+      },
+      {
+        name: 'VisualEditor',
+        path: 'visual',
+        component: () => import('#/views/processManage/Visual.vue'),
+        meta: {
+          title: '可视化编辑器',
+          hideInMenu: true,
+          hideInBreadcrumb: false,
+          order: 2,
+        },
+      },
+    ],
+  },
 ];
 
 export default routes;

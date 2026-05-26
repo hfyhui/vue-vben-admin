@@ -1,0 +1,61 @@
+.flow-node-container {
+  position: absolute;
+  border-radius: 5px;
+  opacity: 0.9;
+  background-color: #fff;
+  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.06);
+  border: 2px solid #E3E3E3;
+  transition: background-color 0.2s, border-color 0.2s;
+  user-select: none;
+
+  &:hover { background-color: #F0F7FF; z-index: 0; }
+  &.active {
+    border-color: rgba(23, 106, 197, 0.5);
+    box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1);
+  }
+  &.disabled { opacity: 0.6; }
+
+  .flow-node-title {
+    display: flex;
+    align-items: center;
+    font-size: 13px;
+    font-weight: bold;
+    border-bottom: 1px solid #E3E3E3;
+    cursor: context-menu;
+
+    .icon-region {
+      width: 20px;
+      height: 20px;
+      margin: 0 8px 0 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 2px;
+      .fanxi { margin-top: 1px; color: #ffffff; font-size: 10px; }
+    }
+
+    .title-text { flex: 1; overflow: hidden; }
+  }
+
+  .flow-node-content {
+    border-radius: 5px;
+    background-color: #ffffff;
+    padding: 4px 0;
+    .flow-port-column .flow-port { width: 100%; }
+  }
+}
+
+.forbidden {
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 0 0 4px 4px;
+  width: 100%;
+  height: calc(100% - 40px);
+  position: absolute;
+  top: 40px;
+  left: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  .iconfont { font-size: 46px; color: #ffffff; }
+}

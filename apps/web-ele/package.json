@@ -31,6 +31,7 @@
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.2",
+    "jsplumb": "^2.15.6",
     "@vben/access": "workspace:*",
     "@vben/common-ui": "workspace:*",
     "@vben/constants": "workspace:*",

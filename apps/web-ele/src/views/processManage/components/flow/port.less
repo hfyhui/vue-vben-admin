@@ -1,0 +1,60 @@
+.flow-port-container {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 100%;
+  padding: 4px 0;
+
+  .normal-port-content {
+    width: 100%;
+    display: flex;
+    align-items: flex-start;
+  }
+
+  .flow-point {
+    display: inline-block;
+    width: 8px;
+    height: 10px;
+    border-left: 8px solid #959CB6;
+    border-bottom: 6px solid transparent;
+    border-top: 6px solid transparent;
+    position: relative;
+    cursor: pointer;
+
+    &::after {
+      content: '';
+      border-left: 6px solid #ffffff;
+      border-bottom: 4px solid transparent;
+      border-top: 4px solid transparent;
+      position: absolute;
+      top: -4px;
+      left: -7px;
+    }
+  }
+
+  .connected-flow::after { border-left-color: #959CB6; }
+
+  .status-point {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 1px solid #ffc107;
+    cursor: pointer;
+    &:hover { transform: scale(1.2); }
+  }
+
+  .port-label {
+    padding-right: 5px;
+    font-size: 12px;
+    color: #606266;
+    white-space: nowrap;
+  }
+
+  .port-input {
+    padding-left: 5px;
+    flex: 1;
+    min-width: 0;
+  }
+}

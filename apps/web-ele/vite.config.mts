@@ -50,9 +50,17 @@ export default defineConfig(async () => {
             secure: false,
             rewrite: (path) => path.replace(/^\/social/, 'social'),
             ws: true,
-          }
+          },
+          '/cloud': {
+            changeOrigin: true,
+            // 应用管理 MCC 接口代理，测试环境
+            target: 'https://test.callfansai.cn',
+            secure: false,
+            rewrite: (path) => path.replace(/^\/cloud/, ''),
+            ws: true,
+          },
         },
-      }
+      },
     },
   };
 });

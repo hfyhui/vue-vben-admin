@@ -1,0 +1,31 @@
+{
+  "visual": {
+    "saveProcess": "保存流程",
+    "run": "运行",
+    "runSuccess": "运行成功",
+    "deleteLine": "删除连线",
+    "set": "设置",
+    "get": "获取",
+    "detail": "属性配置",
+    "logOutput": "控制台输出",
+    "selectPhone": "选择设备",
+    "pleaseSelectPhone": "请选择设备",
+    "closeTip": "您输入的内容尚未保存，确定要离开吗？",
+    "sameDirectionOneLine": "两个节点之间同方向只能有一条连线",
+    "dragNodeToCanvas": "请将节点拖拽到画布中",
+    "minValue0": "最小值不能小于0",
+    "allFlows": "所有流程"
+  },
+  "common": {
+    "run": "运行",
+    "close": "关闭",
+    "yes": "是",
+    "no": "否",
+    "pleaseSelect": "请选择",
+    "save": "保存"
+  },
+  "route": {
+    "processDetail": "流程详情",
+    "processManage": "流程管理"
+  }
+}

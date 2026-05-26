@@ -717,13 +717,13 @@ function onClearSelection(command: ClearSelectionType) {
           v-model="batchUnbindType"
           class="batch-unbind-radio-group"
         >
-          <el-radio label="PROXY">
+          <el-radio value="PROXY">
             {{ $t('associationCenter.batchUnbindProxy') }}
           </el-radio>
-          <el-radio label="ACCOUNT">
+          <el-radio value="ACCOUNT">
             {{ $t('associationCenter.batchUnbindAccount') }}
           </el-radio>
-          <el-radio label="ALL">
+          <el-radio value="ALL">
             {{ $t('associationCenter.batchUnbindAll') }}
           </el-radio>
         </el-radio-group>

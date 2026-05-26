@@ -8,7 +8,7 @@ import '@vben/styles';
 import '@vben/styles/ele';
 
 import { useTitle } from '@vueuse/core';
-import ElementPlus, { ElLoading } from 'element-plus';
+import ElementPlus from 'element-plus';
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import { $t, setupI18n } from '#/locales';
 import { useAssetEnumsStore } from '#/store';
@@ -38,10 +38,8 @@ async function bootstrap(namespace: string) {
   // });
   const app = createApp(App);
 
-  // 注册Element Plus提供的v-loading指令
-  app.directive('loading', ElLoading.directive);
-
   // 注册Vben提供的v-loading和v-spinning指令
+  // 注意：Element Plus 的 v-loading 指令通过 app.use(ElementPlus) 自动注册，无需手动注册
   registerLoadingDirective(app, {
     loading: false, // Vben提供的v-loading指令和Element Plus提供的v-loading指令二选一即可，此处false表示不注册Vben提供的v-loading指令
     spinning: 'spinning',
